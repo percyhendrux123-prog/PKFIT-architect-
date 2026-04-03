@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us | Bakare's Contractors LLC — Baker, Louisiana</title>
+  <meta name="description" content="Learn about Bakare's Contractors LLC — a locally owned contracting and landscaping company serving Baker, Louisiana and the greater Baton Rouge area.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: #0e0e12; color: #d0d0d0; font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    h1, h2, h3, h4 { font-family: 'Oswald', sans-serif; font-weight: 600; letter-spacing: 0.03em; color: #fff; text-transform: uppercase; }
+    a { text-decoration: none; color: inherit; }
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    .accent { color: #e94560; }
+
+    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(14,14,18,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav .container { display: flex; align-items: center; justify-content: space-between; height: 70px; }
+    .nav-brand { font-family: 'Oswald', sans-serif; font-size: 1.15rem; font-weight: 700; color: #fff; letter-spacing: 0.04em; text-transform: uppercase; }
+    .nav-brand span { color: #e94560; }
+    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+    .nav-links a { font-size: 0.85rem; font-weight: 500; color: #aaa; letter-spacing: 0.03em; transition: color 0.3s; }
+    .nav-links a:hover { color: #fff; }
+    .nav-cta { background: #e94560; color: #fff !important; padding: 10px 20px; font-family: 'Oswald', sans-serif; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; transition: background 0.3s; }
+    .nav-cta:hover { background: #d63652; }
+    .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; }
+    @media (max-width: 768px) {
+      .nav-toggle { display: block; }
+      .nav-links { position: fixed; top: 70px; left: 0; right: 0; background: rgba(14,14,18,0.98); flex-direction: column; padding: 24px 0; gap: 0; transform: translateY(-120%); transition: transform 0.3s; }
+      .nav-links.open { transform: translateY(0); }
+      .nav-links li { width: 100%; text-align: center; }
+      .nav-links a { display: block; padding: 14px 0; font-size: 1rem; }
+      .nav-cta { margin: 12px 24px; display: block; text-align: center; }
+    }
+
+    .page-header { padding: 140px 0 60px; background: linear-gradient(160deg, #0e0e12 0%, #16213e 50%, #0f3460 100%); text-align: center; }
+    .page-header h1 { font-size: clamp(2.4rem, 6vw, 4rem); margin-bottom: 16px; }
+    .page-header p { color: #889; font-size: 0.95rem; max-width: 520px; margin: 0 auto; }
+
+    section { padding: 80px 0; }
+    .divider { border-top: 1px solid rgba(255,255,255,0.05); }
+
+    /* Story */
+    .story-section { max-width: 760px; margin: 0 auto; }
+    .story-section h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-bottom: 24px; }
+    .story-section p { font-size: 0.95rem; color: #aab; line-height: 1.9; margin-bottom: 20px; }
+
+    /* Values */
+    .values-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; margin-top: 48px; }
+    .value-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 36px 28px; transition: border-color 0.3s; }
+    .value-card:hover { border-color: #e94560; }
+    .value-card h3 { font-size: 1.3rem; margin-bottom: 12px; }
+    .value-card p { font-size: 0.85rem; color: #889; line-height: 1.8; }
+
+    /* Service Area */
+    .area-content { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    .area-content h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-bottom: 16px; }
+    .area-content p { font-size: 0.9rem; color: #aab; line-height: 1.8; margin-bottom: 16px; }
+    .area-list { list-style: none; }
+    .area-list li { font-size: 0.9rem; color: #aab; padding: 6px 0; padding-left: 20px; position: relative; }
+    .area-list li::before { content: '—'; position: absolute; left: 0; color: #e94560; font-weight: 700; }
+    .area-map {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      height: 340px; display: flex; align-items: center; justify-content: center;
+      font-family: 'Oswald', sans-serif; font-size: 1.2rem; color: #445; text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    @media (max-width: 768px) { .area-content { grid-template-columns: 1fr; } .area-map { height: 200px; } }
+
+    /* Owner */
+    .owner-section { text-align: center; max-width: 680px; margin: 0 auto; }
+    .owner-photo {
+      width: 160px; height: 160px; border-radius: 50%; margin: 0 auto 24px;
+      background: rgba(255,255,255,0.03); border: 3px solid rgba(233,69,96,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; color: rgba(233,69,96,0.2);
+    }
+    .owner-section h3 { font-size: 1.5rem; margin-bottom: 8px; }
+    .owner-section .title { font-size: 0.85rem; color: #e94560; margin-bottom: 16px; letter-spacing: 0.05em; }
+    .owner-section p { font-size: 0.9rem; color: #aab; line-height: 1.8; }
+
+    .btn-primary {
+      display: inline-block; padding: 16px 36px; background: #e94560; color: #fff;
+      font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; border: 2px solid #e94560; transition: all 0.3s;
+    }
+    .btn-primary:hover { background: transparent; color: #e94560; transform: translateY(-2px); }
+
+    .cta-banner { background: linear-gradient(135deg, #16213e, #0f3460); text-align: center; padding: 80px 0; }
+    .cta-banner h2 { font-size: clamp(2rem, 4.5vw, 3rem); margin-bottom: 16px; }
+    .cta-banner p { color: #aab; margin-bottom: 32px; font-size: 0.95rem; }
+
+    footer { background: #090910; padding: 60px 0 30px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 40px; margin-bottom: 40px; }
+    .footer-col h4 { font-size: 1rem; margin-bottom: 16px; color: #fff; }
+    .footer-col p, .footer-col a { font-size: 0.85rem; color: #667; line-height: 2; }
+    .footer-col a:hover { color: #e94560; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px; text-align: center; }
+    .footer-bottom p { font-size: 0.75rem; color: #445; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="container">
+      <a href="index.html" class="nav-brand">BAKARE'S <span>CONTRACTORS</span></a>
+      <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="blog.html">Blog</a></li>
+        <li><a href="tel:2258069658" class="nav-cta">225-806-9658</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <div class="container">
+      <h1>ABOUT <span class="accent">US</span></h1>
+      <p>Locally owned. Community driven. Building Baker one project at a time.</p>
+    </div>
+  </header>
+
+  <!-- Our Story -->
+  <section class="divider">
+    <div class="container">
+      <div class="story-section">
+        <h2>OUR <span class="accent">STORY</span></h2>
+        <p>Bakare's Contractors LLC was founded with a simple idea: do honest work at an honest price. What started as one person with a truck and a reputation for showing up on time has grown into a full-service contracting and landscaping company trusted across Baker and the greater Baton Rouge area.</p>
+        <p>We've always believed that the best advertising is a finished job that speaks for itself. That's why we focus on doing every project right the first time — no shortcuts, no excuses, no hidden costs. Our clients come back because they know what to expect: quality work, clear communication, and a team that treats their property like it's our own.</p>
+        <p>From remodeling kitchens and replacing roofs to maintaining lawns and clearing storm damage, we bring the same level of care and professionalism to every job — big or small.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Owner -->
+  <section class="divider">
+    <div class="container">
+      <div class="owner-section">
+        <div class="owner-photo">&#9787;</div>
+        <h3>MEET THE OWNER</h3>
+        <p class="title">FOUNDER &amp; LEAD CONTRACTOR</p>
+        <p>With years of hands-on experience in construction, remodeling, and landscaping, the owner of Bakare's Contractors leads every major project personally. When you hire Bakare's, you're not handed off to a crew you've never met — you're working with someone who takes pride in every nail, every cut, and every finished product.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Values -->
+  <section class="divider">
+    <div class="container">
+      <div style="text-align:center; margin-bottom: 48px;">
+        <h2>WHAT WE <span class="accent">STAND FOR</span></h2>
+      </div>
+      <div class="values-grid">
+        <div class="value-card">
+          <h3>INTEGRITY</h3>
+          <p>We say what we mean and charge what we quote. No bait-and-switch, no surprise fees. You'll know the scope and price before we pick up a single tool.</p>
+        </div>
+        <div class="value-card">
+          <h3>CRAFTSMANSHIP</h3>
+          <p>We don't just finish jobs — we finish them right. Every detail matters, from the foundation to the final coat of paint. Our name goes on every project.</p>
+        </div>
+        <div class="value-card">
+          <h3>COMMUNITY</h3>
+          <p>Baker is home. We're invested in this community because we live here, raise our families here, and build here. When you hire Bakare's, you're supporting local.</p>
+        </div>
+        <div class="value-card">
+          <h3>RELIABILITY</h3>
+          <p>We show up when we say we will. We finish when we say we'll finish. In an industry full of ghosting and delays, we answer the phone and deliver on our word.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Service Area -->
+  <section class="divider">
+    <div class="container">
+      <div class="area-content">
+        <div>
+          <h2>SERVICE <span class="accent">AREA</span></h2>
+          <p>We're based in Baker, Louisiana and proudly serve the surrounding communities. Whether you're in the city or the parishes, we'll come to you.</p>
+          <ul class="area-list">
+            <li>Baker</li>
+            <li>Baton Rouge</li>
+            <li>Zachary</li>
+            <li>Central</li>
+            <li>Denham Springs</li>
+            <li>Gonzales</li>
+            <li>East Baton Rouge Parish</li>
+            <li>Surrounding areas</li>
+          </ul>
+        </div>
+        <div class="area-map">Baker, LA &amp; Surrounding Areas</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-banner">
+    <div class="container">
+      <h2>LET'S BUILD <span class="accent">SOMETHING TOGETHER</span></h2>
+      <p>Have a project in mind? We'd love to hear about it. Call for a free estimate — no obligation.</p>
+      <a href="tel:2258069658" class="btn-primary">Call 225-806-9658</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>BAKARE'S CONTRACTORS, LLC</h4>
+          <p>Landscaping, Lawn &amp; Tree Service<br>Baker, Louisiana</p>
+        </div>
+        <div class="footer-col">
+          <h4>SERVICES</h4>
+          <a href="services.html">General Contracting</a><br>
+          <a href="services.html">Remodeling &amp; Renovation</a><br>
+          <a href="services.html">Roofing &amp; Exterior</a><br>
+          <a href="services.html">Landscaping &amp; Lawn Care</a><br>
+          <a href="services.html">Tree Service</a><br>
+          <a href="services.html">Pressure Washing</a>
+        </div>
+        <div class="footer-col">
+          <h4>QUICK LINKS</h4>
+          <a href="index.html">Home</a><br>
+          <a href="services.html">Services</a><br>
+          <a href="about.html">About Us</a><br>
+          <a href="blog.html">Blog</a>
+        </div>
+        <div class="footer-col">
+          <h4>CONTACT</h4>
+          <p>Baker, Louisiana</p>
+          <p><a href="tel:2258069658">225-806-9658</a></p>
+          <p>Mon – Sat: 7AM – 6PM</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Bakare's Contractors, LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

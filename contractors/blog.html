@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog | Bakare's Contractors LLC — Tips, Guides &amp; Updates</title>
+  <meta name="description" content="Expert tips on roofing, remodeling, landscaping, and home improvement from Bakare's Contractors in Baker, Louisiana.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: #0e0e12; color: #d0d0d0; font-family: 'Inter', sans-serif; font-weight: 400; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    h1, h2, h3, h4 { font-family: 'Oswald', sans-serif; font-weight: 600; letter-spacing: 0.03em; color: #fff; text-transform: uppercase; }
+    a { text-decoration: none; color: inherit; }
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    .accent { color: #e94560; }
+
+    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(14,14,18,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav .container { display: flex; align-items: center; justify-content: space-between; height: 70px; }
+    .nav-brand { font-family: 'Oswald', sans-serif; font-size: 1.15rem; font-weight: 700; color: #fff; letter-spacing: 0.04em; text-transform: uppercase; }
+    .nav-brand span { color: #e94560; }
+    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+    .nav-links a { font-size: 0.85rem; font-weight: 500; color: #aaa; letter-spacing: 0.03em; transition: color 0.3s; }
+    .nav-links a:hover { color: #fff; }
+    .nav-cta { background: #e94560; color: #fff !important; padding: 10px 20px; font-family: 'Oswald', sans-serif; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; transition: background 0.3s; }
+    .nav-cta:hover { background: #d63652; }
+    .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .nav-toggle span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; }
+    @media (max-width: 768px) {
+      .nav-toggle { display: block; }
+      .nav-links { position: fixed; top: 70px; left: 0; right: 0; background: rgba(14,14,18,0.98); flex-direction: column; padding: 24px 0; gap: 0; transform: translateY(-120%); transition: transform 0.3s; }
+      .nav-links.open { transform: translateY(0); }
+      .nav-links li { width: 100%; text-align: center; }
+      .nav-links a { display: block; padding: 14px 0; font-size: 1rem; }
+      .nav-cta { margin: 12px 24px; display: block; text-align: center; }
+    }
+
+    .page-header { padding: 140px 0 60px; background: linear-gradient(160deg, #0e0e12 0%, #16213e 50%, #0f3460 100%); text-align: center; }
+    .page-header h1 { font-size: clamp(2.4rem, 6vw, 4rem); margin-bottom: 16px; }
+    .page-header p { color: #889; font-size: 0.95rem; max-width: 520px; margin: 0 auto; }
+
+    section { padding: 80px 0; }
+
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; }
+    .blog-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      transition: border-color 0.3s, transform 0.3s; overflow: hidden;
+    }
+    .blog-card:hover { border-color: #e94560; transform: translateY(-4px); }
+    .blog-thumb {
+      height: 200px; background: linear-gradient(135deg, #16213e, #0f3460);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem; color: rgba(233,69,96,0.25);
+    }
+    .blog-body { padding: 28px 24px; }
+    .blog-meta { font-size: 0.75rem; color: #667; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; }
+    .blog-body h3 { font-size: 1.3rem; margin-bottom: 12px; line-height: 1.3; }
+    .blog-body h3 a { color: #fff; transition: color 0.3s; }
+    .blog-body h3 a:hover { color: #e94560; }
+    .blog-body p { font-size: 0.85rem; color: #889; line-height: 1.7; margin-bottom: 16px; }
+    .read-more { font-size: 0.8rem; font-weight: 600; color: #e94560; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.3s; }
+    .read-more:hover { color: #fff; }
+
+    .cta-banner { background: linear-gradient(135deg, #16213e, #0f3460); text-align: center; padding: 80px 0; }
+    .cta-banner h2 { font-size: clamp(2rem, 4.5vw, 3rem); margin-bottom: 16px; }
+    .cta-banner p { color: #aab; margin-bottom: 32px; font-size: 0.95rem; }
+    .btn-primary { display: inline-block; padding: 16px 36px; background: #e94560; color: #fff; font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; border: 2px solid #e94560; transition: all 0.3s; }
+    .btn-primary:hover { background: transparent; color: #e94560; transform: translateY(-2px); }
+
+    footer { background: #090910; padding: 60px 0 30px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 40px; margin-bottom: 40px; }
+    .footer-col h4 { font-size: 1rem; margin-bottom: 16px; color: #fff; }
+    .footer-col p, .footer-col a { font-size: 0.85rem; color: #667; line-height: 2; }
+    .footer-col a:hover { color: #e94560; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px; text-align: center; }
+    .footer-bottom p { font-size: 0.75rem; color: #445; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="container">
+      <a href="index.html" class="nav-brand">BAKARE'S <span>CONTRACTORS</span></a>
+      <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="blog.html">Blog</a></li>
+        <li><a href="tel:2258069658" class="nav-cta">225-806-9658</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <div class="container">
+      <h1>THE <span class="accent">BLOG</span></h1>
+      <p>Tips, guides, and insights from the team at Bakare's Contractors. Helping you make smarter decisions for your home and property.</p>
+    </div>
+  </header>
+
+  <section>
+    <div class="container">
+      <div class="blog-grid">
+
+        <article class="blog-card">
+          <div class="blog-thumb">&#9960;</div>
+          <div class="blog-body">
+            <p class="blog-meta">Roofing &bull; April 2026</p>
+            <h3><a href="blog-1.html">5 Signs Your Roof Needs Replacing</a></h3>
+            <p>Don't wait for a leak to tell you there's a problem. Here are five warning signs that your roof is past its prime and needs professional attention.</p>
+            <a href="blog-1.html" class="read-more">Read More &rarr;</a>
+          </div>
+        </article>
+
+        <article class="blog-card">
+          <div class="blog-thumb">&#9881;</div>
+          <div class="blog-body">
+            <p class="blog-meta">Contracting &bull; April 2026</p>
+            <h3><a href="blog-2.html">How to Choose the Right Contractor in Baker, LA</a></h3>
+            <p>Hiring a contractor can feel like a gamble. It doesn't have to be. Here's what to look for — and what to avoid — when choosing a contractor in Baker.</p>
+            <a href="blog-2.html" class="read-more">Read More &rarr;</a>
+          </div>
+        </article>
+
+        <article class="blog-card">
+          <div class="blog-thumb">&#9752;</div>
+          <div class="blog-body">
+            <p class="blog-meta">Landscaping &bull; March 2026</p>
+            <h3><a href="blog-3.html">Spring Landscaping Tips for Louisiana Homeowners</a></h3>
+            <p>Spring in Louisiana means growth — fast. Here's how to get ahead of the season and set your lawn and landscape up for a beautiful year.</p>
+            <a href="blog-3.html" class="read-more">Read More &rarr;</a>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-banner">
+    <div class="container">
+      <h2>HAVE A <span class="accent">PROJECT IN MIND?</span></h2>
+      <p>We're always happy to talk. Call us for a free estimate on any contracting or landscaping job.</p>
+      <a href="tel:2258069658" class="btn-primary">Call 225-806-9658</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>BAKARE'S CONTRACTORS, LLC</h4>
+          <p>Landscaping, Lawn &amp; Tree Service<br>Baker, Louisiana</p>
+        </div>
+        <div class="footer-col">
+          <h4>SERVICES</h4>
+          <a href="services.html">General Contracting</a><br>
+          <a href="services.html">Remodeling &amp; Renovation</a><br>
+          <a href="services.html">Roofing &amp; Exterior</a><br>
+          <a href="services.html">Landscaping &amp; Lawn Care</a><br>
+          <a href="services.html">Tree Service</a><br>
+          <a href="services.html">Pressure Washing</a>
+        </div>
+        <div class="footer-col">
+          <h4>QUICK LINKS</h4>
+          <a href="index.html">Home</a><br>
+          <a href="services.html">Services</a><br>
+          <a href="about.html">About Us</a><br>
+          <a href="blog.html">Blog</a>
+        </div>
+        <div class="footer-col">
+          <h4>CONTACT</h4>
+          <p>Baker, Louisiana</p>
+          <p><a href="tel:2258069658">225-806-9658</a></p>
+          <p>Mon – Sat: 7AM – 6PM</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Bakare's Contractors, LLC. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
