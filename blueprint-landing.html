@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The PKFIT Blueprint — 30-Day Body Recomposition System</title>
+  <meta name="description" content="The PKFIT Blueprint: A 30-day structured system to diagnose, correct, and lock in your ideal physique. No guesswork. Just results.">
+  <meta property="og:title" content="The PKFIT Blueprint — 30-Day Body Recomposition System">
+  <meta property="og:description" content="A 30-day structured system to diagnose, correct, and lock in your ideal physique.">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: #080808;
+      color: #e0e0e0;
+      font-family: 'DM Mono', monospace;
+      font-weight: 400;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Typography ── */
+
+    h1, h2, h3, h4 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+
+    /* ── Utility ── */
+
+    .gold { color: #C8A96E; }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      padding: 18px 48px;
+      background-color: #C8A96E;
+      color: #080808;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.25rem;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      border: 2px solid #C8A96E;
+      transition: background-color 0.3s, color 0.3s, transform 0.2s;
+    }
+
+    .cta-btn:hover {
+      background-color: transparent;
+      color: #C8A96E;
+      transform: translateY(-2px);
+    }
+
+    section {
+      padding: 100px 0;
+    }
+
+    /* ── Hero ── */
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at center, rgba(200, 169, 110, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 7rem);
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+
+    .hero .subtitle {
+      font-size: clamp(0.85rem, 1.5vw, 1rem);
+      color: #999;
+      max-width: 560px;
+      margin: 0 auto 48px;
+      line-height: 1.8;
+    }
+
+    .hero .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #C8A96E;
+      border: 1px solid rgba(200, 169, 110, 0.3);
+      padding: 6px 16px;
+      margin-bottom: 32px;
+    }
+
+    /* ── What You Get ── */
+
+    .what-you-get {
+      border-top: 1px solid rgba(200, 169, 110, 0.15);
+    }
+
+    .what-you-get h2 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+    }
+
+    .feature-card {
+      border: 1px solid rgba(200, 169, 110, 0.15);
+      padding: 36px 28px;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: #C8A96E;
+      transform: translateY(-4px);
+    }
+
+    .feature-card .number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.5rem;
+      color: #C8A96E;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      font-size: 0.85rem;
+      color: #999;
+      line-height: 1.7;
+    }
+
+    /* ── 30-Day Structure ── */
+
+    .structure {
+      border-top: 1px solid rgba(200, 169, 110, 0.15);
+    }
+
+    .structure h2 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .structure .section-sub {
+      text-align: center;
+      color: #777;
+      font-size: 0.85rem;
+      margin-bottom: 64px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .phases {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .phase {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 32px;
+      padding: 40px 0;
+      border-bottom: 1px solid rgba(200, 169, 110, 0.1);
+      align-items: start;
+    }
+
+    .phase:last-child {
+      border-bottom: none;
+    }
+
+    .phase-days {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      color: #C8A96E;
+      letter-spacing: 0.05em;
+      padding-top: 4px;
+    }
+
+    .phase-content h3 {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+    }
+
+    .phase-content p {
+      font-size: 0.85rem;
+      color: #999;
+      line-height: 1.8;
+      max-width: 600px;
+    }
+
+    /* ── Testimonial ── */
+
+    .testimonial {
+      border-top: 1px solid rgba(200, 169, 110, 0.15);
+      text-align: center;
+    }
+
+    .testimonial-card {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 48px 36px;
+      border: 1px solid rgba(200, 169, 110, 0.15);
+      position: relative;
+    }
+
+    .testimonial-card .quote-mark {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 5rem;
+      color: #C8A96E;
+      line-height: 1;
+      opacity: 0.4;
+      position: absolute;
+      top: 16px;
+      left: 28px;
+    }
+
+    .testimonial-card blockquote {
+      font-size: 0.95rem;
+      font-style: italic;
+      color: #ccc;
+      line-height: 1.9;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .testimonial-card .attribution {
+      font-size: 0.8rem;
+      color: #C8A96E;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Final CTA ── */
+
+    .final-cta {
+      border-top: 1px solid rgba(200, 169, 110, 0.15);
+      text-align: center;
+      padding: 120px 0;
+    }
+
+    .final-cta h2 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      margin-bottom: 20px;
+    }
+
+    .final-cta p {
+      color: #777;
+      font-size: 0.9rem;
+      margin-bottom: 48px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ── Footer ── */
+
+    footer {
+      padding: 40px 0;
+      text-align: center;
+      border-top: 1px solid rgba(200, 169, 110, 0.08);
+    }
+
+    footer p {
+      font-size: 0.75rem;
+      color: #555;
+    }
+
+    /* ── Responsive ── */
+
+    @media (max-width: 640px) {
+      section {
+        padding: 72px 0;
+      }
+
+      .phase {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .cta-btn {
+        padding: 16px 36px;
+        font-size: 1.1rem;
+      }
+
+      .feature-card {
+        padding: 28px 24px;
+      }
+
+      .testimonial-card {
+        padding: 36px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="container">
+      <span class="tag">A 30-Day System</span>
+      <h1>THE PKFIT<br><span class="gold">BLUEPRINT</span></h1>
+      <p class="subtitle">Stop guessing. Start building. A structured 30-day system that diagnoses your weak points, corrects them, and locks in lasting results.</p>
+      <a href="https://percyhendrux.gumroad.com/l/khcus" class="cta-btn">Get The Blueprint</a>
+    </div>
+  </section>
+
+  <!-- ── What You Get ── -->
+  <section class="what-you-get">
+    <div class="container">
+      <h2>WHAT YOU <span class="gold">GET</span></h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="number">01</div>
+          <h3>THE 30-DAY PLAN</h3>
+          <p>A complete day-by-day training and nutrition framework. Every session mapped out. Every phase with a clear purpose.</p>
+        </div>
+        <div class="feature-card">
+          <div class="number">02</div>
+          <h3>SELF-DIAGNOSIS TOOLS</h3>
+          <p>Assessments that pinpoint your weaknesses — posture, imbalances, mobility gaps — so you fix what actually matters.</p>
+        </div>
+        <div class="feature-card">
+          <div class="number">03</div>
+          <h3>NUTRITION FRAMEWORK</h3>
+          <p>No cookie-cutter meal plans. A flexible system that teaches you to eat for your goals without obsessing over every macro.</p>
+        </div>
+        <div class="feature-card">
+          <div class="number">04</div>
+          <h3>MINDSET PROTOCOLS</h3>
+          <p>The mental architecture that separates people who transform from people who quit. Identity-level change, not just motivation.</p>
+        </div>
+        <div class="feature-card">
+          <div class="number">05</div>
+          <h3>PROGRESS TRACKING</h3>
+          <p>Structured check-ins and metrics that show you exactly where you are and what to adjust — no guesswork.</p>
+        </div>
+        <div class="feature-card">
+          <div class="number">06</div>
+          <h3>LIFETIME ACCESS</h3>
+          <p>Buy once, keep forever. Run the 30-day cycle as many times as you need. Every update included.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── The 30-Day Structure ── -->
+  <section class="structure">
+    <div class="container">
+      <h2>THE 30-DAY <span class="gold">STRUCTURE</span></h2>
+      <p class="section-sub">Four phases. Each one builds on the last. By Day 30, the results are locked in.</p>
+      <div class="phases">
+        <div class="phase">
+          <div class="phase-days">DAYS 1 – 7</div>
+          <div class="phase-content">
+            <h3>DIAGNOSIS</h3>
+            <p>Audit your body, habits, and baseline. Identify postural imbalances, movement deficiencies, and nutrition gaps. You can't fix what you haven't measured.</p>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-days">DAYS 8 – 16</div>
+          <div class="phase-content">
+            <h3>CORRECTION</h3>
+            <p>Attack the weak points. Targeted training protocols and nutrition adjustments that address exactly what the diagnosis revealed. This is where the real work begins.</p>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-days">DAYS 17 – 24</div>
+          <div class="phase-content">
+            <h3>IDENTITY SHIFT</h3>
+            <p>Move from "trying to get fit" to "being fit." Rewire habits, build discipline systems, and internalize the standards that make results automatic.</p>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-days">DAYS 25 – 30</div>
+          <div class="phase-content">
+            <h3>THE LOCK</h3>
+            <p>Consolidate everything. Stress-test your new systems. Build the maintenance framework that ensures Day 30 isn't the end — it's the new baseline.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Testimonial ── -->
+  <section class="testimonial">
+    <div class="container">
+      <div class="testimonial-card">
+        <span class="quote-mark">"</span>
+        <blockquote>"I've tried dozens of programs. This is the first one that actually made me understand why I wasn't progressing. By week three, I wasn't just seeing results — I was thinking differently."</blockquote>
+        <p class="attribution">— SATISFIED CLIENT</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ── -->
+  <section class="final-cta">
+    <div class="container">
+      <h2>READY TO <span class="gold">BUILD?</span></h2>
+      <p>30 days. Four phases. One system that actually works. Stop cycling through programs and start seeing results.</p>
+      <a href="https://percyhendrux.gumroad.com/l/khcus" class="cta-btn">Get The Blueprint Now</a>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 PKFIT. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

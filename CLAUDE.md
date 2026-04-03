@@ -4,19 +4,24 @@
 
 ## Project Overview
 
-**PKFIT-architect-** is a newly initialized project. The codebase is in its earliest stage — no source code, build system, or framework has been set up yet.
+**PKFIT-architect-** is a fitness product landing page for the PKFIT Blueprint — a 30-day body recomposition system. The site is a single static HTML file deployed on Netlify.
 
-**Status:** Pre-development (repository scaffolding only)
+**Status:** Active (static site, Netlify-ready)
 
 ## Repository Structure
 
 ```
 PKFIT-architect-/
-├── CLAUDE.md          # This file — AI assistant guide
-└── README.md          # Project title
+├── blueprint-landing.html   # Main landing page (Netlify entry point)
+├── CLAUDE.md                # This file — AI assistant guide
+└── README.md                # Project title
 ```
 
-As the project grows, update this section to reflect the actual directory layout.
+### Key Tech
+- **Single HTML file** with inline CSS, no build step
+- **Fonts:** Bebas Neue (headings), DM Mono (body) via Google Fonts
+- **Theme:** Dark (#080808 background, #C8A96E gold accent)
+- **CTA:** Links to Gumroad (`https://percyhendrux.gumroad.com/l/khcus`)
 
 ## Common Commands
 
