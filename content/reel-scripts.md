@@ -205,3 +205,133 @@ If you batch-shoot all 10 in one session, order them by emotional register so yo
 ## Post Cadence
 
 Don't post all 10 in a row. Drop one every 2–3 days. Track which register gets the most saves and shares — that tells you which direction to lean next time. **Saves > likes** for content that actually converts.
+
+---
+
+## Silent-Autoplay Subtitle Cards
+
+80%+ of reels are watched muted. These are the big on-screen text cards timed to the spoken beats. Use Bebas Neue, all-caps, gold (#C8A96E) on black. One card per beat. Keep each card on screen long enough to read in one glance (~1.5s minimum).
+
+### Script 1 — "The Mirror"
+1. YOU LIED TO YOURSELF THIS MORNING
+2. AGAIN
+3. YOU'VE BEEN SAYING "MONDAY" SINCE LAST JANUARY
+4. YOU DON'T HAVE A DISCIPLINE PROBLEM
+5. YOU HAVE AN IDENTITY PROBLEM
+6. A YEAR FROM NOW — SAME MIRROR
+7. UNLESS THE MAN CHANGES
+8. LINK IN BIO
+
+### Script 2 — "Same Room, Same Body"
+1. THERE'S A GUY AT YOUR GYM
+2. SAME BODY FOR 3 YEARS
+3. LAST WEEK — YOU REALIZED IT WAS YOU
+4. CONSISTENCY WITHOUT DIAGNOSIS IS JUST REPETITION
+5. YOU'VE BEEN PERFORMING FITNESS
+6. 30 DAYS TO STOP
+7. LINK IN BIO
+
+### Script 3 — "The Receipts"
+1. OPEN YOUR CAMERA ROLL
+2. SCROLL BACK 6 MONTHS
+3. FIND A SHIRTLESS PHOTO
+4. TELL ME WHAT ACTUALLY CHANGED
+5. THAT'S WHY YOU NEVER TAKE THE SECOND PHOTO
+6. TRAINING IN THE DARK ISN'T TRYING
+7. LINK IN BIO
+
+### Script 4 — "The Story You Tell"
+1. "I'M WORKING ON IT"
+2. YOU'VE BEEN SAYING IT FOR 2 YEARS
+3. NO — YOU'RE TALKING ABOUT IT
+4. SOON BECOMES NEVER
+5. NEVER BECOMES THE SHAPE YOU DIE IN
+6. LINK IN BIO
+
+### Script 5 — "Skinny-Fat"
+1. YOU'RE NOT FAT
+2. YOU'RE NOT SKINNY
+3. THAT'S THE PROBLEM
+4. YOU EAT "CLEAN." YOU TRAIN 4x A WEEK.
+5. AND YOU NEVER GET LEANER
+6. YOU'RE TRAINING FOR THE WRONG BODY
+7. LINK IN BIO
+
+### Script 6 — "Monday Man"
+1. COUNT YOUR MONDAYS
+2. NOT WEEKS — MONDAYS
+3. 30? 50? 100?
+4. RESTARTING ISN'T DISCIPLINE
+5. IT'S AVOIDANCE IN A BETTER OUTFIT
+6. FEELINGS DON'T BUILD BODIES
+7. FRAMEWORKS DO
+8. LINK IN BIO
+
+### Script 7 — "Quiet Disappointment"
+1. THE QUIET DISAPPOINTMENT OF BEING IN YOUR OWN BODY
+2. YOU LOOK AWAY FROM WINDOWS
+3. YOU FLINCH AT OLD PHOTOS
+4. EVERYONE'S BEING POLITE ABOUT IT
+5. "FINE" IS HOW YOU DIE SLOWLY
+6. LINK IN BIO
+
+### Script 8 — "The Diagnosis"
+1. LET ME DIAGNOSE YOU IN 30 SECONDS
+2. YOU KNOW MORE THAN MOST COACHES
+3. YOUR BODY REFUSES TO REFLECT IT
+4. KNOWLEDGE WITHOUT DIAGNOSIS IS NOISE
+5. YOU ALREADY KNOW WHAT'S WRONG
+6. LINK IN BIO
+
+### Script 9 — "Same Place"
+1. SAME BODY. SAME YEAR. SAME EXCUSE.
+2. DIFFERENT CALENDAR.
+3. IT'S APRIL
+4. IT WILL BE JANUARY AGAIN
+5. WE'LL BE HAVING THIS EXACT CONVERSATION
+6. BEING STUCK IS COMFORTABLE
+7. LINK IN BIO
+
+### Script 10 — "The Inheritance"
+1. LOOK AT A PHOTO OF YOUR DAD AT YOUR AGE
+2. THAT'S WHAT YOU'LL INHERIT
+3. NOT GENETICS — PATTERNS
+4. A THOUSAND SMALL PERMISSIONS
+5. THE MAN YOU'LL BE AT 50 IS BUILT TODAY
+6. LINK IN BIO
+
+---
+
+## 15s Teaser Cuts
+
+Shorter, sharper versions of each script — for Stories, TikTok hooks, and top-of-funnel pattern interrupts. Each one is ~35–40 words (~15s at 150 wpm). Use these as the "trailer" and let the full 60s reel be the payoff.
+
+### Teaser 1 — "The Mirror"
+"You looked in the mirror this morning. [beat] And you lied to yourself. Again. [beat] A year from now — same mirror. Same body. Same lie. [beat] Unless the man changes. Link in bio."
+
+### Teaser 2 — "Same Room, Same Body"
+"There's a guy at your gym. Same body for three years. [beat] Last week, you caught your reflection and realized it was you. [beat] You're not training. You're *performing* fitness. Link in bio."
+
+### Teaser 3 — "The Receipts"
+"Open your camera roll. Scroll back six months. Find a shirtless photo. [beat] Now tell me what actually changed. [beat] That's why you never take the second photo. Link in bio."
+
+### Teaser 4 — "The Story You Tell"
+"'I'm working on it.' [beat] You've been saying that for two years. [beat] Soon becomes someday. Someday becomes never. And never becomes the shape you die in. Link in bio."
+
+### Teaser 5 — "Skinny-Fat"
+"You're not fat. You're not skinny. [beat] That's the problem nobody's telling you the truth about. [beat] You've been training for the body you already have. Not the one you need. Link in bio."
+
+### Teaser 6 — "Monday Man"
+"Count how many Mondays you've started over. [beat] Not weeks. Mondays. [beat] Restarting isn't discipline. It's avoidance in a better outfit. Link in bio."
+
+### Teaser 7 — "Quiet Disappointment"
+"Nobody talks about the quiet disappointment of being in your own body. [beat] You look away from windows. You flinch at old photos. [beat] 'Fine' is how you die slowly. Link in bio."
+
+### Teaser 8 — "The Diagnosis"
+"Let me diagnose you in 30 seconds. [beat] You know more than most coaches — and your body refuses to reflect any of it. [beat] Knowledge without diagnosis is noise. Link in bio."
+
+### Teaser 9 — "Same Place"
+"Same body. Same year. Same excuse. Different calendar. [beat] In January, you said — this year. [beat] It's April. And in January, we'll have this conversation again. Link in bio."
+
+### Teaser 10 — "The Inheritance"
+"Look at a photo of your dad at your age. [beat] That's what you're inheriting. [beat] Not from his genes. From his patterns. The man you'll be at 50 is built today. Link in bio."
