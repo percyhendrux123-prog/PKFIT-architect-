@@ -319,3 +319,32 @@ footer p {
     padding: 36px 24px;
   }
 }
+
+/* ── Manifesto (hero sub-line) ── */
+
+.hero .manifesto {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: #C8A96E;
+  letter-spacing: 0.08em;
+  margin: 0 auto 32px;
+  max-width: 640px;
+}
+
+/* ── Positioning band ── */
+
+.positioning {
+  border-top: 1px solid rgba(200, 169, 110, 0.15);
+  padding: 80px 0;
+  text-align: center;
+}
+
+.positioning p {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  color: #fff;
+  letter-spacing: 0.03em;
+  max-width: 780px;
+  margin: 0 auto;
+  line-height: 1.4;
+}
