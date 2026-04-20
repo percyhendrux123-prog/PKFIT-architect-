@@ -34,11 +34,18 @@ function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
           <div className="font-display tracking-wider2">{post.author?.name ?? 'Member'}</div>
           <div className="text-xs text-faint">{new Date(post.created_at).toLocaleString()}</div>
         </div>
-        {post.is_pinned ? (
-          <span className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold">
-            <Pin size={12} /> Pinned
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {post.target_plan ? (
+            <span className="text-[0.6rem] uppercase tracking-widest2 text-mute">
+              → {post.target_plan}
+            </span>
+          ) : null}
+          {post.is_pinned ? (
+            <span className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold">
+              <Pin size={12} /> Pinned
+            </span>
+          ) : null}
+        </div>
       </header>
 
       <p className="mt-3 whitespace-pre-wrap text-sm text-ink/90">{post.content}</p>
