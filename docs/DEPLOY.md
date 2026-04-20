@@ -60,6 +60,7 @@ Keep a scratch notes doc open. You will copy values between dashboards.
    - `0014_stripe_events.sql` (idempotency log so duplicate Stripe webhooks are no-ops)
    - `0015_review_coach_comment.sql` (adds coach-authored note on a weekly review)
    - `0016_community_photos.sql` (public `community-photos` bucket + `community_posts.image_path`)
+   - `0017_macro_floor.sql` (adds `profiles.target_kcal` / `target_protein_g` / `target_carbs_g` / `target_fat_g`)
 6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`, `reviews`, `conversations`, `conversation_messages`, `dm_threads`, `dm_messages`, `rate_limits`. Each should have a shield icon next to the name indicating RLS is enabled.
 7. Left sidebar → **Storage** → verify three buckets: `baseline-photos` (Private), `avatars` (Public), `community-photos` (Public).
 

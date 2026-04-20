@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
@@ -21,27 +21,44 @@ function totals(items) {
   return { planned, eaten };
 }
 
-function MacroBar({ label, planned, eaten }) {
+function MacroBar({ label, planned, eaten, floor }) {
   const pct = planned > 0 ? Math.min(100, Math.round((eaten / planned) * 100)) : 0;
+  const plannedBelowFloor = floor != null && planned > 0 && planned < floor;
   return (
     <div>
       <div className="flex items-baseline justify-between text-[0.6rem] uppercase tracking-widest2 text-faint">
         <span>{label}</span>
         <span>
           <span className="text-ink">{eaten}</span> / {planned}
+          {floor != null ? <span className="text-faint"> · floor {floor}</span> : null}
         </span>
       </div>
       <div className="mt-1 h-1 w-full bg-line">
         <div className="h-1 bg-gold" style={{ width: `${pct}%` }} />
       </div>
+      {plannedBelowFloor ? (
+        <div className="mt-1 text-[0.55rem] uppercase tracking-widest2 text-red-300">
+          Below floor
+        </div>
+      ) : null}
     </div>
   );
 }
 
 export default function Meals() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const floor = useMemo(
+    () => ({
+      kcal: profile?.target_kcal ?? null,
+      p: profile?.target_protein_g ?? null,
+      c: profile?.target_carbs_g ?? null,
+      f: profile?.target_fat_g ?? null,
+    }),
+    [profile],
+  );
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured || !user) {
@@ -109,10 +126,10 @@ export default function Meals() {
                 </div>
                 {anyMacros ? (
                   <div className="mb-3 grid grid-cols-2 gap-3 border border-line bg-black/30 p-3 md:grid-cols-4">
-                    <MacroBar label="Kcal" planned={planned.kcal} eaten={eaten.kcal} />
-                    <MacroBar label="Protein" planned={planned.p} eaten={eaten.p} />
-                    <MacroBar label="Carbs" planned={planned.c} eaten={eaten.c} />
-                    <MacroBar label="Fat" planned={planned.f} eaten={eaten.f} />
+                    <MacroBar label="Kcal" planned={planned.kcal} eaten={eaten.kcal} floor={floor.kcal} />
+                    <MacroBar label="Protein" planned={planned.p} eaten={eaten.p} floor={floor.p} />
+                    <MacroBar label="Carbs" planned={planned.c} eaten={eaten.c} floor={floor.c} />
+                    <MacroBar label="Fat" planned={planned.f} eaten={eaten.f} floor={floor.f} />
                   </div>
                 ) : null}
                 <ul className="divide-y divide-line border border-line">

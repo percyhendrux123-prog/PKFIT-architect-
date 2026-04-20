@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, KeyRound, Trash2 } from 'lucide-react';
+import { Download, KeyRound, Save, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { account } from '../../lib/claudeClient';
@@ -9,7 +9,7 @@ import { Input } from '../../components/ui/Input';
 import { Card, CardHeader } from '../../components/ui/Card';
 
 export default function Settings() {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   const [pw1, setPw1] = useState('');
@@ -17,6 +17,40 @@ export default function Settings() {
   const [pwBusy, setPwBusy] = useState(false);
   const [pwMsg, setPwMsg] = useState(null);
   const [pwErr, setPwErr] = useState(null);
+
+  const [target, setTarget] = useState({
+    target_kcal: '',
+    target_protein_g: '',
+    target_carbs_g: '',
+    target_fat_g: '',
+  });
+  const [targetBusy, setTargetBusy] = useState(false);
+  const [targetMsg, setTargetMsg] = useState(null);
+
+  useEffect(() => {
+    setTarget({
+      target_kcal: profile?.target_kcal ?? '',
+      target_protein_g: profile?.target_protein_g ?? '',
+      target_carbs_g: profile?.target_carbs_g ?? '',
+      target_fat_g: profile?.target_fat_g ?? '',
+    });
+  }, [profile]);
+
+  async function saveTarget(e) {
+    e.preventDefault();
+    setTargetBusy(true);
+    setTargetMsg(null);
+    const payload = {
+      target_kcal: target.target_kcal === '' ? null : Number(target.target_kcal),
+      target_protein_g: target.target_protein_g === '' ? null : Number(target.target_protein_g),
+      target_carbs_g: target.target_carbs_g === '' ? null : Number(target.target_carbs_g),
+      target_fat_g: target.target_fat_g === '' ? null : Number(target.target_fat_g),
+    };
+    await supabase.from('profiles').update(payload).eq('id', user.id);
+    await refreshProfile?.();
+    setTargetMsg('Macro floor saved.');
+    setTargetBusy(false);
+  }
 
   const [exportBusy, setExportBusy] = useState(false);
   const [exportErr, setExportErr] = useState(null);
@@ -95,6 +129,44 @@ export default function Settings() {
         <div className="label mb-2">Settings</div>
         <h1 className="font-display text-4xl tracking-wider2">Account</h1>
       </header>
+
+      <Card>
+        <CardHeader label="Nutrition" title="Macro floor" meta="Used on Meals to compare planned vs. eaten" />
+        <form onSubmit={saveTarget} className="grid max-w-xl grid-cols-2 gap-3 md:grid-cols-4">
+          <Input
+            label="Kcal"
+            type="number"
+            value={target.target_kcal}
+            onChange={(e) => setTarget({ ...target, target_kcal: e.target.value })}
+          />
+          <Input
+            label="Protein (g)"
+            type="number"
+            value={target.target_protein_g}
+            onChange={(e) => setTarget({ ...target, target_protein_g: e.target.value })}
+          />
+          <Input
+            label="Carbs (g)"
+            type="number"
+            value={target.target_carbs_g}
+            onChange={(e) => setTarget({ ...target, target_carbs_g: e.target.value })}
+          />
+          <Input
+            label="Fat (g)"
+            type="number"
+            value={target.target_fat_g}
+            onChange={(e) => setTarget({ ...target, target_fat_g: e.target.value })}
+          />
+          <div className="col-span-2 md:col-span-4">
+            <Button type="submit" disabled={targetBusy}>
+              <Save size={14} /> {targetBusy ? 'Saving' : 'Save floor'}
+            </Button>
+            {targetMsg ? (
+              <span className="ml-3 text-xs uppercase tracking-widest2 text-gold">{targetMsg}</span>
+            ) : null}
+          </div>
+        </form>
+      </Card>
 
       <Card>
         <CardHeader label="Password" title="Change password" />
