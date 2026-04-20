@@ -171,7 +171,8 @@ export default function Workouts() {
           <div className="label mb-2">Training</div>
           <h1 className="font-display text-4xl tracking-wider2">Workouts</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button as={Link} to="/workouts/history" variant="ghost">History</Button>
           <Button as={Link} to="/workouts/generator" variant="ghost">AI Generator</Button>
           <Button as={Link} to="/workouts/builder">Builder</Button>
         </div>

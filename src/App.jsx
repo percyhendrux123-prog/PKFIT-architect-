@@ -13,6 +13,7 @@ import Dashboard from './pages/client/Dashboard.jsx';
 import Workouts from './pages/client/Workouts.jsx';
 import WorkoutGenerator from './pages/client/WorkoutGenerator.jsx';
 import WorkoutBuilder from './pages/client/WorkoutBuilder.jsx';
+import ExerciseHistory from './pages/client/ExerciseHistory.jsx';
 import Meals from './pages/client/Meals.jsx';
 import MealGenerator from './pages/client/MealGenerator.jsx';
 import Habits from './pages/client/Habits.jsx';
@@ -54,6 +55,7 @@ export default function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/workouts" element={<Workouts />} />
+        <Route path="/workouts/history" element={<ExerciseHistory />} />
         <Route path="/workouts/generator" element={<WorkoutGenerator />} />
         <Route path="/workouts/builder" element={<WorkoutBuilder />} />
         <Route path="/meals" element={<Meals />} />
