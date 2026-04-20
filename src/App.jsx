@@ -28,6 +28,7 @@ import Reviews from './pages/client/Reviews.jsx';
 import ReviewDetail from './pages/client/ReviewDetail.jsx';
 import Inbox from './pages/client/Inbox.jsx';
 import CoachInbox from './pages/coach/Inbox.jsx';
+import CoachSessionDetail from './pages/coach/SessionDetail.jsx';
 
 import CoachDashboard from './pages/coach/Dashboard.jsx';
 import Clients from './pages/coach/Clients.jsx';
@@ -86,6 +87,7 @@ export default function App() {
         <Route path="/coach/inbox" element={<CoachInbox />} />
         <Route path="/coach/clients" element={<Clients />} />
         <Route path="/coach/clients/:id" element={<ClientDetail />} />
+        <Route path="/coach/clients/:id/sessions/:sid" element={<CoachSessionDetail />} />
         <Route path="/coach/programs" element={<Programs />} />
         <Route path="/coach/revenue" element={<Revenue />} />
         <Route path="/coach/announcements" element={<Announcements />} />

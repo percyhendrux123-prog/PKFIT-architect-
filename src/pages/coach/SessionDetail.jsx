@@ -1,31 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { SessionView } from '../../components/SessionView';
 
-export default function SessionDetail() {
-  const { id } = useParams();
-  const { user } = useAuth();
+export default function CoachSessionDetail() {
+  const { id: clientId, sid } = useParams();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !user || !id) {
+    if (!isSupabaseConfigured || !sid) {
       setLoading(false);
       return;
     }
     supabase
       .from('workout_sessions')
       .select('*')
-      .eq('id', id)
+      .eq('id', sid)
       .maybeSingle()
       .then(({ data }) => {
         setSession(data ?? null);
         setLoading(false);
       });
-  }, [id, user?.id]);
+  }, [sid]);
 
   if (loading) return <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>;
-  return <SessionView session={session} backTo="/workouts" backLabel="← Workouts" />;
+  return (
+    <SessionView
+      session={session}
+      backTo={`/coach/clients/${clientId}`}
+      backLabel="← Client"
+    />
+  );
 }

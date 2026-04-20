@@ -43,10 +43,20 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState([]);
   const [activeProgram, setActiveProgram] = useState(null);
 
+  const [reviewThisWeek, setReviewThisWeek] = useState(null);
+
   useEffect(() => {
     if (!isSupabaseConfigured || !user) return;
     const today = new Date().toISOString().slice(0, 10);
     const sinceIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+
+    const weekStart = (() => {
+      const d = new Date();
+      const day = d.getUTCDay();
+      const diff = (day + 6) % 7; // Monday start
+      d.setUTCDate(d.getUTCDate() - diff);
+      return d.toISOString().slice(0, 10);
+    })();
     supabase
       .from('check_ins')
       .select('*')
@@ -92,6 +102,13 @@ export default function Dashboard() {
       .gte('performed_at', sinceIso)
       .order('performed_at', { ascending: false })
       .then(({ data }) => setSessions(data ?? []));
+    supabase
+      .from('reviews')
+      .select('id,week_starting')
+      .eq('client_id', user.id)
+      .eq('week_starting', weekStart)
+      .maybeSingle()
+      .then(({ data }) => setReviewThisWeek(data ?? null));
   }, [user?.id]);
 
   const hStreak = habitStreak(habitRow);
@@ -294,13 +311,29 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      <section>
-        <div className="label mb-3">Recent programs</div>
-        {recent.length === 0 ? (
-          <div className="border border-line bg-black/20 p-6 text-sm text-mute">
-            No program written. Generate one, or build one by hand. Structure first, intensity second.
+      {!reviewThisWeek ? (
+        <section className="border border-gold bg-black/30 p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="label">Weekly review</div>
+              <h3 className="mt-1 font-display text-2xl tracking-wider2">Close the loop for this week</h3>
+              <p className="mt-1 max-w-reading text-sm text-mute">
+                Diagnose the week. Install the next adjustment. Takes under a minute.
+              </p>
+            </div>
+            <Link
+              to="/reviews"
+              className="border border-gold bg-gold px-4 py-2 font-display text-xs tracking-wider2 text-bg hover:bg-[#d8b658]"
+            >
+              Open reviews
+            </Link>
           </div>
-        ) : (
+        </section>
+      ) : null}
+
+      {!activeProgram && recent.length > 0 ? (
+        <section>
+          <div className="label mb-3">Archived programs</div>
           <ul className="divide-y divide-line border border-line">
             {recent.map((r) => (
               <li key={r.id} className="flex items-center justify-between p-4">
@@ -312,8 +345,17 @@ export default function Dashboard() {
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      ) : null}
+
+      {!activeProgram && recent.length === 0 ? (
+        <section>
+          <div className="label mb-3">Programs</div>
+          <div className="border border-line bg-black/20 p-6 text-sm text-mute">
+            No program written. Generate one, or build one by hand. Structure first, intensity second.
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

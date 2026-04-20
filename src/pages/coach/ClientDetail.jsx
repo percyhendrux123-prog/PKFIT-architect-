@@ -299,12 +299,17 @@ export default function ClientDetail() {
               ) : (
                 <ul className="divide-y divide-line">
                   {sessions.map((s) => (
-                    <li key={s.id} className="flex items-center justify-between py-2 text-sm">
-                      <span>{new Date(s.performed_at).toLocaleDateString()}</span>
-                      <span className="text-faint">
-                        {s.duration_min ? `${s.duration_min}m` : ''}
-                        {s.rpe_avg != null ? ` · RPE ${s.rpe_avg}` : ''}
-                      </span>
+                    <li key={s.id}>
+                      <Link
+                        to={`/coach/clients/${id}/sessions/${s.id}`}
+                        className="flex items-center justify-between py-2 text-sm hover:bg-black/30"
+                      >
+                        <span>{new Date(s.performed_at).toLocaleDateString()}</span>
+                        <span className="text-faint">
+                          {s.duration_min ? `${s.duration_min}m` : ''}
+                          {s.rpe_avg != null ? ` · RPE ${s.rpe_avg}` : ''}
+                        </span>
+                      </Link>
                     </li>
                   ))}
                 </ul>
