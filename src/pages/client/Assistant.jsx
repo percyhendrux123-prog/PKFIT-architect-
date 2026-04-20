@@ -4,12 +4,14 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { streamAssistant } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
+import { ContextPinMenu } from '../../components/ContextPinMenu';
 
 export default function Assistant() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [currentId, setCurrentId] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [pins, setPins] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -29,18 +31,27 @@ export default function Assistant() {
   const loadMessages = useCallback(async (conversationId) => {
     if (!isSupabaseConfigured || !conversationId) {
       setMessages([]);
+      setPins([]);
       return;
     }
-    const { data } = await supabase
-      .from('conversation_messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
+    const [{ data: msgs }, { data: conv }] = await Promise.all([
+      supabase
+        .from('conversation_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('conversations')
+        .select('context')
+        .eq('id', conversationId)
+        .maybeSingle(),
+    ]);
     setMessages(
-      (data ?? [])
+      (msgs ?? [])
         .filter((m) => m.role === 'user' || m.role === 'assistant')
         .map((m) => ({ role: m.role, content: m.content })),
     );
+    setPins(Array.isArray(conv?.context) ? conv.context : []);
   }, []);
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
@@ -99,6 +110,7 @@ export default function Assistant() {
   function startNew() {
     setCurrentId(null);
     setMessages([]);
+    setPins([]);
     setErr(null);
   }
 
@@ -153,12 +165,20 @@ export default function Assistant() {
       </aside>
 
       <section className="flex flex-col">
-        <header className="mb-4">
-          <div className="label mb-2">Assistant</div>
-          <h1 className="font-display text-4xl tracking-wider2">The Architect</h1>
-          <p className="mt-1 max-w-reading text-sm text-mute">
-            Mechanism over motivation. No hype. Ask the question you would ask the coach.
-          </p>
+        <header className="mb-4 space-y-3">
+          <div>
+            <div className="label mb-2">Assistant</div>
+            <h1 className="font-display text-4xl tracking-wider2">The Architect</h1>
+            <p className="mt-1 max-w-reading text-sm text-mute">
+              Mechanism over motivation. No hype. Ask the question you would ask the coach.
+            </p>
+          </div>
+          <ContextPinMenu
+            userId={user?.id}
+            conversationId={currentId}
+            pins={pins}
+            onChange={setPins}
+          />
         </header>
 
         <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-4">

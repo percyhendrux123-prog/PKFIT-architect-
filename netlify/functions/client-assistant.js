@@ -6,6 +6,34 @@ const MAX_CONTEXT_MESSAGES = 24;
 const ASSISTANT_RPM = 20;
 const ASSISTANT_WINDOW_SEC = 60;
 
+// Render a pinned context array into a compact text block for the system
+// prompt. Each entry is { type, data } where type is 'program' | 'check_in'
+// | 'review' | 'habits' | 'note'. The server never trusts the shape — it
+// stringifies whatever the client stored.
+function renderPinnedContext(pins) {
+  if (!Array.isArray(pins) || pins.length === 0) return '';
+  const sections = [];
+  for (const pin of pins) {
+    if (!pin || typeof pin !== 'object') continue;
+    const type = String(pin.type ?? 'note');
+    let block = `[${type.toUpperCase()}]`;
+    try {
+      block += '\n' + JSON.stringify(pin.data ?? pin, null, 2).slice(0, 4000);
+    } catch {
+      block += '\n(context unreadable)';
+    }
+    sections.push(block);
+  }
+  if (!sections.length) return '';
+  return [
+    '',
+    '--- PINNED CLIENT CONTEXT (use when relevant, do not recite verbatim) ---',
+    ...sections,
+    '--- END PINNED CONTEXT ---',
+    '',
+  ].join('\n');
+}
+
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 function sseEvent(event, data) {
@@ -82,10 +110,11 @@ export default async (req) => {
   const admin = getAdminClient();
 
   let conversationId = body.conversationId ?? null;
+  let conversationContext = [];
   if (conversationId) {
     const { data: conv } = await admin
       .from('conversations')
-      .select('id, client_id')
+      .select('id, client_id, context')
       .eq('id', conversationId)
       .maybeSingle();
     if (!conv || conv.client_id !== user.id) {
@@ -94,6 +123,7 @@ export default async (req) => {
         headers: JSON_HEADERS,
       });
     }
+    conversationContext = Array.isArray(conv.context) ? conv.context : [];
   } else {
     const title = userMessage.slice(0, 60);
     const { data: created, error: createErr } = await admin
@@ -127,7 +157,11 @@ export default async (req) => {
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
 
-  const system = loadPrompt('pkfit-system.md') + '\n\n' + loadPrompt('client-assistant.md');
+  const system =
+    loadPrompt('pkfit-system.md') +
+    '\n\n' +
+    loadPrompt('client-assistant.md') +
+    renderPinnedContext(conversationContext);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
