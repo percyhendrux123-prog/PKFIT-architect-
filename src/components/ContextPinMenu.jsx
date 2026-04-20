@@ -12,6 +12,8 @@ function summaryOf(pin) {
       return `Review · ${pin.data?.week_starting ?? '—'}`;
     case 'habits':
       return `Habit stack · ${(pin.data?.habit_list ?? []).length} levers`;
+    case 'session':
+      return `Session · ${pin.data?.performed_at?.slice(0, 10) ?? '—'}`;
     default:
       return String(pin.type);
   }
@@ -19,13 +21,25 @@ function summaryOf(pin) {
 
 export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
   const [open, setOpen] = useState(false);
-  const [options, setOptions] = useState({ programs: [], checkIns: [], reviews: [], habits: null });
+  const [options, setOptions] = useState({
+    programs: [],
+    checkIns: [],
+    reviews: [],
+    habits: null,
+    sessions: [],
+  });
   const wrapRef = useRef(null);
 
   useEffect(() => {
     if (!open || !userId || !isSupabaseConfigured) return;
     (async () => {
-      const [{ data: programs }, { data: checkIns }, { data: reviews }, { data: habits }] = await Promise.all([
+      const [
+        { data: programs },
+        { data: checkIns },
+        { data: reviews },
+        { data: habits },
+        { data: sessions },
+      ] = await Promise.all([
         supabase
           .from('programs')
           .select('id,week_number,schedule,exercises')
@@ -51,12 +65,19 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from('workout_sessions')
+          .select('id,performed_at,duration_min,rpe_avg,notes,exercises')
+          .eq('client_id', userId)
+          .order('performed_at', { ascending: false })
+          .limit(5),
       ]);
       setOptions({
         programs: programs ?? [],
         checkIns: checkIns ?? [],
         reviews: reviews ?? [],
         habits: habits ?? null,
+        sessions: sessions ?? [],
       });
     })();
   }, [open, userId]);
@@ -146,6 +167,15 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
                   key={r.id}
                   label={`Week of ${r.week_starting}`}
                   onClick={() => add({ type: 'review', data: r })}
+                />
+              ))}
+            </Section>
+            <Section title="Sessions">
+              {options.sessions.length === 0 ? <Empty /> : options.sessions.map((s) => (
+                <OptionRow
+                  key={s.id}
+                  label={`${new Date(s.performed_at).toLocaleDateString()}${s.rpe_avg != null ? ` · RPE ${s.rpe_avg}` : ''}`}
+                  onClick={() => add({ type: 'session', data: s })}
                 />
               ))}
             </Section>

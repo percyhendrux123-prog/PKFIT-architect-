@@ -94,12 +94,33 @@ function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
       {open ? (
         <div className="mt-4 border-t border-line pt-4">
           <ul className="space-y-3">
-            {comments.map((c) => (
-              <li key={c.id} className="text-sm">
-                <div className="label">{c.author_id === me?.id ? 'You' : 'Member'} · {new Date(c.created_at).toLocaleTimeString()}</div>
-                <div className="text-ink/90">{c.content}</div>
-              </li>
-            ))}
+            {comments.map((c) => {
+              const mine = c.author_id === me?.id;
+              const canDelete = mine || isCoach;
+              return (
+                <li key={c.id} className="text-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="label">
+                      {mine ? 'You' : 'Member'} · {new Date(c.created_at).toLocaleString()}
+                    </div>
+                    {canDelete ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!window.confirm('Delete this comment.')) return;
+                          await supabase.from('community_comments').delete().eq('id', c.id);
+                          setComments((xs) => xs.filter((x) => x.id !== c.id));
+                        }}
+                        className="text-[0.55rem] uppercase tracking-widest2 text-faint hover:text-red-300"
+                      >
+                        Delete
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="text-ink/90">{c.content}</div>
+                </li>
+              );
+            })}
           </ul>
           <form
             onSubmit={async (e) => {
