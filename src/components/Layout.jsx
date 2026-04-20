@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useUnreadDMs } from '../hooks/useUnreadDMs';
 
 const clientPrimary = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -52,14 +53,16 @@ const coachSecondary = [
 ];
 
 export function Layout() {
-  const { role, profile, signOut } = useAuth();
+  const { user, role, profile, signOut } = useAuth();
   const nav = useNavigate();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+  const unreadDMs = useUnreadDMs({ userId: user?.id, role });
 
   const primary = role === 'coach' ? coachPrimary : clientPrimary;
   const secondary = role === 'coach' ? coachSecondary : clientSecondary;
   const sidebar = [...primary, ...secondary];
+  const inboxPath = role === 'coach' ? '/coach/inbox' : '/inbox';
 
   useEffect(() => {
     setMoreOpen(false);
@@ -99,24 +102,35 @@ export function Layout() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-0 md:grid-cols-[220px_1fr]">
         <nav className="hidden border-r border-line py-6 md:block" aria-label="Primary">
           <ul className="flex flex-col">
-            {sidebar.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-5 py-3 text-sm uppercase tracking-wider2 transition-colors ${
-                      isActive
-                        ? 'border-l-2 border-gold text-gold'
-                        : 'border-l-2 border-transparent text-mute hover:text-ink'
-                    }`
-                  }
-                >
-                  <item.icon size={16} />
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
+            {sidebar.map((item) => {
+              const showDot = item.to === inboxPath && unreadDMs > 0;
+              return (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-5 py-3 text-sm uppercase tracking-wider2 transition-colors ${
+                        isActive
+                          ? 'border-l-2 border-gold text-gold'
+                          : 'border-l-2 border-transparent text-mute hover:text-ink'
+                      }`
+                    }
+                  >
+                    <item.icon size={16} />
+                    <span className="flex-1">{item.label}</span>
+                    {showDot ? (
+                      <span
+                        className="rounded-none bg-gold px-1.5 py-0.5 text-[0.55rem] text-bg"
+                        aria-label={`${unreadDMs} unread messages`}
+                      >
+                        {unreadDMs > 99 ? '99+' : unreadDMs}
+                      </span>
+                    ) : null}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
@@ -131,23 +145,32 @@ export function Layout() {
         aria-label="Mobile primary"
       >
         <ul className="flex">
-          {primary.map((item) => (
-            <li key={item.to} className="flex-1">
-              <NavLink
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 px-2 py-3 text-[0.6rem] uppercase tracking-widest2 ${
-                    isActive ? 'text-gold' : 'text-faint'
-                  }`
-                }
-              >
-                <item.icon size={18} />
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
-          <li className="flex-1">
+          {primary.map((item) => {
+            const showDot = item.to === inboxPath && unreadDMs > 0;
+            return (
+              <li key={item.to} className="relative flex-1">
+                <NavLink
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center gap-1 px-2 py-3 text-[0.6rem] uppercase tracking-widest2 ${
+                      isActive ? 'text-gold' : 'text-faint'
+                    }`
+                  }
+                >
+                  <item.icon size={18} />
+                  {item.label}
+                </NavLink>
+                {showDot ? (
+                  <span
+                    className="absolute right-3 top-2 h-2 w-2 rounded-full bg-gold"
+                    aria-label={`${unreadDMs} unread messages`}
+                  />
+                ) : null}
+              </li>
+            );
+          })}
+          <li className="relative flex-1">
             <button
               onClick={() => setMoreOpen(true)}
               className="flex w-full flex-col items-center gap-1 px-2 py-3 text-[0.6rem] uppercase tracking-widest2 text-faint"
@@ -156,6 +179,9 @@ export function Layout() {
               <Menu size={18} />
               More
             </button>
+            {role !== 'coach' && unreadDMs > 0 ? (
+              <span className="absolute right-3 top-2 h-2 w-2 rounded-full bg-gold" aria-hidden />
+            ) : null}
           </li>
         </ul>
       </nav>
