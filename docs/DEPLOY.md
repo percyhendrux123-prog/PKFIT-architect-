@@ -53,10 +53,12 @@ Keep a scratch notes doc open. You will copy values between dashboards.
    - `0007_storage.sql` (baseline-photos bucket + RLS + `profiles.baseline_photo_path`)
    - `0008_checkin_photos.sql` (adds `check_ins.photo_path` — reuses the same bucket)
    - `0009_announcement_targeting.sql` (adds `community_posts.target_plan` + plan-scoped read policy)
+   - `0010_last_seen_and_avatar.sql` (adds `profiles.community_last_seen_at` + `profiles.avatar_path`)
+   - `0011_avatars_bucket.sql` (public `avatars` bucket with owner-write policies)
 6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`, `reviews`, `conversations`, `conversation_messages`, `dm_threads`, `dm_messages`, `rate_limits`. Each should have a shield icon next to the name indicating RLS is enabled.
-7. Left sidebar → **Storage** → verify a bucket named `baseline-photos` exists and is marked **Private**.
+7. Left sidebar → **Storage** → verify two buckets: `baseline-photos` (Private) and `avatars` (Public).
 
-**Completion signal:** sixteen tables visible with RLS enabled, one private bucket.
+**Completion signal:** sixteen tables visible with RLS enabled, one private bucket, one public bucket.
 
 ## 3 — Enable email auth
 

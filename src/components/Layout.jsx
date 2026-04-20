@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useUnreadDMs } from '../hooks/useUnreadDMs';
 import { useUnreadCommunity } from '../hooks/useUnreadCommunity';
+import { Avatar } from './ui/Avatar';
 
 const clientPrimary = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -95,7 +96,8 @@ export function Layout() {
           >
             PKFIT
           </NavLink>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Avatar name={profile?.name ?? profile?.email ?? 'Me'} path={profile?.avatar_path} size={28} />
             <span className="hidden text-xs uppercase tracking-widest2 text-faint sm:inline">
               {profile?.name ?? profile?.email ?? 'Member'}
             </span>

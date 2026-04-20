@@ -4,10 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Avatar } from '../../components/ui/Avatar';
 import { StorageImage } from '../../components/StorageImage';
 
 export default function Profile() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [form, setForm] = useState({ name: '', email: '' });
   const [checkIns, setCheckIns] = useState([]);
   const [weight, setWeight] = useState('');
@@ -37,7 +39,41 @@ export default function Profile() {
     e.preventDefault();
     setBusy(true);
     await supabase.from('profiles').update({ name: form.name }).eq('id', user.id);
+    await refreshProfile?.();
     setBusy(false);
+  }
+
+  async function uploadAvatar(e) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      setErr('Avatar must be an image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErr('Avatar must be 5 MB or less.');
+      return;
+    }
+    setAvatarBusy(true);
+    setErr(null);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({ avatar_path: path })
+        .eq('id', user.id);
+      if (updErr) throw updErr;
+      await refreshProfile?.();
+    } catch (e) {
+      setErr(`Avatar upload failed: ${e.message}`);
+    } finally {
+      setAvatarBusy(false);
+    }
   }
 
   function pickPhoto(e) {
@@ -98,10 +134,22 @@ export default function Profile() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <div className="label mb-2">Profile</div>
-        <h1 className="font-display text-4xl tracking-wider2">Your record</h1>
+      <header className="flex items-center gap-4">
+        <Avatar name={profile?.name ?? profile?.email ?? 'You'} path={profile?.avatar_path} size={72} />
+        <div>
+          <div className="label mb-2">Profile</div>
+          <h1 className="font-display text-4xl tracking-wider2">Your record</h1>
+        </div>
       </header>
+
+      <section>
+        <div className="label mb-2">Avatar</div>
+        <label className="inline-flex cursor-pointer items-center gap-2 border border-line bg-black/30 px-4 py-3 text-xs uppercase tracking-widest2 text-mute hover:border-gold">
+          <Upload size={14} />
+          {avatarBusy ? 'Uploading' : profile?.avatar_path ? 'Replace avatar' : 'Upload avatar'}
+          <input type="file" accept="image/*" className="sr-only" onChange={uploadAvatar} disabled={avatarBusy} />
+        </label>
+      </section>
 
       <form onSubmit={saveProfile} className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />

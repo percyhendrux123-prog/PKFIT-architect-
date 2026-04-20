@@ -29,7 +29,7 @@ function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
   return (
     <article className={`border p-4 ${post.is_pinned ? 'border-gold' : 'border-line'} bg-black/30`}>
       <header className="flex items-center gap-3">
-        <Avatar name={post.author?.name ?? 'Member'} size={32} />
+        <Avatar name={post.author?.name ?? 'Member'} path={post.author?.avatar_path} size={32} />
         <div className="flex-1">
           <div className="font-display tracking-wider2">{post.author?.name ?? 'Member'}</div>
           <div className="text-xs text-faint">{new Date(post.created_at).toLocaleString()}</div>
@@ -128,7 +128,7 @@ export default function Community() {
       .limit(100);
     const authorIds = [...new Set((rows ?? []).map((p) => p.author_id))];
     const { data: authors } = authorIds.length
-      ? await supabase.from('profiles').select('id,name').in('id', authorIds)
+      ? await supabase.from('profiles').select('id,name,avatar_path').in('id', authorIds)
       : { data: [] };
     const byId = Object.fromEntries((authors ?? []).map((a) => [a.id, a]));
 

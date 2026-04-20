@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Input, Select } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
+import { Avatar } from '../../components/ui/Avatar';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 
 export default function Clients() {
@@ -64,7 +65,12 @@ export default function Clients() {
           <tbody className="divide-y divide-line">
             {filtered.map((c) => (
               <tr key={c.id}>
-                <td className="px-4 py-3 font-display tracking-wider2">{c.name ?? '—'}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={c.name ?? c.email ?? '—'} path={c.avatar_path} size={32} />
+                    <span className="font-display tracking-wider2">{c.name ?? '—'}</span>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-mute">{c.email ?? '—'}</td>
                 <td className="px-4 py-3"><Badge tone="gold">{c.plan ?? 'trial'}</Badge></td>
                 <td className="px-4 py-3 text-mute">{loopStageMeta(deriveLoopStage(c)).label}</td>
