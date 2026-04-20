@@ -2,10 +2,9 @@ import { jsonResponse } from './_shared/auth.js';
 import { getAdminClient } from './_shared/supabase-admin.js';
 import { getStripe } from './_shared/stripe.js';
 
-// Netlify must not parse the body — we need the raw payload for signature
-// verification. Configure the function to receive the raw string via the
-// rawBody property when available.
-export const config = { bodyParser: false };
+// Netlify functions receive the raw request body on `event.body` directly
+// (base64-encoded when `event.isBase64Encoded` is true). Stripe signature
+// verification needs that raw byte stream — do not JSON.parse it.
 
 function mapStatus(s) {
   const allowed = ['active', 'trialing', 'past_due', 'canceled', 'incomplete'];

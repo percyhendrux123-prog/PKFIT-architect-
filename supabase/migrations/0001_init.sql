@@ -248,6 +248,17 @@ create policy "comments delete author" on public.community_comments
   for delete using (author_id = auth.uid() or public.is_coach());
 
 -- ─── REALTIME ────────────────────────────────────────────────────────────
-alter publication supabase_realtime add table public.community_posts;
-alter publication supabase_realtime add table public.community_comments;
-alter publication supabase_realtime add table public.community_reactions;
+-- Idempotent add: skip tables already in the publication so re-running this
+-- migration does not error.
+do $$
+declare tbl text;
+begin
+  foreach tbl in array array['community_posts','community_comments','community_reactions'] loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = tbl
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', tbl);
+    end if;
+  end loop;
+end $$;
