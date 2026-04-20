@@ -19,9 +19,11 @@ export default function Dashboard() {
   const { user, profile } = useAuth();
   const [recent, setRecent] = useState([]);
   const [checkIn, setCheckIn] = useState(null);
+  const [todayMeals, setTodayMeals] = useState([]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !user) return;
+    const today = new Date().toISOString().slice(0, 10);
     supabase
       .from('check_ins')
       .select('*')
@@ -36,7 +38,25 @@ export default function Dashboard() {
       .order('created_at', { ascending: false })
       .limit(3)
       .then(({ data }) => setRecent(data ?? []));
+    supabase
+      .from('meals')
+      .select('*')
+      .eq('client_id', user.id)
+      .eq('date', today)
+      .order('meal_type')
+      .then(({ data }) => setTodayMeals(data ?? []));
   }, [user?.id]);
+
+  async function toggleMealEaten(meal) {
+    const next = !meal.eaten;
+    setTodayMeals((list) =>
+      list.map((m) => (m.id === meal.id ? { ...m, eaten: next } : m)),
+    );
+    await supabase
+      .from('meals')
+      .update({ eaten: next, eaten_at: next ? new Date().toISOString() : null })
+      .eq('id', meal.id);
+  }
 
   const loop = deriveLoopStage(profile);
   const loopMeta = loopStageMeta(loop);
@@ -103,6 +123,40 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
+
+      {todayMeals.length > 0 ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="label">Today&apos;s meals</div>
+            <Link to="/meals" className="text-xs uppercase tracking-widest2 text-gold">Full plan →</Link>
+          </div>
+          <ul className="divide-y divide-line border border-line">
+            {todayMeals.map((m) => (
+              <li
+                key={m.id}
+                className="grid grid-cols-[32px_120px_1fr_100px] items-center gap-3 p-3 text-sm"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleMealEaten(m)}
+                  aria-pressed={Boolean(m.eaten)}
+                  aria-label={m.eaten ? 'Mark as not eaten' : 'Mark as eaten'}
+                  className={`h-6 w-6 border ${m.eaten ? 'bg-gold border-gold' : 'border-line'}`}
+                />
+                <div className="font-display tracking-wider2 text-gold">{m.meal_type ?? 'Meal'}</div>
+                <div className={m.eaten ? 'truncate text-faint line-through' : 'truncate text-mute'}>
+                  {(m.items ?? [])
+                    .map((it) => (typeof it === 'string' ? it : `${it.qty ?? ''} ${it.name ?? ''}`.trim()))
+                    .join(', ')}
+                </div>
+                <div className="text-xs text-faint">
+                  {m.macros?.kcal ? `${m.macros.kcal} kcal` : ''}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section>
         <div className="label mb-3">Recent programs</div>
