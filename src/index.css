@@ -59,3 +59,21 @@ body {
   text-transform: uppercase;
   color: #c9a84c;
 }
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: #c9a84c;
+  color: #080808;
+  padding: 0.75rem 1rem;
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 100;
+  transition: top 0.15s linear;
+}
+.skip-link:focus {
+  top: 0;
+}
+

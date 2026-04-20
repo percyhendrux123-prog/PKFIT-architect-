@@ -54,6 +54,7 @@ export function Layout() {
 
   return (
     <div className="min-h-screen">
+      <a href="#main" className="skip-link">Skip to content</a>
       <header className="border-b border-line bg-bg/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <NavLink to={role === 'coach' ? '/coach' : '/dashboard'} className="font-display text-2xl tracking-wider2 text-gold">
@@ -95,7 +96,7 @@ export function Layout() {
           </ul>
         </nav>
 
-        <main className="min-h-[70vh] px-5 py-8">
+        <main id="main" tabIndex={-1} className="min-h-[70vh] px-5 py-8">
           <Outlet />
         </main>
       </div>

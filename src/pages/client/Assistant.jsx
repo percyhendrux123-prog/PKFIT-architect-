@@ -88,7 +88,11 @@ export default function Assistant() {
       <aside className="border border-line bg-black/20">
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div className="label">Conversations</div>
-          <button onClick={startNew} className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold" title="New conversation">
+          <button
+            onClick={startNew}
+            aria-label="Start a new conversation"
+            className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold"
+          >
             <Plus size={14} /> New
           </button>
         </div>
