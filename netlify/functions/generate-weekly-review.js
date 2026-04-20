@@ -46,6 +46,7 @@ export const handler = async (event) => {
       { data: programs },
       { data: habits },
       { data: sessions },
+      { data: priorReview },
     ] = await Promise.all([
       admin.from('profiles').select('*').eq('id', targetClientId).maybeSingle(),
       admin
@@ -72,6 +73,14 @@ export const handler = async (event) => {
         .eq('client_id', targetClientId)
         .gte('performed_at', sevenDaysAgoIso)
         .order('performed_at', { ascending: true }),
+      admin
+        .from('reviews')
+        .select('week_starting,summary,constraints,adjustments,metrics,coach_comment')
+        .eq('client_id', targetClientId)
+        .lt('week_starting', weekStart.toISOString().slice(0, 10))
+        .order('week_starting', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     const habitRow = habits?.data ?? habits ?? null;
@@ -88,6 +97,16 @@ export const handler = async (event) => {
       habit_list: habitList,
       habit_history: habitHistory,
       week_starting: weekStart.toISOString().slice(0, 10),
+      prior_review: priorReview
+        ? {
+            week_starting: priorReview.week_starting,
+            summary: priorReview.summary,
+            constraints: priorReview.constraints,
+            adjustments: priorReview.adjustments,
+            metrics: priorReview.metrics,
+            coach_comment: priorReview.coach_comment ?? null,
+          }
+        : null,
     };
 
     const system = loadPrompt('pkfit-system.md') + '\n\n' + loadPrompt('weekly-review.md');

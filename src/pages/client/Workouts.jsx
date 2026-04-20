@@ -262,11 +262,16 @@ export default function Workouts() {
           <div className="label mb-2">Recent sessions</div>
           <ul className="divide-y divide-line border border-line">
             {sessions.slice(0, 10).map((s) => (
-              <li key={s.id} className="grid grid-cols-1 gap-2 p-3 md:grid-cols-[160px_1fr_120px_120px]">
-                <div className="label">{new Date(s.performed_at).toLocaleString()}</div>
-                <div className="truncate text-sm text-mute">{s.notes || '—'}</div>
-                <div className="text-xs text-faint">{s.duration_min ? `${s.duration_min} min` : ''}</div>
-                <div className="text-xs text-faint">{s.rpe_avg != null ? `RPE ${s.rpe_avg}` : ''}</div>
+              <li key={s.id}>
+                <Link
+                  to={`/workouts/sessions/${s.id}`}
+                  className="grid grid-cols-1 gap-2 p-3 hover:bg-black/30 md:grid-cols-[160px_1fr_120px_120px]"
+                >
+                  <div className="label">{new Date(s.performed_at).toLocaleString()}</div>
+                  <div className="truncate text-sm text-mute">{s.notes || '—'}</div>
+                  <div className="text-xs text-faint">{s.duration_min ? `${s.duration_min} min` : ''}</div>
+                  <div className="text-xs text-faint">{s.rpe_avg != null ? `RPE ${s.rpe_avg}` : ''}</div>
+                </Link>
               </li>
             ))}
           </ul>
