@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Youtube } from 'lucide-react';
+import { CheckCircle2, Download, Youtube } from 'lucide-react';
+import { downloadCSV } from '../../lib/csv';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
@@ -259,7 +260,31 @@ export default function Workouts() {
 
       {sessions.length > 0 ? (
         <section>
-          <div className="label mb-2">Recent sessions</div>
+          <div className="mb-2 flex items-center justify-between">
+            <div className="label">Recent sessions</div>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCSV(
+                  `pkfit-sessions-${new Date().toISOString().slice(0, 10)}.csv`,
+                  sessions,
+                  [
+                    { key: 'performed_at', label: 'Performed' },
+                    { key: 'duration_min', label: 'Duration (min)' },
+                    { key: 'rpe_avg', label: 'Avg RPE' },
+                    { key: 'notes', label: 'Notes' },
+                    {
+                      label: 'Exercises',
+                      get: (s) => Array.isArray(s.exercises) ? s.exercises.length : 0,
+                    },
+                  ],
+                )
+              }
+              className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold"
+            >
+              <Download size={12} /> CSV
+            </button>
+          </div>
           <ul className="divide-y divide-line border border-line">
             {sessions.slice(0, 10).map((s) => (
               <li key={s.id}>

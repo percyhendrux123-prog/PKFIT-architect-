@@ -355,6 +355,64 @@ export default function ClientDetail() {
             </Card>
           </section>
 
+          {(() => {
+            const latestCheckInWithPhoto = checkIns.find((c) => c.photo_path);
+            if (!client.baseline_photo_path && !latestCheckInWithPhoto) return null;
+            return (
+              <section className="border border-line bg-black/30 p-5">
+                <div className="mb-4 flex items-end justify-between">
+                  <div>
+                    <div className="label">Comparison</div>
+                    <h2 className="mt-1 font-display text-2xl tracking-wider2">Baseline vs latest</h2>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <div className="label mb-2">Baseline</div>
+                    {client.baseline_photo_path ? (
+                      <StorageImage
+                        path={client.baseline_photo_path}
+                        alt="Baseline"
+                        className="max-h-80 w-full object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-48 w-full items-center justify-center border border-dashed border-line bg-black/20 text-xs text-faint">
+                        No baseline photo
+                      </div>
+                    )}
+                    {client.start_date ? (
+                      <div className="mt-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
+                        {new Date(client.start_date).toLocaleDateString()}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div>
+                    <div className="label mb-2">Latest check-in</div>
+                    {latestCheckInWithPhoto ? (
+                      <>
+                        <StorageImage
+                          path={latestCheckInWithPhoto.photo_path}
+                          alt="Latest check-in"
+                          className="max-h-80 w-full object-contain"
+                        />
+                        <div className="mt-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
+                          {latestCheckInWithPhoto.date?.slice(0, 10)}
+                          {latestCheckInWithPhoto.weight != null
+                            ? ` · ${latestCheckInWithPhoto.weight} kg`
+                            : ''}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex h-48 w-full items-center justify-center border border-dashed border-line bg-black/20 text-xs text-faint">
+                        No photo yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+
           {habitList.length > 0 ? (
             <section className="border border-line bg-black/30 p-5">
               <div className="mb-4 flex items-end justify-between">

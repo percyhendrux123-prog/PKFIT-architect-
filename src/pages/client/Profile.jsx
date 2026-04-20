@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Download, Upload } from 'lucide-react';
+import { downloadCSV } from '../../lib/csv';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
@@ -302,7 +303,29 @@ export default function Profile() {
       {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
 
       <section>
-        <div className="label mb-2">History</div>
+        <div className="mb-2 flex items-center justify-between">
+          <div className="label">History</div>
+          {checkIns.length > 0 ? (
+            <button
+              type="button"
+              onClick={() =>
+                downloadCSV(
+                  `pkfit-checkins-${new Date().toISOString().slice(0, 10)}.csv`,
+                  checkIns,
+                  [
+                    { key: 'date', label: 'Date' },
+                    { key: 'weight', label: 'Weight (kg)' },
+                    { key: 'body_fat', label: 'Body fat %' },
+                    { key: 'notes', label: 'Notes' },
+                  ],
+                )
+              }
+              className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold"
+            >
+              <Download size={12} /> CSV
+            </button>
+          ) : null}
+        </div>
         {checkIns.length === 0 ? (
           <div className="border border-line bg-black/20 p-6 text-sm text-mute">No check-ins yet.</div>
         ) : (
