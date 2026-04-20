@@ -103,10 +103,20 @@ function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
 }
 
 export default function Community() {
-  const { user, profile, role } = useAuth();
+  const { user, profile, role, refreshProfile } = useAuth();
   const [posts, setPosts] = useState([]);
   const [content, setContent] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Mark the feed as seen each time it's mounted so unread counts stay accurate.
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return;
+    supabase
+      .from('profiles')
+      .update({ community_last_seen_at: new Date().toISOString() })
+      .eq('id', user.id)
+      .then(() => refreshProfile?.());
+  }, [user?.id]);
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured) return;

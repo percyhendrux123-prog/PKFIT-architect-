@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadDMs } from '../hooks/useUnreadDMs';
+import { useUnreadCommunity } from '../hooks/useUnreadCommunity';
 
 const clientPrimary = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -58,11 +59,21 @@ export function Layout() {
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const unreadDMs = useUnreadDMs({ userId: user?.id, role });
+  const unreadCommunity = useUnreadCommunity({
+    userId: user?.id,
+    lastSeenAt: profile?.community_last_seen_at,
+  });
 
   const primary = role === 'coach' ? coachPrimary : clientPrimary;
   const secondary = role === 'coach' ? coachSecondary : clientSecondary;
   const sidebar = [...primary, ...secondary];
   const inboxPath = role === 'coach' ? '/coach/inbox' : '/inbox';
+
+  // Map route → unread count so the sidebar renders badges generically.
+  const badges = {
+    [inboxPath]: unreadDMs,
+    '/community': role === 'coach' ? 0 : unreadCommunity,
+  };
 
   useEffect(() => {
     setMoreOpen(false);
@@ -103,7 +114,7 @@ export function Layout() {
         <nav className="hidden border-r border-line py-6 md:block" aria-label="Primary">
           <ul className="flex flex-col">
             {sidebar.map((item) => {
-              const showDot = item.to === inboxPath && unreadDMs > 0;
+              const badgeCount = badges[item.to] ?? 0;
               return (
                 <li key={item.to}>
                   <NavLink
@@ -119,12 +130,12 @@ export function Layout() {
                   >
                     <item.icon size={16} />
                     <span className="flex-1">{item.label}</span>
-                    {showDot ? (
+                    {badgeCount > 0 ? (
                       <span
                         className="rounded-none bg-gold px-1.5 py-0.5 text-[0.55rem] text-bg"
-                        aria-label={`${unreadDMs} unread messages`}
+                        aria-label={`${badgeCount} unread`}
                       >
-                        {unreadDMs > 99 ? '99+' : unreadDMs}
+                        {badgeCount > 99 ? '99+' : badgeCount}
                       </span>
                     ) : null}
                   </NavLink>
@@ -146,7 +157,7 @@ export function Layout() {
       >
         <ul className="flex">
           {primary.map((item) => {
-            const showDot = item.to === inboxPath && unreadDMs > 0;
+            const showDot = (badges[item.to] ?? 0) > 0;
             return (
               <li key={item.to} className="relative flex-1">
                 <NavLink
@@ -164,7 +175,7 @@ export function Layout() {
                 {showDot ? (
                   <span
                     className="absolute right-3 top-2 h-2 w-2 rounded-full bg-gold"
-                    aria-label={`${unreadDMs} unread messages`}
+                    aria-label="Unread"
                   />
                 ) : null}
               </li>
@@ -179,7 +190,7 @@ export function Layout() {
               <Menu size={18} />
               More
             </button>
-            {role !== 'coach' && unreadDMs > 0 ? (
+            {secondary.some((item) => (badges[item.to] ?? 0) > 0) ? (
               <span className="absolute right-3 top-2 h-2 w-2 rounded-full bg-gold" aria-hidden />
             ) : null}
           </li>

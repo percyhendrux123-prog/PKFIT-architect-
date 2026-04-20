@@ -30,6 +30,17 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  const refreshProfile = async (userId) => {
+    if (!isSupabaseConfigured || !userId) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    setProfile(data ?? null);
+    return data ?? null;
+  };
+
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     const userId = session?.user?.id;
@@ -37,12 +48,7 @@ export function AuthProvider({ children }) {
       setProfile(null);
       return;
     }
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-      .then(({ data }) => setProfile(data ?? null));
+    refreshProfile(userId);
   }, [session?.user?.id]);
 
   const value = useMemo(() => {
@@ -70,7 +76,17 @@ export function AuthProvider({ children }) {
       await supabase.auth.signOut();
     }
 
-    return { user, profile, role, loading, signIn, signUp, signOut, isSupabaseConfigured };
+    return {
+      user,
+      profile,
+      role,
+      loading,
+      signIn,
+      signUp,
+      signOut,
+      isSupabaseConfigured,
+      refreshProfile: () => refreshProfile(user?.id),
+    };
   }, [session, profile, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
