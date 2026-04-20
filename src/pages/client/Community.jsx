@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Pin } from 'lucide-react';
+import { Pin, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { useRealtime } from '../../hooks/useRealtime';
@@ -7,20 +7,24 @@ import { Button } from '../../components/ui/Button';
 import { Input, Textarea } from '../../components/ui/Input';
 import { Avatar } from '../../components/ui/Avatar';
 
-function PostItem({ post, me, isCoach, onReact, onComment, onPin }) {
+function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
   const [draft, setDraft] = useState('');
   const [comments, setComments] = useState([]);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
+  const loadComments = useCallback(async () => {
     if (!open) return;
-    supabase
+    const { data } = await supabase
       .from('community_comments')
       .select('*')
       .eq('post_id', post.id)
-      .order('created_at', { ascending: true })
-      .then(({ data }) => setComments(data ?? []));
+      .order('created_at', { ascending: true });
+    setComments(data ?? []);
   }, [open, post.id]);
+
+  useEffect(() => { loadComments(); }, [loadComments]);
+
+  useRealtime('community_comments', loadComments, `post_id=eq.${post.id}`);
 
   return (
     <article className={`border p-4 ${post.is_pinned ? 'border-gold' : 'border-line'} bg-black/30`}>
@@ -51,6 +55,11 @@ function PostItem({ post, me, isCoach, onReact, onComment, onPin }) {
             {post.is_pinned ? 'Unpin' : 'Pin'}
           </button>
         ) : null}
+        {post.author_id === me?.id || isCoach ? (
+          <button onClick={() => onDelete(post)} className="ml-auto flex items-center gap-1 hover:text-red-300">
+            <Trash2 size={12} /> Delete
+          </button>
+        ) : null}
       </div>
 
       {open ? (
@@ -73,7 +82,6 @@ function PostItem({ post, me, isCoach, onReact, onComment, onPin }) {
                 .select()
                 .maybeSingle();
               if (data) setComments((xs) => [...xs, data]);
-              onComment(post, 1);
               setDraft('');
             }}
             className="mt-3 flex gap-2"
@@ -152,6 +160,15 @@ export default function Community() {
     await load();
   }
 
+  async function remove(post) {
+    if (!user) return;
+    if (post.author_id !== user.id && role !== 'coach') return;
+    const ok = window.confirm('Delete this post. Comments will also be removed.');
+    if (!ok) return;
+    await supabase.from('community_posts').delete().eq('id', post.id);
+    await load();
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -178,8 +195,8 @@ export default function Community() {
               me={{ id: user?.id, name: profile?.name }}
               isCoach={role === 'coach'}
               onReact={react}
-              onComment={() => {}}
               onPin={pin}
+              onDelete={remove}
             />
           ))
         )}
