@@ -26,7 +26,6 @@ const clientNav = [
   { to: '/habits', label: 'Habits', icon: Target },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/reviews', label: 'Reviews', icon: ClipboardCheck },
-  { to: '/inbox', label: 'Inbox', icon: Inbox },
   { to: '/community', label: 'Community', icon: MessageSquare },
   { to: '/assistant', label: 'Assistant', icon: Sparkles },
   { to: '/billing', label: 'Billing', icon: CreditCard },
