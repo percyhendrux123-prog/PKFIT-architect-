@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Download } from 'lucide-react';
+import { Download, Sparkles } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
+import { claude } from '../../lib/claudeClient';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { downloadCSV } from '../../lib/csv';
@@ -42,6 +43,8 @@ export default function CoachDashboard() {
     weekPrograms: 0,
   });
   const [triageBusy, setTriageBusy] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -85,6 +88,38 @@ export default function CoachDashboard() {
       });
     })();
   }, []);
+
+  async function bulkReview() {
+    const ok = window.confirm(
+      'Generate a weekly review for every active client. This fires one Anthropic call per client — rate-limited, slow, not free. Continue?',
+    );
+    if (!ok) return;
+    setBulkBusy(true);
+    setBulkMsg(null);
+    try {
+      const { data: clients } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'client');
+      const ids = (clients ?? []).map((c) => c.id);
+      let ok = 0;
+      let failed = 0;
+      // Run sequentially to stay comfortable inside the generator's hourly
+      // rate limit and keep the progress message meaningful.
+      for (const id of ids) {
+        try {
+          await claude.weeklyReview({ clientId: id });
+          ok += 1;
+        } catch {
+          failed += 1;
+        }
+        setBulkMsg(`Generating ${ok + failed} / ${ids.length}`);
+      }
+      setBulkMsg(`Done. ${ok} generated, ${failed} failed.`);
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   async function exportTriage() {
     setTriageBusy(true);
@@ -174,10 +209,18 @@ export default function CoachDashboard() {
           <div className="label mb-2">Coach</div>
           <h1 className="font-display text-4xl tracking-wider2">Overview</h1>
         </div>
-        <Button variant="ghost" onClick={exportTriage} disabled={triageBusy}>
-          <Download size={14} /> {triageBusy ? 'Compiling' : 'Monday triage CSV'}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" onClick={exportTriage} disabled={triageBusy}>
+            <Download size={14} /> {triageBusy ? 'Compiling' : 'Monday triage CSV'}
+          </Button>
+          <Button onClick={bulkReview} disabled={bulkBusy}>
+            <Sparkles size={14} /> {bulkBusy ? bulkMsg ?? 'Generating' : 'Generate reviews (all clients)'}
+          </Button>
+        </div>
       </header>
+      {bulkMsg && !bulkBusy ? (
+        <div className="text-xs uppercase tracking-widest2 text-gold">{bulkMsg}</div>
+      ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>

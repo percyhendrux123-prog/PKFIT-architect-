@@ -86,7 +86,8 @@ export default function Reviews() {
               <Link to={`/reviews/${r.id}`} className="block border border-line bg-black/30 p-5 hover:border-gold">
                 <div className="flex items-center justify-between">
                   <div className="label">Week of {r.week_starting}</div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {r.coach_comment ? <Badge tone="gold">Coach note</Badge> : null}
                     {r.metrics?.adherence_pct != null ? (
                       <Badge tone={r.metrics.adherence_pct >= 80 ? 'green' : 'mute'}>
                         {r.metrics.adherence_pct}% adherence
