@@ -9,6 +9,7 @@ import { Card, CardHeader } from '../../components/ui/Card';
 import { DMThread } from '../../components/DMThread';
 import { StorageImage } from '../../components/StorageImage';
 import { HabitHeatmap } from '../../components/HabitHeatmap';
+import { GenerateProgramForm, GenerateMealForm } from '../../components/GenerateProgramForm';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 import { downloadCSV } from '../../lib/csv';
 
@@ -26,6 +27,7 @@ export default function ClientDetail() {
   const [reviews, setReviews] = useState([]);
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [openForm, setOpenForm] = useState(null); // 'program' | 'meal' | null
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured || !id) return;
@@ -65,40 +67,16 @@ export default function ClientDetail() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function runWorkout() {
-    setBusy('workout');
-    setMsg(null);
-    try {
-      await claude.generateWorkout({
-        clientId: id,
-        profile: client,
-        goal: 'recomp',
-        training_days: '4',
-        experience: 'intermediate',
-        equipment: 'full_gym',
-      });
-      setMsg('Program generated.');
-      await load();
-    } catch (e) { setMsg(e.message); }
-    setBusy(null);
+  async function onProgramDone() {
+    setOpenForm(null);
+    setMsg('Program generated.');
+    await load();
   }
 
-  async function runMeals() {
-    setBusy('meals');
-    setMsg(null);
-    try {
-      await claude.generateMealPlan({
-        clientId: id,
-        profile: client,
-        goal: 'recomp',
-        kcal_target: '2400',
-        protein_g: '180',
-        style: 'flexible',
-      });
-      setMsg('Meal plan generated.');
-      await load();
-    } catch (e) { setMsg(e.message); }
-    setBusy(null);
+  async function onMealDone() {
+    setOpenForm(null);
+    setMsg('Meal plan generated.');
+    await load();
   }
 
   async function runReview() {
@@ -150,16 +128,41 @@ export default function ClientDetail() {
 
       {tab === 'overview' ? (
         <>
-          <section className="flex flex-wrap gap-3">
-            <Button onClick={runWorkout} disabled={busy === 'workout'}>
-              {busy === 'workout' ? 'Generating' : 'Generate program'}
-            </Button>
-            <Button onClick={runMeals} variant="ghost" disabled={busy === 'meals'}>
-              {busy === 'meals' ? 'Generating' : 'Generate meal plan'}
-            </Button>
-            <Button onClick={runReview} variant="ghost" disabled={busy === 'review'}>
-              <Sparkles size={14} /> {busy === 'review' ? 'Reviewing' : 'Generate weekly review'}
-            </Button>
+          <section className="space-y-3">
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={() => setOpenForm(openForm === 'program' ? null : 'program')}>
+                {openForm === 'program' ? 'Close program form' : 'Generate program'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setOpenForm(openForm === 'meal' ? null : 'meal')}
+              >
+                {openForm === 'meal' ? 'Close meal form' : 'Generate meal plan'}
+              </Button>
+              <Button onClick={runReview} variant="ghost" disabled={busy === 'review'}>
+                <Sparkles size={14} /> {busy === 'review' ? 'Reviewing' : 'Generate weekly review'}
+              </Button>
+            </div>
+            {openForm === 'program' ? (
+              <div className="border border-line bg-black/30 p-4">
+                <GenerateProgramForm
+                  clientId={id}
+                  profile={client}
+                  onDone={onProgramDone}
+                  onCancel={() => setOpenForm(null)}
+                />
+              </div>
+            ) : null}
+            {openForm === 'meal' ? (
+              <div className="border border-line bg-black/30 p-4">
+                <GenerateMealForm
+                  clientId={id}
+                  profile={client}
+                  onDone={onMealDone}
+                  onCancel={() => setOpenForm(null)}
+                />
+              </div>
+            ) : null}
           </section>
           {msg ? <div className="text-xs uppercase tracking-widest2 text-gold">{msg}</div> : null}
 
