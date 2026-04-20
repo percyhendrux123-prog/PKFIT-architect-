@@ -1,8 +1,11 @@
 import { requireUser, jsonResponse, errorResponse } from './_shared/auth.js';
 import { getAdminClient } from './_shared/supabase-admin.js';
 import { getAnthropic, loadPrompt, MODEL, bannedTokensCleanup } from './_shared/anthropic.js';
+import { checkRateLimit } from './_shared/rate-limit.js';
 
 const MAX_CONTEXT_MESSAGES = 24;
+const ASSISTANT_RPM = 20;
+const ASSISTANT_WINDOW_SEC = 60;
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') return jsonResponse(405, { error: 'Method not allowed' });
@@ -11,6 +14,25 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     const userMessage = typeof body.message === 'string' ? body.message.trim() : '';
     if (!userMessage) return jsonResponse(400, { error: 'message required' });
+
+    const limit = await checkRateLimit({
+      userId: user.id,
+      bucket: 'assistant',
+      max: ASSISTANT_RPM,
+      windowSec: ASSISTANT_WINDOW_SEC,
+    });
+    if (!limit.allowed) {
+      return {
+        statusCode: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(limit.retryAfterSec ?? 30),
+        },
+        body: JSON.stringify({
+          error: `Rate limit. Wait ${limit.retryAfterSec ?? 30}s.`,
+        }),
+      };
+    }
 
     const admin = getAdminClient();
 
