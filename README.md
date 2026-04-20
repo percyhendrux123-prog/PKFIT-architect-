@@ -99,7 +99,9 @@ Server-only (set in the Netlify dashboard, never in client bundle):
    psql "$SUPABASE_DB_URL" < supabase/migrations/0001_init.sql
    ```
 
-   The migration creates every table (profiles, programs, meals, habits, check_ins, community_posts, community_reactions, community_comments, payments), enables row-level security on each, installs the per-role policies, and adds a trigger that creates a `profiles` row on every new `auth.users` insert.
+   The first migration creates every table (profiles, programs, meals, habits, check_ins, community_posts, community_reactions, community_comments, payments), enables row-level security on each, installs the per-role policies, and adds a trigger that creates a `profiles` row on every new `auth.users` insert.
+
+   Then run `supabase/migrations/0002_exercise_library.sql` for the seeded exercise catalogue (powers the autocomplete in the workout builder).
 
 3. In Supabase → Authentication → Providers, enable email/password.
 4. To promote a user to coach, run:

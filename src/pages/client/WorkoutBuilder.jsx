@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { ExercisePicker } from '../../components/ExercisePicker';
 
 function parseYouTubeId(input = '') {
   const m = input.match(/(?:youtu\.be\/|v=|\/embed\/)([A-Za-z0-9_-]{11})/);
@@ -16,7 +17,7 @@ export default function WorkoutBuilder() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [week, setWeek] = useState(1);
-  const [exercises, setExercises] = useState([{ name: '', sets: 3, reps: 8, load: 'RPE 8', youtube: '' }]);
+  const [exercises, setExercises] = useState([{ name: '', sets: 3, reps: 8, load: 'RPE 8', youtube: '', cues: '' }]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
@@ -24,7 +25,22 @@ export default function WorkoutBuilder() {
     setExercises((list) => list.map((e, idx) => (idx === i ? { ...e, [key]: value } : e)));
   }
   function add() {
-    setExercises((list) => [...list, { name: '', sets: 3, reps: 8, load: '', youtube: '' }]);
+    setExercises((list) => [...list, { name: '', sets: 3, reps: 8, load: '', youtube: '', cues: '' }]);
+  }
+
+  function pickExercise(i, picked) {
+    setExercises((list) =>
+      list.map((e, idx) =>
+        idx === i
+          ? {
+              ...e,
+              name: picked.name,
+              youtube: e.youtube || picked.youtube_id || '',
+              cues: e.cues || picked.cues || '',
+            }
+          : e,
+      ),
+    );
   }
   function remove(i) {
     setExercises((list) => list.filter((_, idx) => idx !== i));
@@ -68,7 +84,14 @@ export default function WorkoutBuilder() {
           return (
             <div key={i} className="border border-line bg-black/30 p-4">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[2fr_repeat(3,1fr)_auto]">
-                <Input label="Exercise" value={ex.name} onChange={(e) => update(i, 'name', e.target.value)} />
+                <div>
+                  <div className="label mb-2">Exercise</div>
+                  <ExercisePicker
+                    value={ex.name}
+                    onPick={(p) => pickExercise(i, p)}
+                    placeholder="Start typing — back squat, deadlift..."
+                  />
+                </div>
                 <Input label="Sets" type="number" value={ex.sets} onChange={(e) => update(i, 'sets', e.target.value)} />
                 <Input label="Reps" value={ex.reps} onChange={(e) => update(i, 'reps', e.target.value)} />
                 <Input label="Load" value={ex.load} onChange={(e) => update(i, 'load', e.target.value)} placeholder="RPE 8 / 70%" />
@@ -76,6 +99,9 @@ export default function WorkoutBuilder() {
                   <Trash2 size={16} />
                 </button>
               </div>
+              {ex.cues ? (
+                <div className="mt-3 border-l-2 border-gold pl-3 text-xs text-mute">{ex.cues}</div>
+              ) : null}
               <div className="mt-3">
                 <Input
                   label="YouTube demo (URL or ID)"
