@@ -136,7 +136,7 @@ export default function Assistant() {
         </div>
         <ul className="max-h-[60vh] overflow-y-auto md:max-h-none">
           {conversations.length === 0 ? (
-            <li className="p-4 text-xs text-faint">No history yet.</li>
+            <li className="p-4 text-xs text-faint">No threads. Start one below.</li>
           ) : (
             conversations.map((c) => (
               <li key={c.id} className="group flex items-center">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { claude } from '../../lib/claudeClient';
 import { useAuth } from '../../context/AuthContext';
@@ -19,6 +19,15 @@ export default function MealGenerator() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [plan, setPlan] = useState(null);
+
+  useEffect(() => {
+    if (!profile) return;
+    setForm((f) => ({
+      ...f,
+      kcal_target: profile.target_kcal != null ? String(profile.target_kcal) : f.kcal_target,
+      protein_g: profile.target_protein_g != null ? String(profile.target_protein_g) : f.protein_g,
+    }));
+  }, [profile?.target_kcal, profile?.target_protein_g]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -56,8 +65,22 @@ export default function MealGenerator() {
           <option value="pescatarian">Pescatarian</option>
           <option value="vegetarian">Vegetarian</option>
         </Select>
-        <Input label="Kcal target" type="number" value={form.kcal_target} onChange={set('kcal_target')} />
-        <Input label="Protein floor (g)" type="number" value={form.protein_g} onChange={set('protein_g')} />
+        <div>
+          <Input label="Kcal target" type="number" value={form.kcal_target} onChange={set('kcal_target')} />
+          {profile?.target_kcal != null ? (
+            <div className="mt-1 text-[0.6rem] uppercase tracking-widest2 text-faint">
+              Default from your macro floor. Change in Settings.
+            </div>
+          ) : null}
+        </div>
+        <div>
+          <Input label="Protein floor (g)" type="number" value={form.protein_g} onChange={set('protein_g')} />
+          {profile?.target_protein_g != null ? (
+            <div className="mt-1 text-[0.6rem] uppercase tracking-widest2 text-faint">
+              Default from your macro floor.
+            </div>
+          ) : null}
+        </div>
         <Textarea label="Allergies" rows={2} value={form.allergies} onChange={set('allergies')} />
         <Textarea label="Dislikes" rows={2} value={form.dislikes} onChange={set('dislikes')} />
       </section>

@@ -60,7 +60,7 @@ export default function ExerciseHistory() {
         <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>
       ) : rows.length === 0 ? (
         <div className="border border-line bg-black/20 p-6 text-sm text-mute">
-          No logged sets yet. Log a workout session with checked sets on /workouts and come back.
+          Nothing recorded. Log a session with checked sets on Workouts. The data turns into the record here.
         </div>
       ) : (
         <>

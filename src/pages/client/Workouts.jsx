@@ -182,9 +182,9 @@ export default function Workouts() {
         <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>
       ) : programs.length === 0 ? (
         <Empty
-          title="No programs"
-          body="Use the generator to produce a week, or the builder to craft one by hand."
-          action={<Button as={Link} to="/workouts/generator">Open generator</Button>}
+          title="No program written"
+          body="The generator writes a clean week in one call. The builder is for when you want to tune by hand."
+          action={<Button as={Link} to="/workouts/generator">Open the generator</Button>}
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

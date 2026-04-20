@@ -106,9 +106,9 @@ export default function Meals() {
         <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>
       ) : meals.length === 0 ? (
         <Empty
-          title="No meals logged"
-          body="Generate a plan to install the macro floor and meal scaffolding."
-          action={<Button as={Link} to="/meals/generator">Generate</Button>}
+          title="No plan installed"
+          body="Generate a seven-day scaffold. Macro floor, meal templates, grocery surface."
+          action={<Button as={Link} to="/meals/generator">Generate the plan</Button>}
         />
       ) : (
         <div className="space-y-6">

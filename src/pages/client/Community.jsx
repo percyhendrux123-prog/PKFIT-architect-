@@ -287,7 +287,9 @@ export default function Community() {
 
       <div className="space-y-3">
         {posts.length === 0 ? (
-          <div className="border border-line bg-black/20 p-6 text-sm text-mute">No posts yet.</div>
+          <div className="border border-line bg-black/20 p-6 text-sm text-mute">
+            Quiet in here. Be the first to post. Short, specific, signal.
+          </div>
         ) : (
           posts.map((p) => (
             <PostItem

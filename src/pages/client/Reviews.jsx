@@ -76,8 +76,8 @@ export default function Reviews() {
         <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>
       ) : rows.length === 0 ? (
         <Empty
-          title="No reviews yet"
-          body="Generate this week when you have at least one check-in logged."
+          title="No review installed"
+          body="Log a check-in, then generate the week. The loop closes here."
         />
       ) : (
         <ul className="space-y-4">

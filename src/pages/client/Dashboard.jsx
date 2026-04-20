@@ -247,7 +247,7 @@ export default function Dashboard() {
         <div className="label mb-3">Recent programs</div>
         {recent.length === 0 ? (
           <div className="border border-line bg-black/20 p-6 text-sm text-mute">
-            No programs yet. Generate one from Workouts → Generator.
+            No program written. Generate one, or build one by hand. Structure first, intensity second.
           </div>
         ) : (
           <ul className="divide-y divide-line border border-line">
