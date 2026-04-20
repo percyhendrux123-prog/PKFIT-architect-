@@ -6,7 +6,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Empty } from '../../components/ui/Empty';
-import { Input, Textarea } from '../../components/ui/Input';
+import { LogSessionForm } from '../../components/LogSessionForm';
 
 function parseYouTubeId(input = '') {
   if (!input) return null;
@@ -62,27 +62,12 @@ function ExerciseRow({ ex }) {
 
 function ProgramCard({ program, sessionCount, onLog }) {
   const [open, setOpen] = useState(false);
-  const [duration, setDuration] = useState('');
-  const [rpe, setRpe] = useState('');
-  const [notes, setNotes] = useState('');
-  const [busy, setBusy] = useState(false);
 
   const exercises = Array.isArray(program.exercises) ? program.exercises : [];
 
-  async function submit(e) {
-    e.preventDefault();
-    setBusy(true);
-    await onLog({
-      program,
-      duration_min: duration ? Number(duration) : null,
-      rpe_avg: rpe ? Number(rpe) : null,
-      notes: notes.trim() || null,
-    });
-    setBusy(false);
+  async function submit(payload) {
+    await onLog(payload);
     setOpen(false);
-    setDuration('');
-    setRpe('');
-    setNotes('');
   }
 
   return (
@@ -116,17 +101,7 @@ function ProgramCard({ program, sessionCount, onLog }) {
 
       <footer className="flex flex-col gap-3 border-t border-line p-4">
         {open ? (
-          <form onSubmit={submit} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="Duration (min)" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} />
-              <Input label="Avg RPE" type="number" step="0.5" min="0" max="10" value={rpe} onChange={(e) => setRpe(e.target.value)} />
-            </div>
-            <Textarea label="Notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What moved, what did not" />
-            <div className="flex gap-2">
-              <Button type="submit" disabled={busy}>{busy ? 'Logging' : 'Save session'}</Button>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            </div>
-          </form>
+          <LogSessionForm program={program} onSubmit={submit} onCancel={() => setOpen(false)} />
         ) : (
           <div className="flex items-center justify-between">
             <span className="text-xs text-faint">Created {new Date(program.created_at).toLocaleDateString()}</span>
@@ -169,11 +144,11 @@ export default function Workouts() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function logSession({ program, duration_min, rpe_avg, notes }) {
+  async function logSession({ program, duration_min, rpe_avg, notes, exercises }) {
     await supabase.from('workout_sessions').insert({
       client_id: user.id,
       program_id: program.id,
-      exercises: program.exercises ?? [],
+      exercises: exercises ?? program.exercises ?? [],
       duration_min,
       rpe_avg,
       notes,
