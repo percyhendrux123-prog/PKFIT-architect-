@@ -4,36 +4,44 @@
 
 ## Project Overview
 
-**PKFIT-architect-** is a fitness product landing page for the PKFIT Blueprint — a 30-day body recomposition system. The site is a single static HTML file deployed on Netlify.
+**PKFIT-architect-** is the PKFIT coaching app: a React + Vite application deployed on Netlify with Supabase (auth + Postgres + realtime), Stripe subscriptions, and Anthropic-powered generators and client assistant. The public landing page (`/`) is a React component.
 
-**Status:** Active (static site, Netlify-ready)
+**Status:** Active (app v1 on `claude/pkfit-app-build-v1-6PvBo`)
 
-## Repository Structure
+## Repository Structure (summary)
 
 ```
 PKFIT-architect-/
-├── blueprint-landing.html   # Main landing page (Netlify entry point)
-├── CLAUDE.md                # This file — AI assistant guide
-└── README.md                # Project title
+├── index.html                # Vite shell
+├── netlify.toml              # build, functions, security headers, SPA redirect
+├── package.json
+├── public/                   # fonts, favicon, og image, _redirects
+├── src/                      # React app (pages/, components/, lib/, context/, hooks/)
+├── netlify/functions/        # server-side only (Anthropic + Stripe)
+└── supabase/migrations/      # Postgres schema + RLS
 ```
 
+See `README.md` for full structure, env vars, and deploy steps.
+
 ### Key Tech
-- **Single HTML file** with inline CSS, no build step
-- **Fonts:** Bebas Neue (headings), DM Mono (body) via Google Fonts
-- **Theme:** Dark (#080808 background, #C8A96E gold accent)
-- **CTA:** Links to Gumroad (`https://percyhendrux.gumroad.com/l/khcus`)
+- React 18 + Vite 5, Tailwind CSS 3, React Router v6
+- Supabase (auth + db + realtime)
+- Stripe (subscriptions)
+- Anthropic Claude Sonnet 4 (server-side only, via Netlify Functions)
+- **Fonts:** Bebas Neue (headings), DM Mono (body) — self-hosted from `/public/fonts/`
+- **Theme:** #080808 bg, #C9A84C gold, #F5F5F5 ink
 
 ## Common Commands
 
-<!-- Update these as the project adds tooling -->
-
-| Task         | Command | Notes                          |
-|--------------|---------|--------------------------------|
-| Install deps | TBD     | No package manager configured  |
-| Build        | TBD     | No build system configured     |
-| Test         | TBD     | No test framework configured   |
-| Lint         | TBD     | No linter configured           |
-| Format       | TBD     | No formatter configured        |
+| Task         | Command             | Notes                                   |
+|--------------|---------------------|-----------------------------------------|
+| Install deps | `npm install`       | Node 20 required                        |
+| Dev server   | `npm run dev`       | Vite on :5173                           |
+| Build        | `npm run build`     | Emits `dist/`                           |
+| Preview      | `npm run preview`   | Preview build on :4173                  |
+| Lint         | `npm run lint`      | ESLint over `src/`                      |
+| Test         | TBD                 | No test framework configured yet        |
+| Format       | TBD                 | No formatter configured yet             |
 
 ## Git Workflow
 
