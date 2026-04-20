@@ -21,6 +21,24 @@ function totals(items) {
   return { planned, eaten };
 }
 
+function TotalBar({ label, planned, eaten, avg }) {
+  const pct = planned > 0 ? Math.min(100, Math.round((eaten / planned) * 100)) : 0;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between text-[0.6rem] uppercase tracking-widest2 text-faint">
+        <span>{label}</span>
+        <span>
+          <span className="text-ink">{eaten}</span> / {planned}
+          <span className="text-faint"> · avg {avg}</span>
+        </span>
+      </div>
+      <div className="mt-1 h-1 w-full bg-line">
+        <div className="h-1 bg-gold" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function MacroBar({ label, planned, eaten, floor }) {
   const pct = planned > 0 ? Math.min(100, Math.round((eaten / planned) * 100)) : 0;
   const plannedBelowFloor = floor != null && planned > 0 && planned < floor;
@@ -92,6 +110,38 @@ export default function Meals() {
     return acc;
   }, {});
 
+  const planTotals = useMemo(() => {
+    const dayKeys = Object.keys(grouped);
+    if (dayKeys.length === 0) return null;
+    let planned = { kcal: 0, p: 0, c: 0, f: 0 };
+    let eaten = { kcal: 0, p: 0, c: 0, f: 0 };
+    for (const items of Object.values(grouped)) {
+      const t = totals(items);
+      for (const k of ['kcal', 'p', 'c', 'f']) {
+        planned[k] += t.planned[k];
+        eaten[k] += t.eaten[k];
+      }
+    }
+    const days = dayKeys.length;
+    return {
+      days,
+      planned,
+      eaten,
+      avgPlanned: {
+        kcal: Math.round(planned.kcal / days),
+        p: Math.round(planned.p / days),
+        c: Math.round(planned.c / days),
+        f: Math.round(planned.f / days),
+      },
+      avgEaten: {
+        kcal: Math.round(eaten.kcal / days),
+        p: Math.round(eaten.p / days),
+        c: Math.round(eaten.c / days),
+        f: Math.round(eaten.f / days),
+      },
+    };
+  }, [grouped]);
+
   return (
     <div className="space-y-6">
       <header className="flex items-end justify-between gap-4">
@@ -112,6 +162,22 @@ export default function Meals() {
         />
       ) : (
         <div className="space-y-6">
+          {planTotals ? (
+            <section className="border border-line bg-black/30 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="label">Plan total · {planTotals.days}-day window</div>
+                <div className="text-[0.6rem] uppercase tracking-widest2 text-faint">
+                  Daily average in parentheses
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <TotalBar label="Kcal" planned={planTotals.planned.kcal} eaten={planTotals.eaten.kcal} avg={planTotals.avgPlanned.kcal} />
+                <TotalBar label="Protein" planned={planTotals.planned.p} eaten={planTotals.eaten.p} avg={planTotals.avgPlanned.p} />
+                <TotalBar label="Carbs" planned={planTotals.planned.c} eaten={planTotals.eaten.c} avg={planTotals.avgPlanned.c} />
+                <TotalBar label="Fat" planned={planTotals.planned.f} eaten={planTotals.eaten.f} avg={planTotals.avgPlanned.f} />
+              </div>
+            </section>
+          ) : null}
           {Object.entries(grouped).map(([day, items]) => {
             const done = items.filter((m) => m.eaten).length;
             const { planned, eaten } = totals(items);

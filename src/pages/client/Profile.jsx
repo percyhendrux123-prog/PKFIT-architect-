@@ -72,6 +72,39 @@ export default function Profile() {
     setBusy(false);
   }
 
+  async function uploadBaseline(e) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      setErr('Baseline photo must be an image.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErr('Image must be 10 MB or less.');
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${user.id}/baseline-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('baseline-photos')
+        .upload(path, file, { upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({ baseline_photo_path: path })
+        .eq('id', user.id);
+      if (updErr) throw updErr;
+      await refreshProfile?.();
+    } catch (e) {
+      setErr(`Baseline upload failed: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function uploadAvatar(e) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -196,6 +229,39 @@ export default function Profile() {
         <Card>
           <CardHeader label="Photos" title={String(stats.photos)} meta="Check-in photos" />
         </Card>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
+        <div>
+          <div className="label mb-2">Baseline photo</div>
+          {profile?.baseline_photo_path ? (
+            <StorageImage
+              path={profile.baseline_photo_path}
+              alt="Baseline"
+              className="max-h-80 w-full object-contain"
+            />
+          ) : (
+            <div className="flex h-48 w-full items-center justify-center border border-dashed border-line bg-black/20 text-xs text-faint">
+              No baseline photo
+            </div>
+          )}
+          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 border border-line bg-black/30 px-4 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold">
+            <Upload size={14} />
+            {profile?.baseline_photo_path ? 'Replace baseline' : 'Upload baseline'}
+            <input type="file" accept="image/*" className="sr-only" onChange={uploadBaseline} disabled={busy} />
+          </label>
+        </div>
+        <div className="text-sm text-mute">
+          <p>
+            One photo, well-lit, relaxed stance. Used at the start of the loop so the Diagnosis review has a
+            reference point. Private — visible to you and the coach only.
+          </p>
+          {profile?.start_date ? (
+            <p className="mt-3 text-xs text-faint">
+              Loop started {new Date(profile.start_date).toLocaleDateString()}.
+            </p>
+          ) : null}
+        </div>
       </section>
 
       <section>
