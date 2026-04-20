@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { deriveLoopStage, LOOP_STAGES, loopProgress, loopStageMeta } from '../../lib/loop';
 
 const cards = [
   { to: '/workouts', label: 'Training', icon: Dumbbell, copy: "Today's program. Three lifts. No filler." },
@@ -37,7 +38,9 @@ export default function Dashboard() {
       .then(({ data }) => setRecent(data ?? []));
   }, [user?.id]);
 
-  const loop = profile?.loop_stage ?? 'diagnosis';
+  const loop = deriveLoopStage(profile);
+  const loopMeta = loopStageMeta(loop);
+  const progress = loopProgress(profile);
 
   return (
     <div className="space-y-8">
@@ -71,12 +74,15 @@ export default function Dashboard() {
           <Link to="/billing" className="mt-4 inline-block text-xs uppercase tracking-widest2 text-gold">Manage →</Link>
         </Card>
         <Card>
-          <CardHeader label="Status" title="The Loop" />
-          <div className="flex flex-wrap gap-2">
-            <Badge tone={loop === 'diagnosis' ? 'gold' : 'mute'}>Diagnosis</Badge>
-            <Badge tone={loop === 'correction' ? 'gold' : 'mute'}>Correction</Badge>
-            <Badge tone={loop === 'identity' ? 'gold' : 'mute'}>Identity</Badge>
-            <Badge tone={loop === 'lock' ? 'gold' : 'mute'}>Lock</Badge>
+          <CardHeader label="Loop stage" title={loopMeta.label} meta={`${Math.round(progress * 100)}%`} />
+          <p className="text-sm text-mute">{loopMeta.body}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {LOOP_STAGES.map((s) => (
+              <Badge key={s.key} tone={loop === s.key ? 'gold' : 'mute'}>{s.label}</Badge>
+            ))}
+          </div>
+          <div className="mt-3 h-1 w-full bg-line">
+            <div className="h-1 bg-gold transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
           </div>
         </Card>
       </section>

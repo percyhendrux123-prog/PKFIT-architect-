@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { DMThread } from '../../components/DMThread';
+import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -60,7 +61,7 @@ export default function ClientDetail() {
         <div>
           <div className="label mb-2">Client</div>
           <h1 className="font-display text-4xl tracking-wider2">{client.name ?? client.email}</h1>
-          <p className="mt-1 text-sm text-mute">{client.plan ?? 'trial'} · loop: {client.loop_stage ?? '—'}</p>
+          <p className="mt-1 text-sm text-mute">{client.plan ?? 'trial'} · loop: {loopStageMeta(deriveLoopStage(client)).label}</p>
         </div>
         <Link to="/coach/clients" className="text-xs uppercase tracking-widest2 text-gold">← Roster</Link>
       </header>

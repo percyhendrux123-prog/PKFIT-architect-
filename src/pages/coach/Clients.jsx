@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Input, Select } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
+import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 
 export default function Clients() {
   const [clients, setClients] = useState([]);
@@ -66,7 +67,7 @@ export default function Clients() {
                 <td className="px-4 py-3 font-display tracking-wider2">{c.name ?? '—'}</td>
                 <td className="px-4 py-3 text-mute">{c.email ?? '—'}</td>
                 <td className="px-4 py-3"><Badge tone="gold">{c.plan ?? 'trial'}</Badge></td>
-                <td className="px-4 py-3 text-mute">{c.loop_stage ?? '—'}</td>
+                <td className="px-4 py-3 text-mute">{loopStageMeta(deriveLoopStage(c)).label}</td>
                 <td className="px-4 py-3 text-faint">{new Date(c.created_at).toLocaleDateString()}</td>
                 <td className="px-4 py-3 text-right">
                   <Link to={`/coach/clients/${c.id}`} className="text-xs uppercase tracking-widest2 text-gold">Open →</Link>
