@@ -35,8 +35,15 @@ function averageRpe(exercises) {
   return Math.round(avg * 10) / 10;
 }
 
+function todayLocalIso() {
+  const now = new Date();
+  const tz = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - tz).toISOString().slice(0, 16);
+}
+
 export function LogSessionForm({ program, onSubmit, onCancel }) {
   const [exercises, setExercises] = useState(() => draftFromProgram(program));
+  const [performedAt, setPerformedAt] = useState(todayLocalIso());
   const [duration, setDuration] = useState('');
   const [rpe, setRpe] = useState('');
   const [notes, setNotes] = useState('');
@@ -85,6 +92,7 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
     setBusy(true);
     const payload = {
       program,
+      performed_at: performedAt ? new Date(performedAt).toISOString() : new Date().toISOString(),
       duration_min: duration ? Number(duration) : null,
       rpe_avg: rpe !== '' ? Number(rpe) : inferredRpe,
       notes: notes.trim() || null,
@@ -105,7 +113,13 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <Input
+          label="Performed at"
+          type="datetime-local"
+          value={performedAt}
+          onChange={(e) => setPerformedAt(e.target.value)}
+        />
         <Input label="Duration (min)" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} />
         <Input
           label={`Avg RPE${inferredRpe != null ? ` (auto ${inferredRpe})` : ''}`}

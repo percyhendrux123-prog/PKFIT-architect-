@@ -144,15 +144,17 @@ export default function Workouts() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function logSession({ program, duration_min, rpe_avg, notes, exercises }) {
-    await supabase.from('workout_sessions').insert({
+  async function logSession({ program, performed_at, duration_min, rpe_avg, notes, exercises }) {
+    const row = {
       client_id: user.id,
       program_id: program.id,
       exercises: exercises ?? program.exercises ?? [],
       duration_min,
       rpe_avg,
       notes,
-    });
+    };
+    if (performed_at) row.performed_at = performed_at;
+    await supabase.from('workout_sessions').insert(row);
     await load();
   }
 
