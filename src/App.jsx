@@ -20,6 +20,8 @@ import Profile from './pages/client/Profile.jsx';
 import Community from './pages/client/Community.jsx';
 import Assistant from './pages/client/Assistant.jsx';
 import Billing from './pages/client/Billing.jsx';
+import Reviews from './pages/client/Reviews.jsx';
+import ReviewDetail from './pages/client/ReviewDetail.jsx';
 
 import CoachDashboard from './pages/coach/Dashboard.jsx';
 import Clients from './pages/coach/Clients.jsx';
@@ -56,6 +58,8 @@ export default function App() {
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/community" element={<Community />} />
         <Route path="/assistant" element={<Assistant />} />
+        <Route path="/reviews" element={<Reviews />} />
+        <Route path="/reviews/:id" element={<ReviewDetail />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/profile" element={<Profile />} />
       </Route>

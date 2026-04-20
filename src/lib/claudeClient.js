@@ -35,6 +35,7 @@ export const claude = {
   generateWorkout: (input) => callFunction('generate-workout', input),
   generateMealPlan: (input) => callFunction('generate-meal-plan', input),
   assistant: (input) => callFunction('client-assistant', input),
+  weeklyReview: (input) => callFunction('generate-weekly-review', input),
 };
 
 export const billing = {
