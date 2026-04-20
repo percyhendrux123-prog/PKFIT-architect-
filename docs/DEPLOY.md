@@ -51,6 +51,7 @@ Keep a scratch notes doc open. You will copy values between dashboards.
    - `0005_dms.sql` (coach-client direct-message threads + messages)
    - `0006_rate_limits.sql` (server-only rate limit table for the assistant)
    - `0007_storage.sql` (baseline-photos bucket + RLS + `profiles.baseline_photo_path`)
+   - `0008_checkin_photos.sql` (adds `check_ins.photo_path` — reuses the same bucket)
 6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`, `reviews`, `conversations`, `conversation_messages`, `dm_threads`, `dm_messages`, `rate_limits`. Each should have a shield icon next to the name indicating RLS is enabled.
 7. Left sidebar → **Storage** → verify a bucket named `baseline-photos` exists and is marked **Private**.
 

@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { DMThread } from '../../components/DMThread';
+import { StorageImage } from '../../components/StorageImage';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 
 export default function ClientDetail() {
@@ -111,8 +112,11 @@ export default function ClientDetail() {
               <CardHeader label="Check-ins" title={`Recent (${checkIns.length})`} />
               <ul className="divide-y divide-line">
                 {checkIns.map((c) => (
-                  <li key={c.id} className="flex items-center justify-between py-2 text-sm">
-                    <span>{c.date?.slice(0, 10)}</span>
+                  <li key={c.id} className="flex items-center gap-3 py-2 text-sm">
+                    {c.photo_path ? (
+                      <StorageImage path={c.photo_path} alt="Check-in" className="h-12 w-12 shrink-0 object-cover" />
+                    ) : null}
+                    <span className="flex-1">{c.date?.slice(0, 10)}</span>
                     <span className="text-faint">{c.weight ?? '—'} kg · {c.body_fat ?? '—'}%</span>
                   </li>
                 ))}
