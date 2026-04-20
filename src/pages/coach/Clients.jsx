@@ -9,19 +9,51 @@ import { Avatar } from '../../components/ui/Avatar';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 import { downloadCSV } from '../../lib/csv';
 
+function relativeDays(iso) {
+  if (!iso) return null;
+  const d = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
+  if (d === 0) return 'today';
+  if (d === 1) return '1d';
+  if (d < 7) return `${d}d`;
+  if (d < 30) return `${Math.floor(d / 7)}w`;
+  return `${Math.floor(d / 30)}mo`;
+}
+
 export default function Clients() {
   const [clients, setClients] = useState([]);
+  const [lastActive, setLastActive] = useState({});
   const [q, setQ] = useState('');
   const [plan, setPlan] = useState('all');
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'client')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setClients(data ?? []));
+    (async () => {
+      const { data: rows } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'client')
+        .order('created_at', { ascending: false });
+      const clientRows = rows ?? [];
+      setClients(clientRows);
+      if (!clientRows.length) return;
+      const ids = clientRows.map((c) => c.id);
+
+      const [checkIns, sessions, threads] = await Promise.all([
+        supabase.from('check_ins').select('client_id,created_at').in('client_id', ids),
+        supabase.from('workout_sessions').select('client_id,performed_at').in('client_id', ids),
+        supabase.from('dm_threads').select('client_id,last_activity_at').in('client_id', ids),
+      ]);
+
+      const map = {};
+      function touch(id, iso) {
+        if (!iso) return;
+        if (!map[id] || new Date(iso) > new Date(map[id])) map[id] = iso;
+      }
+      for (const r of checkIns.data ?? []) touch(r.client_id, r.created_at);
+      for (const r of sessions.data ?? []) touch(r.client_id, r.performed_at);
+      for (const r of threads.data ?? []) touch(r.client_id, r.last_activity_at);
+      setLastActive(map);
+    })();
   }, []);
 
   const filtered = useMemo(() => {
@@ -56,6 +88,10 @@ export default function Clients() {
                   label: 'Loop stage',
                   get: (c) => loopStageMeta(deriveLoopStage(c)).label,
                 },
+                {
+                  label: 'Last active',
+                  get: (c) => lastActive[c.id] ?? '',
+                },
                 { key: 'created_at', label: 'Joined' },
               ],
             )
@@ -86,6 +122,7 @@ export default function Clients() {
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Plan</th>
               <th className="px-4 py-3">Loop</th>
+              <th className="px-4 py-3">Last active</th>
               <th className="px-4 py-3">Joined</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -102,6 +139,16 @@ export default function Clients() {
                 <td className="px-4 py-3 text-mute">{c.email ?? '—'}</td>
                 <td className="px-4 py-3"><Badge tone="gold">{c.plan ?? 'trial'}</Badge></td>
                 <td className="px-4 py-3 text-mute">{loopStageMeta(deriveLoopStage(c)).label}</td>
+                <td className="px-4 py-3 text-faint">
+                  {(() => {
+                    const rel = relativeDays(lastActive[c.id]);
+                    if (!rel) return '—';
+                    const daysAgo = Math.floor((Date.now() - new Date(lastActive[c.id]).getTime()) / 86400000);
+                    return (
+                      <span className={daysAgo >= 7 ? 'text-red-300' : 'text-faint'}>{rel}</span>
+                    );
+                  })()}
+                </td>
                 <td className="px-4 py-3 text-faint">{new Date(c.created_at).toLocaleDateString()}</td>
                 <td className="px-4 py-3 text-right">
                   <Link to={`/coach/clients/${c.id}`} className="text-xs uppercase tracking-widest2 text-gold">Open →</Link>

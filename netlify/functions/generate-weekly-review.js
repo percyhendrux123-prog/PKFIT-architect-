@@ -75,7 +75,7 @@ export const handler = async (event) => {
         .order('performed_at', { ascending: true }),
       admin
         .from('reviews')
-        .select('week_starting,summary,constraints,adjustments,metrics,coach_comment')
+        .select('week_starting,summary,constraints,adjustments,adjustments_state,metrics,coach_comment')
         .eq('client_id', targetClientId)
         .lt('week_starting', weekStart.toISOString().slice(0, 10))
         .order('week_starting', { ascending: false })
@@ -98,14 +98,26 @@ export const handler = async (event) => {
       habit_history: habitHistory,
       week_starting: weekStart.toISOString().slice(0, 10),
       prior_review: priorReview
-        ? {
-            week_starting: priorReview.week_starting,
-            summary: priorReview.summary,
-            constraints: priorReview.constraints,
-            adjustments: priorReview.adjustments,
-            metrics: priorReview.metrics,
-            coach_comment: priorReview.coach_comment ?? null,
-          }
+        ? (() => {
+            const adj = priorReview.adjustments ?? [];
+            const state = priorReview.adjustments_state ?? {};
+            const installed = adj
+              .map((text, i) => (state?.[i] ? text : null))
+              .filter(Boolean);
+            const skipped = adj
+              .map((text, i) => (state?.[i] ? null : text))
+              .filter(Boolean);
+            return {
+              week_starting: priorReview.week_starting,
+              summary: priorReview.summary,
+              constraints: priorReview.constraints,
+              adjustments: adj,
+              adjustments_installed: installed,
+              adjustments_skipped: skipped,
+              metrics: priorReview.metrics,
+              coach_comment: priorReview.coach_comment ?? null,
+            };
+          })()
         : null,
     };
 

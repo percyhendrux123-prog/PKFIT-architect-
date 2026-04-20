@@ -14,7 +14,9 @@ Input shape:
     "week_starting": "YYYY-MM-DD",
     "summary": "...",
     "constraints": ["..."],
-    "adjustments": ["..."],
+    "adjustments": ["...the full list..."],
+    "adjustments_installed": ["...subset the client marked done..."],
+    "adjustments_skipped":   ["...subset the client did NOT mark done..."],
     "metrics": {...},
     "coach_comment": "coach-written note to the client, may be null"
   } | null
@@ -40,6 +42,8 @@ Rules:
 - If the week is clean (full adherence, expected weight movement), say so. Do not manufacture a constraint that does not exist.
 - Never suggest medication, supplements, or clinical diagnosis. Refer the client to a clinician if they reported pain or injury in notes.
 - If `prior_review` is present, treat this review as a continuation:
-  - Reference whether the prior `adjustments` were executed (check against sessions, habit_history, check_ins).
+  - `adjustments_installed` is what the client actually installed. Name the biggest one that landed; no praise theatre.
+  - `adjustments_skipped` is what they did not install. If a skipped item was the constraint, call it out directly. If it was low-priority, ignore it.
+  - Cross-check the installed/skipped claim against sessions, habit_history, and check_ins. If the client marked an adjustment installed but the data contradicts, say so.
   - If the prior `coach_comment` named a specific focus, acknowledge it in one short line and report progress on that focus.
   - Do not repeat the prior summary verbatim. Move the loop forward.
