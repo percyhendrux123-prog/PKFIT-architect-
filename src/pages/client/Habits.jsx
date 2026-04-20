@@ -4,6 +4,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { habitTemplates } from '../../lib/habitTemplates';
+import { HabitHeatmap } from '../../components/HabitHeatmap';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -136,28 +137,35 @@ export default function Habits() {
           </div>
         </div>
       ) : (
-        <ul className="divide-y divide-line border border-line">
-          {list.map((h) => {
-            const done = Boolean(todayMap[h.id]);
-            return (
-              <li key={h.id} className="flex items-center justify-between p-4">
-                <button
-                  onClick={() => toggle(h.id)}
-                  className="flex flex-1 items-center gap-3 text-left"
-                  aria-pressed={done}
-                >
-                  <span className={`inline-block h-4 w-4 border ${done ? 'bg-gold border-gold' : 'border-line'}`} />
-                  <span className={`font-display tracking-wider2 ${done ? 'text-gold' : 'text-ink'}`}>
-                    {h.name}
-                  </span>
-                </button>
-                <button onClick={() => removeHabit(h.id)} className="text-xs uppercase tracking-widest2 text-faint hover:text-red-300">
-                  Remove
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="space-y-6">
+          <ul className="divide-y divide-line border border-line">
+            {list.map((h) => {
+              const done = Boolean(todayMap[h.id]);
+              return (
+                <li key={h.id} className="flex items-center justify-between p-4">
+                  <button
+                    onClick={() => toggle(h.id)}
+                    className="flex flex-1 items-center gap-3 text-left"
+                    aria-pressed={done}
+                  >
+                    <span className={`inline-block h-4 w-4 border ${done ? 'bg-gold border-gold' : 'border-line'}`} />
+                    <span className={`font-display tracking-wider2 ${done ? 'text-gold' : 'text-ink'}`}>
+                      {h.name}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => removeHabit(h.id)}
+                    className="text-xs uppercase tracking-widest2 text-faint hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <HabitHeatmap list={list} history={history} />
+        </div>
       )}
     </div>
   );
