@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
-import { claude } from '../../lib/claudeClient';
+import { streamAssistant } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
 
 export default function Assistant() {
@@ -51,20 +51,46 @@ export default function Assistant() {
     e.preventDefault();
     const text = input.trim();
     if (!text) return;
-    setMessages((m) => [...m, { role: 'user', content: text }]);
+    setMessages((m) => [...m, { role: 'user', content: text }, { role: 'assistant', content: '' }]);
     setInput('');
     setBusy(true);
     setErr(null);
+    let resolvedConversationId = currentId;
     try {
-      const { conversationId: newId, reply } = await claude.assistant({
+      await streamAssistant({
         conversationId: currentId,
         message: text,
+        onEvent: ({ event, data }) => {
+          if (event === 'meta' && data?.conversationId) {
+            resolvedConversationId = data.conversationId;
+            if (!currentId) setCurrentId(data.conversationId);
+          } else if (event === 'delta' && typeof data?.text === 'string') {
+            setMessages((m) => {
+              const next = [...m];
+              const last = next[next.length - 1];
+              if (last?.role === 'assistant') {
+                next[next.length - 1] = { ...last, content: last.content + data.text };
+              }
+              return next;
+            });
+          } else if (event === 'error') {
+            setErr(data?.message ?? 'Stream failed');
+          }
+        },
       });
-      if (!currentId) setCurrentId(newId);
-      setMessages((m) => [...m, { role: 'assistant', content: reply }]);
       await loadConversations();
+      if (resolvedConversationId && resolvedConversationId === currentId) {
+        // nothing to reload — messages already appended client-side
+      }
     } catch (e) {
       setErr(e.message);
+      // Strip the empty assistant placeholder if the stream failed outright.
+      setMessages((m) => {
+        const next = [...m];
+        const last = next[next.length - 1];
+        if (last?.role === 'assistant' && last.content === '') next.pop();
+        return next;
+      });
     } finally {
       setBusy(false);
     }

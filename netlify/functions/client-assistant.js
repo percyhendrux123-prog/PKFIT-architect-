@@ -1,107 +1,194 @@
-import { requireUser, jsonResponse, errorResponse } from './_shared/auth.js';
-import { getAdminClient } from './_shared/supabase-admin.js';
-import { getAnthropic, loadPrompt, MODEL, bannedTokensCleanup } from './_shared/anthropic.js';
+import { getAdminClient, getAnonClient } from './_shared/supabase-admin.js';
+import { getAnthropic, loadPrompt, MODEL, sanitizeVoice, bannedTokensCleanup } from './_shared/anthropic.js';
 import { checkRateLimit } from './_shared/rate-limit.js';
 
 const MAX_CONTEXT_MESSAGES = 24;
 const ASSISTANT_RPM = 20;
 const ASSISTANT_WINDOW_SEC = 60;
 
-export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') return jsonResponse(405, { error: 'Method not allowed' });
-  try {
-    const { user } = await requireUser(event);
-    const body = JSON.parse(event.body || '{}');
-    const userMessage = typeof body.message === 'string' ? body.message.trim() : '';
-    if (!userMessage) return jsonResponse(400, { error: 'message required' });
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-    const limit = await checkRateLimit({
-      userId: user.id,
-      bucket: 'assistant',
-      max: ASSISTANT_RPM,
-      windowSec: ASSISTANT_WINDOW_SEC,
-    });
-    if (!limit.allowed) {
-      return {
-        statusCode: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': String(limit.retryAfterSec ?? 30),
-        },
-        body: JSON.stringify({
-          error: `Rate limit. Wait ${limit.retryAfterSec ?? 30}s.`,
-        }),
-      };
-    }
+function sseEvent(event, data) {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
 
-    const admin = getAdminClient();
-
-    // Resolve or create the conversation.
-    let conversationId = body.conversationId ?? null;
-    if (conversationId) {
-      const { data: conv } = await admin
-        .from('conversations')
-        .select('id, client_id')
-        .eq('id', conversationId)
-        .maybeSingle();
-      if (!conv || conv.client_id !== user.id) {
-        return jsonResponse(404, { error: 'Conversation not found' });
-      }
-    } else {
-      const title = userMessage.slice(0, 60);
-      const { data: created, error: createErr } = await admin
-        .from('conversations')
-        .insert({ client_id: user.id, title })
-        .select()
-        .maybeSingle();
-      if (createErr) return jsonResponse(500, { error: createErr.message });
-      conversationId = created.id;
-    }
-
-    // Persist the user turn.
-    await admin.from('conversation_messages').insert({
-      conversation_id: conversationId,
-      role: 'user',
-      content: userMessage,
-    });
-
-    // Pull recent history (assistant + user) for model context.
-    const { data: history } = await admin
-      .from('conversation_messages')
-      .select('role,content')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(MAX_CONTEXT_MESSAGES);
-
-    const messages = (history ?? [])
-      .filter((m) => m.role === 'user' || m.role === 'assistant')
-      .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
-
-    const system = loadPrompt('pkfit-system.md') + '\n\n' + loadPrompt('client-assistant.md');
-
-    const anthropic = getAnthropic();
-    const resp = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      system,
-      messages,
-    });
-
-    const text = resp.content?.[0]?.text ?? '';
-    const reply = bannedTokensCleanup(text);
-
-    await admin.from('conversation_messages').insert({
-      conversation_id: conversationId,
-      role: 'assistant',
-      content: reply,
-    });
-    await admin
-      .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
-
-    return jsonResponse(200, { conversationId, reply });
-  } catch (e) {
-    return errorResponse(e);
+async function authenticate(req) {
+  const header = req.headers.get('authorization') || req.headers.get('Authorization');
+  if (!header?.startsWith('Bearer ')) {
+    const err = new Error('Missing Authorization bearer token');
+    err.statusCode = 401;
+    throw err;
   }
+  const token = header.slice('Bearer '.length).trim();
+  const anon = getAnonClient();
+  const { data, error } = await anon.auth.getUser(token);
+  if (error || !data?.user) {
+    const err = new Error('Invalid session');
+    err.statusCode = 401;
+    throw err;
+  }
+  return data.user;
+}
+
+export default async (req) => {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: JSON_HEADERS,
+    });
+  }
+
+  let user;
+  try {
+    user = await authenticate(req);
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: e.statusCode ?? 401,
+      headers: JSON_HEADERS,
+    });
+  }
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: JSON_HEADERS,
+    });
+  }
+
+  const userMessage = typeof body.message === 'string' ? body.message.trim() : '';
+  if (!userMessage) {
+    return new Response(JSON.stringify({ error: 'message required' }), {
+      status: 400,
+      headers: JSON_HEADERS,
+    });
+  }
+
+  const limit = await checkRateLimit({
+    userId: user.id,
+    bucket: 'assistant',
+    max: ASSISTANT_RPM,
+    windowSec: ASSISTANT_WINDOW_SEC,
+  });
+  if (!limit.allowed) {
+    return new Response(JSON.stringify({ error: `Rate limit. Wait ${limit.retryAfterSec ?? 30}s.` }), {
+      status: 429,
+      headers: { ...JSON_HEADERS, 'Retry-After': String(limit.retryAfterSec ?? 30) },
+    });
+  }
+
+  const admin = getAdminClient();
+
+  let conversationId = body.conversationId ?? null;
+  if (conversationId) {
+    const { data: conv } = await admin
+      .from('conversations')
+      .select('id, client_id')
+      .eq('id', conversationId)
+      .maybeSingle();
+    if (!conv || conv.client_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'Conversation not found' }), {
+        status: 404,
+        headers: JSON_HEADERS,
+      });
+    }
+  } else {
+    const title = userMessage.slice(0, 60);
+    const { data: created, error: createErr } = await admin
+      .from('conversations')
+      .insert({ client_id: user.id, title })
+      .select()
+      .maybeSingle();
+    if (createErr) {
+      return new Response(JSON.stringify({ error: createErr.message }), {
+        status: 500,
+        headers: JSON_HEADERS,
+      });
+    }
+    conversationId = created.id;
+  }
+
+  await admin.from('conversation_messages').insert({
+    conversation_id: conversationId,
+    role: 'user',
+    content: userMessage,
+  });
+
+  const { data: history } = await admin
+    .from('conversation_messages')
+    .select('role,content')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true })
+    .limit(MAX_CONTEXT_MESSAGES);
+
+  const messages = (history ?? [])
+    .filter((m) => m.role === 'user' || m.role === 'assistant')
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
+
+  const system = loadPrompt('pkfit-system.md') + '\n\n' + loadPrompt('client-assistant.md');
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      function send(event, data) {
+        controller.enqueue(encoder.encode(sseEvent(event, data)));
+      }
+
+      send('meta', { conversationId });
+
+      let fullText = '';
+      try {
+        const anthropic = getAnthropic();
+        const anthStream = anthropic.messages.stream({
+          model: MODEL,
+          max_tokens: 1024,
+          system,
+          messages,
+        });
+
+        for await (const evt of anthStream) {
+          if (
+            evt.type === 'content_block_delta' &&
+            evt.delta?.type === 'text_delta' &&
+            typeof evt.delta.text === 'string'
+          ) {
+            const delta = sanitizeVoice(evt.delta.text);
+            if (delta) {
+              fullText += delta;
+              send('delta', { text: delta });
+            }
+          }
+        }
+
+        const clean = bannedTokensCleanup(fullText);
+        await admin.from('conversation_messages').insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: clean,
+        });
+        await admin
+          .from('conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId);
+
+        send('done', {});
+      } catch (e) {
+        send('error', { message: e?.message ?? 'Stream failed' });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
+  });
 };

@@ -23,11 +23,17 @@ export function loadPrompt(name) {
 // dated ID so a dated model is pinned in production.
 export const MODEL = 'claude-sonnet-4-5-20250929';
 
-export function bannedTokensCleanup(text) {
+// Strip characters that violate PKFIT voice (emoji, exclamation points).
+// Safe to run per-chunk: only character-level substitutions, no trim.
+export function sanitizeVoice(text) {
   if (!text) return text;
-  // Remove exclamation points and emoji per PKFIT voice rules.
   return text
     .replace(/!/g, '.')
-    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2700}-\u{27BF}]/gu, '')
-    .trim();
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2700}-\u{27BF}]/gu, '');
+}
+
+// Full-reply cleanup: sanitize + trim (for non-streaming paths).
+export function bannedTokensCleanup(text) {
+  if (!text) return text;
+  return sanitizeVoice(text).trim();
 }
