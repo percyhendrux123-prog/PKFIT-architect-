@@ -105,3 +105,7 @@ export const account = {
   exportData: () => callFunction('export-my-data', {}),
   deleteAccount: () => callFunction('delete-my-account', { confirm: 'DELETE' }),
 };
+
+export const coach = {
+  exportClient: (clientId) => callFunction('coach-export-client', { clientId }),
+};

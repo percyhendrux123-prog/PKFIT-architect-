@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
-import { claude } from '../../lib/claudeClient';
+import { claude, coach as coachApi } from '../../lib/claudeClient';
 import { useAuth } from '../../context/AuthContext';
 import { Download, Sparkles } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -172,6 +172,25 @@ export default function ClientDetail() {
     setBusy(null);
   }
 
+  async function exportClient() {
+    setBusy('export');
+    setMsg(null);
+    try {
+      const dump = await coachApi.exportClient(id);
+      const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const slug = (client?.name ?? id).toString().replace(/\s+/g, '-').toLowerCase();
+      a.download = `pkfit-client-${slug}-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) { setMsg(e.message); }
+    setBusy(null);
+  }
+
   if (!client) return <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>;
 
   const habitList = habits?.habit_list ?? [];
@@ -188,7 +207,16 @@ export default function ClientDetail() {
             {client.plan ?? 'trial'} · loop: {loopStageMeta(deriveLoopStage(client)).label}
           </p>
         </div>
-        <Link to="/coach/clients" className="text-xs uppercase tracking-widest2 text-gold">← Roster</Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exportClient}
+            disabled={busy === 'export'}
+            className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-mute hover:text-gold disabled:opacity-40"
+          >
+            <Download size={12} /> {busy === 'export' ? 'Exporting' : 'Export JSON'}
+          </button>
+          <Link to="/coach/clients" className="text-xs uppercase tracking-widest2 text-gold">← Roster</Link>
+        </div>
       </header>
 
       <nav className="flex gap-2 border-b border-line">

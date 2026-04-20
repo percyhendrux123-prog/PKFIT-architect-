@@ -16,6 +16,24 @@ const cards = [
   { to: '/assistant', label: 'Assistant', icon: Sparkles, copy: "Ask the Architect." },
 ];
 
+function FloorBar({ label, eaten, floor }) {
+  const pct = floor > 0 ? Math.min(100, Math.round((eaten / floor) * 100)) : 0;
+  const short = eaten < floor;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between text-[0.6rem] uppercase tracking-widest2 text-faint">
+        <span>{label}</span>
+        <span>
+          <span className={short ? 'text-red-300' : 'text-ink'}>{eaten}</span> / {floor}
+        </span>
+      </div>
+      <div className="mt-1 h-1 w-full bg-line">
+        <div className="h-1 bg-gold" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user, profile } = useAuth();
   const [recent, setRecent] = useState([]);
@@ -171,6 +189,32 @@ export default function Dashboard() {
             <div className="label">Today&apos;s meals</div>
             <Link to="/meals" className="text-xs uppercase tracking-widest2 text-gold">Full plan →</Link>
           </div>
+          {(() => {
+            const eaten = todayMeals.filter((m) => m.eaten);
+            const eatenMacros = eaten.reduce(
+              (a, m) => {
+                const mac = m.macros ?? {};
+                return {
+                  kcal: a.kcal + Number(mac.kcal ?? 0),
+                  p: a.p + Number(mac.p ?? 0),
+                };
+              },
+              { kcal: 0, p: 0 },
+            );
+            const kcalTarget = profile?.target_kcal;
+            const pTarget = profile?.target_protein_g;
+            if (!kcalTarget && !pTarget) return null;
+            return (
+              <div className="mb-3 grid grid-cols-1 gap-3 border border-line bg-black/30 p-3 sm:grid-cols-2">
+                {kcalTarget ? (
+                  <FloorBar label="Kcal" eaten={Math.round(eatenMacros.kcal)} floor={kcalTarget} />
+                ) : null}
+                {pTarget ? (
+                  <FloorBar label="Protein (g)" eaten={Math.round(eatenMacros.p)} floor={pTarget} />
+                ) : null}
+              </div>
+            );
+          })()}
           <ul className="divide-y divide-line border border-line">
             {todayMeals.map((m) => (
               <li
