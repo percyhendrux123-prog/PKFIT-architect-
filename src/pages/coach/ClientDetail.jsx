@@ -3,11 +3,13 @@ import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { claude } from '../../lib/claudeClient';
 import { useAuth } from '../../context/AuthContext';
+import { Download } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { DMThread } from '../../components/DMThread';
 import { StorageImage } from '../../components/StorageImage';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
+import { downloadCSV } from '../../lib/csv';
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -109,7 +111,31 @@ export default function ClientDetail() {
               </ul>
             </Card>
             <Card>
-              <CardHeader label="Check-ins" title={`Recent (${checkIns.length})`} />
+              <CardHeader
+                label="Check-ins"
+                title={`Recent (${checkIns.length})`}
+                meta={
+                  checkIns.length > 0 ? (
+                    <button
+                      onClick={() =>
+                        downloadCSV(
+                          `pkfit-checkins-${client.name?.replace(/\s+/g, '-').toLowerCase() ?? client.id.slice(0, 8)}.csv`,
+                          checkIns,
+                          [
+                            { key: 'date', label: 'Date' },
+                            { key: 'weight', label: 'Weight (kg)' },
+                            { key: 'body_fat', label: 'Body fat %' },
+                            { key: 'notes', label: 'Notes' },
+                          ],
+                        )
+                      }
+                      className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold"
+                    >
+                      <Download size={12} /> CSV
+                    </button>
+                  ) : null
+                }
+              />
               <ul className="divide-y divide-line">
                 {checkIns.map((c) => (
                   <li key={c.id} className="flex items-center gap-3 py-2 text-sm">

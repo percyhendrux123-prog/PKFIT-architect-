@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
+import { Download } from 'lucide-react';
 import { Input, Select } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { Avatar } from '../../components/ui/Avatar';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
+import { downloadCSV } from '../../lib/csv';
 
 export default function Clients() {
   const [clients, setClients] = useState([]);
@@ -33,9 +36,34 @@ export default function Clients() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <div className="label mb-2">Clients</div>
-        <h1 className="font-display text-4xl tracking-wider2">Roster</h1>
+      <header className="flex items-end justify-between gap-4">
+        <div>
+          <div className="label mb-2">Clients</div>
+          <h1 className="font-display text-4xl tracking-wider2">Roster</h1>
+        </div>
+        <Button
+          variant="ghost"
+          onClick={() =>
+            downloadCSV(
+              `pkfit-clients-${new Date().toISOString().slice(0, 10)}.csv`,
+              filtered,
+              [
+                { key: 'name', label: 'Name' },
+                { key: 'email', label: 'Email' },
+                { key: 'plan', label: 'Plan' },
+                { key: 'start_date', label: 'Start date' },
+                {
+                  label: 'Loop stage',
+                  get: (c) => loopStageMeta(deriveLoopStage(c)).label,
+                },
+                { key: 'created_at', label: 'Joined' },
+              ],
+            )
+          }
+          disabled={filtered.length === 0}
+        >
+          <Download size={14} /> Export CSV
+        </Button>
       </header>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_180px]">

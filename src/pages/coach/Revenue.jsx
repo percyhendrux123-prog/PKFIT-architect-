@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Download } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { downloadCSV } from '../../lib/csv';
 
 export default function Revenue() {
-  const [data, setData] = useState({ active: [], canceled: [], total: 0, mrr: 0 });
+  const [data, setData] = useState({ active: [], canceled: [], all: [], total: 0, mrr: 0 });
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -13,7 +16,7 @@ export default function Revenue() {
       const active = (all ?? []).filter((p) => p.status === 'active');
       const canceled = (all ?? []).filter((p) => p.status === 'canceled');
       const mrr = active.reduce((acc, p) => acc + Number(p.amount ?? 0), 0);
-      setData({ active, canceled, total: (all ?? []).length, mrr });
+      setData({ active, canceled, all: all ?? [], total: (all ?? []).length, mrr });
     })();
   }, []);
 
@@ -21,9 +24,32 @@ export default function Revenue() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <div className="label mb-2">Revenue</div>
-        <h1 className="font-display text-4xl tracking-wider2">Financials</h1>
+      <header className="flex items-end justify-between gap-4">
+        <div>
+          <div className="label mb-2">Revenue</div>
+          <h1 className="font-display text-4xl tracking-wider2">Financials</h1>
+        </div>
+        <Button
+          variant="ghost"
+          onClick={() =>
+            downloadCSV(
+              `pkfit-payments-${new Date().toISOString().slice(0, 10)}.csv`,
+              data.all,
+              [
+                { key: 'created_at', label: 'Created' },
+                { key: 'client_id', label: 'Client ID' },
+                { key: 'plan', label: 'Plan' },
+                { key: 'amount', label: 'Amount' },
+                { key: 'status', label: 'Status' },
+                { key: 'current_period_end', label: 'Period end' },
+                { key: 'stripe_subscription_id', label: 'Subscription' },
+              ],
+            )
+          }
+          disabled={data.all.length === 0}
+        >
+          <Download size={14} /> Export CSV
+        </Button>
       </header>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
