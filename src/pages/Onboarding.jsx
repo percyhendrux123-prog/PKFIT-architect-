@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
 
-const steps = ['Identity', 'Baseline', 'Goal', 'Commit'];
+const steps = ['Identity', 'Baseline', 'Goal', 'Baseline photo', 'Commit'];
 
 export default function Onboarding() {
   const { user } = useAuth();
@@ -22,10 +23,51 @@ export default function Onboarding() {
     sleep_avg: '7',
     constraint: '',
   });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoPath, setPhotoPath] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  function pickPhoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErr('File must be an image.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErr('Image must be 10 MB or less.');
+      return;
+    }
+    setErr(null);
+    setPhotoFile(file);
+    setPhotoPath(null);
+    const url = URL.createObjectURL(file);
+    setPhotoPreview(url);
+  }
+
+  async function uploadPhoto() {
+    if (!photoFile || !user) return;
+    setUploading(true);
+    setErr(null);
+    try {
+      const ext = photoFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${user.id}/baseline-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from('baseline-photos')
+        .upload(path, photoFile, { upsert: false, contentType: photoFile.type });
+      if (error) throw error;
+      setPhotoPath(path);
+    } catch (e) {
+      setErr(`Upload failed: ${e.message}`);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function finish() {
     if (!user) {
@@ -42,6 +84,7 @@ export default function Onboarding() {
           start_date: new Date().toISOString().slice(0, 10),
           loop_stage: 'diagnosis',
           plan: 'trial',
+          baseline_photo_path: photoPath,
         })
         .eq('id', user.id);
       if (error) throw error;
@@ -94,13 +137,37 @@ export default function Onboarding() {
         )}
         {step === 3 && (
           <>
+            <p className="max-w-reading text-sm text-mute">
+              Optional. One photo, well-lit, relaxed stance. Used only for the Diagnosis review. Private to you and the coach.
+            </p>
+            <label className="flex cursor-pointer items-center justify-center gap-3 border border-dashed border-line bg-black/30 p-6 text-sm text-mute hover:border-gold">
+              <Upload size={18} />
+              <span>{photoFile ? 'Change photo' : 'Choose photo'}</span>
+              <input type="file" accept="image/*" onChange={pickPhoto} className="sr-only" />
+            </label>
+            {photoPreview ? (
+              <div className="space-y-3">
+                <img src={photoPreview} alt="Baseline preview" className="max-h-80 w-full border border-line object-contain" />
+                {!photoPath ? (
+                  <Button onClick={uploadPhoto} disabled={uploading}>
+                    {uploading ? 'Uploading' : 'Upload photo'}
+                  </Button>
+                ) : (
+                  <div className="text-xs uppercase tracking-widest2 text-gold">Uploaded.</div>
+                )}
+              </div>
+            ) : null}
+          </>
+        )}
+        {step === 4 && (
+          <>
             <Input label="The one constraint in your way" value={form.constraint} onChange={set('constraint')} />
             <div className="border border-line p-4 text-sm text-mute">
               You are entering a thirty-day protocol. Daily reps. Weekly review. No drift.
             </div>
-            {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
           </>
         )}
+        {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
       </div>
 
       <div className="mt-8 flex justify-between">

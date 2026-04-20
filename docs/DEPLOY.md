@@ -49,9 +49,12 @@ Keep a scratch notes doc open. You will copy values between dashboards.
    - `0003_reviews.sql` (weekly review rows)
    - `0004_conversations.sql` (persisted assistant conversations + messages)
    - `0005_dms.sql` (coach-client direct-message threads + messages)
-6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`, `reviews`, `conversations`, `conversation_messages`, `dm_threads`, `dm_messages`. Each should have a shield icon next to the name indicating RLS is enabled.
+   - `0006_rate_limits.sql` (server-only rate limit table for the assistant)
+   - `0007_storage.sql` (baseline-photos bucket + RLS + `profiles.baseline_photo_path`)
+6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`, `reviews`, `conversations`, `conversation_messages`, `dm_threads`, `dm_messages`, `rate_limits`. Each should have a shield icon next to the name indicating RLS is enabled.
+7. Left sidebar → **Storage** → verify a bucket named `baseline-photos` exists and is marked **Private**.
 
-**Completion signal:** fifteen tables visible, all with RLS enabled.
+**Completion signal:** sixteen tables visible with RLS enabled, one private bucket.
 
 ## 3 — Enable email auth
 
