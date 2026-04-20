@@ -100,3 +100,8 @@ export const billing = {
   createCheckout: (input) => callFunction('create-checkout-session', input),
   createPortal: (input) => callFunction('create-portal-session', input),
 };
+
+export const account = {
+  exportData: () => callFunction('export-my-data', {}),
+  deleteAccount: () => callFunction('delete-my-account', { confirm: 'DELETE' }),
+};

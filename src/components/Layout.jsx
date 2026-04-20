@@ -19,6 +19,7 @@ import {
   Inbox,
   Menu,
   X,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadDMs } from '../hooks/useUnreadDMs';
@@ -41,6 +42,7 @@ const clientSecondary = [
   { to: '/community', label: 'Community', icon: MessageSquare },
   { to: '/billing', label: 'Billing', icon: CreditCard },
   { to: '/profile', label: 'Profile', icon: UserCircle2 },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 const coachPrimary = [

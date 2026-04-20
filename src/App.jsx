@@ -1,10 +1,11 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 import Landing from './pages/Landing.jsx';
 import Splash from './pages/Splash.jsx';
 import Onboarding from './pages/Onboarding.jsx';
+import NotFound from './pages/NotFound.jsx';
 import Login from './pages/auth/Login.jsx';
 import Signup from './pages/auth/Signup.jsx';
 
@@ -20,6 +21,7 @@ import Profile from './pages/client/Profile.jsx';
 import Community from './pages/client/Community.jsx';
 import Assistant from './pages/client/Assistant.jsx';
 import Billing from './pages/client/Billing.jsx';
+import Settings from './pages/client/Settings.jsx';
 import Reviews from './pages/client/Reviews.jsx';
 import ReviewDetail from './pages/client/ReviewDetail.jsx';
 import Inbox from './pages/client/Inbox.jsx';
@@ -65,6 +67,7 @@ export default function App() {
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       {/* Coach-protected */}
@@ -85,7 +88,7 @@ export default function App() {
       </Route>
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
