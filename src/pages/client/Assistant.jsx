@@ -45,7 +45,7 @@ export default function Assistant() {
 
       <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-4">
         {messages.length === 0 ? (
-          <div className="text-sm text-faint">Start with a single, specific question. Example: "Why did my bench stall at 85 kg for three weeks?"</div>
+          <div className="text-sm text-faint">Start with a single, specific question. Example: why did my bench stall at 85 kg for three weeks.</div>
         ) : (
           <ul className="space-y-4">
             {messages.map((m, i) => (

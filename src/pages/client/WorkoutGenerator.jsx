@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { claude } from '../../lib/claudeClient';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
-import { Input, Select, Textarea } from '../../components/ui/Input';
+import { Select, Textarea } from '../../components/ui/Input';
 
 export default function WorkoutGenerator() {
   const { user, profile } = useAuth();
