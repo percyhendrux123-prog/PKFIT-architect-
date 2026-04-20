@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { claude } from '../../lib/claudeClient';
 import { useAuth } from '../../context/AuthContext';
-import { Download } from 'lucide-react';
+import { Download, Sparkles } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { DMThread } from '../../components/DMThread';
 import { StorageImage } from '../../components/StorageImage';
+import { HabitHeatmap } from '../../components/HabitHeatmap';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 import { downloadCSV } from '../../lib/csv';
 
@@ -16,35 +17,68 @@ export default function ClientDetail() {
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') ?? 'overview';
   const { user, role } = useAuth();
+
   const [client, setClient] = useState(null);
   const [programs, setPrograms] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [checkIns, setCheckIns] = useState([]);
+  const [habits, setHabits] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!isSupabaseConfigured || !id) return;
-    (async () => {
-      const [{ data: p }, { data: pr }, { data: ci }, { data: ws }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
-        supabase.from('programs').select('*').eq('client_id', id).order('created_at', { ascending: false }).limit(10),
-        supabase.from('check_ins').select('*').eq('client_id', id).order('date', { ascending: false }).limit(12),
-        supabase.from('workout_sessions').select('*').eq('client_id', id).order('performed_at', { ascending: false }).limit(10),
-      ]);
-      setClient(p);
-      setPrograms(pr ?? []);
-      setCheckIns(ci ?? []);
-      setSessions(ws ?? []);
-    })();
+    const [
+      { data: p },
+      { data: pr },
+      { data: ci },
+      { data: ws },
+      { data: hb },
+      { data: rv },
+    ] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
+      supabase.from('programs').select('*').eq('client_id', id).order('created_at', { ascending: false }).limit(10),
+      supabase.from('check_ins').select('*').eq('client_id', id).order('date', { ascending: false }).limit(12),
+      supabase.from('workout_sessions').select('*').eq('client_id', id).order('performed_at', { ascending: false }).limit(10),
+      supabase
+        .from('habits')
+        .select('*')
+        .eq('client_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('reviews')
+        .select('*')
+        .eq('client_id', id)
+        .order('week_starting', { ascending: false })
+        .limit(4),
+    ]);
+    setClient(p);
+    setPrograms(pr ?? []);
+    setCheckIns(ci ?? []);
+    setSessions(ws ?? []);
+    setHabits(hb ?? null);
+    setReviews(rv ?? []);
   }, [id]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function runWorkout() {
     setBusy('workout');
     setMsg(null);
     try {
-      await claude.generateWorkout({ clientId: id, profile: client, goal: 'recomp', training_days: '4', experience: 'intermediate', equipment: 'full_gym' });
+      await claude.generateWorkout({
+        clientId: id,
+        profile: client,
+        goal: 'recomp',
+        training_days: '4',
+        experience: 'intermediate',
+        equipment: 'full_gym',
+      });
       setMsg('Program generated.');
+      await load();
     } catch (e) { setMsg(e.message); }
     setBusy(null);
   }
@@ -53,13 +87,36 @@ export default function ClientDetail() {
     setBusy('meals');
     setMsg(null);
     try {
-      await claude.generateMealPlan({ clientId: id, profile: client, goal: 'recomp', kcal_target: '2400', protein_g: '180', style: 'flexible' });
+      await claude.generateMealPlan({
+        clientId: id,
+        profile: client,
+        goal: 'recomp',
+        kcal_target: '2400',
+        protein_g: '180',
+        style: 'flexible',
+      });
       setMsg('Meal plan generated.');
+      await load();
+    } catch (e) { setMsg(e.message); }
+    setBusy(null);
+  }
+
+  async function runReview() {
+    setBusy('review');
+    setMsg(null);
+    try {
+      await claude.weeklyReview({ clientId: id });
+      setMsg('Weekly review generated.');
+      await load();
     } catch (e) { setMsg(e.message); }
     setBusy(null);
   }
 
   if (!client) return <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>;
+
+  const habitList = habits?.habit_list ?? [];
+  const habitHistory = habits?.check_history ?? {};
+  const latestReview = reviews[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -67,7 +124,9 @@ export default function ClientDetail() {
         <div>
           <div className="label mb-2">Client</div>
           <h1 className="font-display text-4xl tracking-wider2">{client.name ?? client.email}</h1>
-          <p className="mt-1 text-sm text-mute">{client.plan ?? 'trial'} · loop: {loopStageMeta(deriveLoopStage(client)).label}</p>
+          <p className="mt-1 text-sm text-mute">
+            {client.plan ?? 'trial'} · loop: {loopStageMeta(deriveLoopStage(client)).label}
+          </p>
         </div>
         <Link to="/coach/clients" className="text-xs uppercase tracking-widest2 text-gold">← Roster</Link>
       </header>
@@ -98,8 +157,47 @@ export default function ClientDetail() {
             <Button onClick={runMeals} variant="ghost" disabled={busy === 'meals'}>
               {busy === 'meals' ? 'Generating' : 'Generate meal plan'}
             </Button>
+            <Button onClick={runReview} variant="ghost" disabled={busy === 'review'}>
+              <Sparkles size={14} /> {busy === 'review' ? 'Reviewing' : 'Generate weekly review'}
+            </Button>
           </section>
           {msg ? <div className="text-xs uppercase tracking-widest2 text-gold">{msg}</div> : null}
+
+          {latestReview ? (
+            <section className="border border-gold bg-black/30 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="label">Latest review</div>
+                  <h2 className="mt-1 font-display text-2xl tracking-wider2">Week of {latestReview.week_starting}</h2>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
+                  {latestReview.metrics?.adherence_pct != null ? (
+                    <span>{latestReview.metrics.adherence_pct}% adherence</span>
+                  ) : null}
+                  {latestReview.metrics?.weight_delta_kg != null ? (
+                    <span>
+                      {latestReview.metrics.weight_delta_kg > 0 ? '+' : ''}
+                      {latestReview.metrics.weight_delta_kg} kg
+                    </span>
+                  ) : null}
+                  {latestReview.metrics?.sessions_completed != null ? (
+                    <span>{latestReview.metrics.sessions_completed} sessions</span>
+                  ) : null}
+                </div>
+              </div>
+              <p className="mt-3 max-w-reading text-sm text-ink/90">{latestReview.summary}</p>
+              {latestReview.adjustments?.length ? (
+                <ul className="mt-3 space-y-1 text-sm">
+                  {latestReview.adjustments.map((a, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-gold">→</span>
+                      <span>{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          ) : null}
 
           <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
@@ -170,6 +268,43 @@ export default function ClientDetail() {
               </ul>
             </Card>
           </section>
+
+          {habitList.length > 0 ? (
+            <section className="border border-line bg-black/30 p-5">
+              <div className="mb-4 flex items-end justify-between">
+                <div>
+                  <div className="label">Habits</div>
+                  <h2 className="mt-1 font-display text-2xl tracking-wider2">Daily stack</h2>
+                </div>
+                <span className="text-xs text-faint">{habitList.length} habit{habitList.length === 1 ? '' : 's'}</span>
+              </div>
+              <ul className="mb-5 flex flex-wrap gap-2 text-xs">
+                {habitList.map((h) => (
+                  <li key={h.id} className="border border-line px-2 py-1 text-mute">
+                    {h.name}
+                  </li>
+                ))}
+              </ul>
+              <HabitHeatmap list={habitList} history={habitHistory} />
+            </section>
+          ) : null}
+
+          {reviews.length > 1 ? (
+            <section>
+              <div className="label mb-2">Prior reviews</div>
+              <ul className="divide-y divide-line border border-line">
+                {reviews.slice(1).map((r) => (
+                  <li key={r.id} className="grid grid-cols-[140px_1fr_auto] gap-3 p-3 text-sm">
+                    <div className="label">Week {r.week_starting}</div>
+                    <div className="truncate text-mute">{r.summary}</div>
+                    <div className="text-[0.6rem] uppercase tracking-widest2 text-faint">
+                      {r.metrics?.adherence_pct != null ? `${r.metrics.adherence_pct}%` : '—'}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </>
       ) : (
         <DMThread clientId={id} viewer={{ id: user?.id }} role={role} />
