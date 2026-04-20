@@ -79,6 +79,7 @@ export function SessionView({ session, backTo, backLabel = '← Back' }) {
                       <th className="px-3 py-2">Weight</th>
                       <th className="px-3 py-2">Reps</th>
                       <th className="px-3 py-2">RPE</th>
+                      <th className="px-3 py-2">Note</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
@@ -91,6 +92,7 @@ export function SessionView({ session, backTo, backLabel = '← Back' }) {
                         <td className="px-3 py-2">{s?.weight ?? '—'}</td>
                         <td className="px-3 py-2">{s?.reps ?? '—'}</td>
                         <td className="px-3 py-2 text-faint">{s?.rpe ?? '—'}</td>
+                        <td className="px-3 py-2 text-mute">{s?.note || ''}</td>
                       </tr>
                     ))}
                   </tbody>

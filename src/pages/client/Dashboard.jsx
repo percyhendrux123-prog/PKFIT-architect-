@@ -129,6 +129,58 @@ export default function Dashboard() {
   const loopMeta = loopStageMeta(loop);
   const progress = loopProgress(profile);
 
+  // What's the most-neglected surface? Rank by blast radius, show one prompt.
+  const missingLink = (() => {
+    const now = Date.now();
+    const DAY = 86400000;
+
+    const lastSessionDays = sessions.length
+      ? Math.floor((now - new Date(sessions[0].performed_at).getTime()) / DAY)
+      : Infinity;
+    if (lastSessionDays >= 7) {
+      return {
+        label: 'Training',
+        title: 'Log a session',
+        body: 'Seven days without a logged session. Break the drift today.',
+        to: '/workouts',
+        cta: 'Open workouts',
+      };
+    }
+
+    const lastCheckInDays = checkIn
+      ? Math.floor(
+          (now -
+            new Date(checkIn.date ?? checkIn.created_at ?? now).getTime()) /
+            DAY,
+        )
+      : Infinity;
+    if (lastCheckInDays >= 7) {
+      return {
+        label: 'Measurement',
+        title: 'Log a check-in',
+        body: 'No check-in in the last week. Weight, body fat, one note. Thirty seconds.',
+        to: '/profile',
+        cta: 'Open profile',
+      };
+    }
+
+    const habitList = habitRow?.habit_list ?? [];
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const todayMap = habitRow?.check_history?.[todayKey] ?? {};
+    const anyToggledToday = habitList.some((h) => todayMap[h.id]);
+    if (habitList.length > 0 && !anyToggledToday) {
+      return {
+        label: 'Habits',
+        title: 'Check the daily stack',
+        body: 'Levers are still open. Tick what you did. Small inputs, compound returns.',
+        to: '/habits',
+        cta: 'Open habits',
+      };
+    }
+
+    return null;
+  })();
+
   return (
     <div className="space-y-8">
       <section>
@@ -140,6 +192,24 @@ export default function Dashboard() {
           You are in the <span className="text-gold">{loop}</span> stage of the loop. One move at a time.
         </p>
       </section>
+
+      {missingLink ? (
+        <section className="border border-red-500/40 bg-black/40 p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="label text-red-300">{missingLink.label} · drift</div>
+              <h3 className="mt-1 font-display text-2xl tracking-wider2">{missingLink.title}</h3>
+              <p className="mt-1 max-w-reading text-sm text-mute">{missingLink.body}</p>
+            </div>
+            <Link
+              to={missingLink.to}
+              className="border border-gold bg-gold px-4 py-2 font-display text-xs tracking-wider2 text-bg hover:bg-[#d8b658]"
+            >
+              {missingLink.cta}
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>

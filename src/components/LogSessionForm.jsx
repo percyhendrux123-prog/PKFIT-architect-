@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input, Textarea } from './ui/Input';
 
@@ -17,6 +17,7 @@ function draftFromProgram(program) {
         weight: '',
         reps: repsGuess,
         rpe: '',
+        note: '',
         done: false,
       })),
     };
@@ -63,7 +64,7 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
     setExercises((list) =>
       list.map((ex, i) =>
         i === exIdx
-          ? { ...ex, sets: [...ex.sets, { weight: '', reps: ex.prescribed?.reps ?? '', rpe: '', done: false }] }
+          ? { ...ex, sets: [...ex.sets, { weight: '', reps: ex.prescribed?.reps ?? '', rpe: '', note: '', done: false }] }
           : ex,
       ),
     );
@@ -103,6 +104,7 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
           weight: s.weight !== '' ? Number(s.weight) : null,
           reps: s.reps !== '' ? Number(s.reps) : null,
           rpe: s.rpe !== '' ? Number(s.rpe) : null,
+          note: typeof s.note === 'string' && s.note.trim() ? s.note.trim() : null,
           done: Boolean(s.done),
         })),
       })),
@@ -150,60 +152,84 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
               </div>
             </header>
 
-            <div className="grid grid-cols-[32px_1fr_1fr_1fr_32px] gap-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
+            <div className="grid grid-cols-[32px_1fr_1fr_1fr_32px_32px] gap-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
               <div></div>
               <div>Weight</div>
               <div>Reps</div>
               <div>RPE</div>
               <div></div>
+              <div></div>
             </div>
             <ul className="space-y-2">
-              {ex.sets.map((s, setIdx) => (
-                <li key={setIdx} className="grid grid-cols-[32px_1fr_1fr_1fr_32px] items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => updateSet(exIdx, setIdx, { done: !s.done })}
-                    aria-pressed={s.done}
-                    aria-label={`Mark set ${setIdx + 1} ${s.done ? 'not done' : 'done'}`}
-                    className={`h-6 w-6 border ${s.done ? 'bg-gold border-gold' : 'border-line'}`}
-                  />
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.5"
-                    value={s.weight}
-                    onChange={(e) => updateSet(exIdx, setIdx, { weight: e.target.value })}
-                    placeholder="kg"
-                    className="border border-line bg-black/40 px-2 py-2 text-sm text-ink placeholder:text-faint"
-                  />
-                  <input
-                    type="text"
-                    value={s.reps}
-                    onChange={(e) => updateSet(exIdx, setIdx, { reps: e.target.value })}
-                    placeholder="reps"
-                    className="border border-line bg-black/40 px-2 py-2 text-sm text-ink placeholder:text-faint"
-                  />
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.5"
-                    min="0"
-                    max="10"
-                    value={s.rpe}
-                    onChange={(e) => updateSet(exIdx, setIdx, { rpe: e.target.value })}
-                    placeholder="0-10"
-                    className="border border-line bg-black/40 px-2 py-2 text-sm text-ink placeholder:text-faint"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeSet(exIdx, setIdx)}
-                    aria-label={`Remove set ${setIdx + 1}`}
-                    className="text-mute hover:text-red-300"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </li>
-              ))}
+              {ex.sets.map((s, setIdx) => {
+                const noteOpen = Boolean(s.note);
+                return (
+                  <li key={setIdx} className="space-y-1">
+                    <div className="grid grid-cols-[32px_1fr_1fr_1fr_32px_32px] items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateSet(exIdx, setIdx, { done: !s.done })}
+                        aria-pressed={s.done}
+                        aria-label={`Mark set ${setIdx + 1} ${s.done ? 'not done' : 'done'}`}
+                        className={`h-6 w-6 border ${s.done ? 'bg-gold border-gold' : 'border-line'}`}
+                      />
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.5"
+                        value={s.weight}
+                        onChange={(e) => updateSet(exIdx, setIdx, { weight: e.target.value })}
+                        placeholder="kg"
+                        className="border border-line bg-black/40 px-2 py-2 text-sm text-ink placeholder:text-faint"
+                      />
+                      <input
+                        type="text"
+                        value={s.reps}
+                        onChange={(e) => updateSet(exIdx, setIdx, { reps: e.target.value })}
+                        placeholder="reps"
+                        className="border border-line bg-black/40 px-2 py-2 text-sm text-ink placeholder:text-faint"
+                      />
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.5"
+                        min="0"
+                        max="10"
+                        value={s.rpe}
+                        onChange={(e) => updateSet(exIdx, setIdx, { rpe: e.target.value })}
+                        placeholder="0-10"
+                        className="border border-line bg-black/40 px-2 py-2 text-sm text-ink placeholder:text-faint"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateSet(exIdx, setIdx, { note: noteOpen ? '' : ' ' })}
+                        aria-label={noteOpen ? `Close note for set ${setIdx + 1}` : `Add note for set ${setIdx + 1}`}
+                        className={noteOpen ? 'text-gold' : 'text-mute hover:text-gold'}
+                      >
+                        <MessageSquare size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeSet(exIdx, setIdx)}
+                        aria-label={`Remove set ${setIdx + 1}`}
+                        className="text-mute hover:text-red-300"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    {noteOpen ? (
+                      <input
+                        type="text"
+                        value={s.note}
+                        onChange={(e) => updateSet(exIdx, setIdx, { note: e.target.value })}
+                        placeholder="Note (form cue, wrist twinge, pace)"
+                        className="ml-10 w-[calc(100%-2.5rem)] border border-line bg-black/40 px-2 py-1 text-xs text-ink placeholder:text-faint"
+                        autoFocus
+                      />
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
             <button
               type="button"
