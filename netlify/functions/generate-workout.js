@@ -58,6 +58,15 @@ export const handler = async (event) => {
     if (!program) return jsonResponse(502, { error: 'AI returned unparseable program' });
 
     const admin = getAdminClient();
+
+    // Archive any currently-active programs for this client — keep the roster
+    // clean: one active program at a time.
+    await admin
+      .from('programs')
+      .update({ status: 'archived' })
+      .eq('client_id', targetClientId)
+      .eq('status', 'active');
+
     const { data: inserted, error } = await admin
       .from('programs')
       .insert({

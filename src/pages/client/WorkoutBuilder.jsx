@@ -50,6 +50,13 @@ export default function WorkoutBuilder() {
     setBusy(true);
     setErr(null);
     try {
+      // Archive prior active programs so one program is active at a time.
+      await supabase
+        .from('programs')
+        .update({ status: 'archived' })
+        .eq('client_id', user.id)
+        .eq('status', 'active');
+
       const { error } = await supabase.from('programs').insert({
         client_id: user.id,
         week_number: Number(week) || 1,

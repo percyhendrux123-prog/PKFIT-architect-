@@ -60,10 +60,11 @@ function ExerciseRow({ ex }) {
   );
 }
 
-function ProgramCard({ program, sessionCount, onLog }) {
+function ProgramCard({ program, sessionCount, onLog, onArchive, onReactivate }) {
   const [open, setOpen] = useState(false);
 
   const exercises = Array.isArray(program.exercises) ? program.exercises : [];
+  const isActive = program.status === 'active';
 
   async function submit(payload) {
     await onLog(payload);
@@ -85,7 +86,22 @@ function ProgramCard({ program, sessionCount, onLog }) {
               <CheckCircle2 size={12} /> {sessionCount} logged
             </span>
           ) : null}
-          <Badge tone={program.status === 'active' ? 'green' : 'mute'}>{program.status}</Badge>
+          <Badge tone={isActive ? 'green' : 'mute'}>{program.status}</Badge>
+          {isActive ? (
+            <button
+              onClick={() => onArchive(program)}
+              className="text-[0.55rem] uppercase tracking-widest2 text-faint hover:text-gold"
+            >
+              Archive
+            </button>
+          ) : (
+            <button
+              onClick={() => onReactivate(program)}
+              className="text-[0.55rem] uppercase tracking-widest2 text-faint hover:text-gold"
+            >
+              Reactivate
+            </button>
+          )}
         </div>
       </header>
 
@@ -118,6 +134,7 @@ export default function Workouts() {
   const [programs, setPrograms] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('active');
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured || !user) {
@@ -158,6 +175,25 @@ export default function Workouts() {
     await load();
   }
 
+  async function archiveProgram(program) {
+    await supabase.from('programs').update({ status: 'archived' }).eq('id', program.id);
+    await load();
+  }
+
+  async function reactivateProgram(program) {
+    await supabase
+      .from('programs')
+      .update({ status: 'archived' })
+      .eq('client_id', user.id)
+      .eq('status', 'active');
+    await supabase.from('programs').update({ status: 'active' }).eq('id', program.id);
+    await load();
+  }
+
+  const visible = filter === 'active'
+    ? programs.filter((p) => p.status === 'active')
+    : programs;
+
   const sessionsByProgram = sessions.reduce((acc, s) => {
     if (!s.program_id) return acc;
     acc[s.program_id] = (acc[s.program_id] ?? 0) + 1;
@@ -187,16 +223,38 @@ export default function Workouts() {
           action={<Button as={Link} to="/workouts/generator">Open the generator</Button>}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {programs.map((p) => (
-            <ProgramCard
-              key={p.id}
-              program={p}
-              sessionCount={sessionsByProgram[p.id] ?? 0}
-              onLog={logSession}
-            />
-          ))}
-        </div>
+        <>
+          <div className="inline-flex border border-line">
+            {['active', 'all'].map((v) => (
+              <button
+                key={v}
+                onClick={() => setFilter(v)}
+                className={`px-4 py-2 text-xs uppercase tracking-widest2 ${
+                  filter === v ? 'bg-gold text-bg' : 'text-mute'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {visible.map((p) => (
+              <ProgramCard
+                key={p.id}
+                program={p}
+                sessionCount={sessionsByProgram[p.id] ?? 0}
+                onLog={logSession}
+                onArchive={archiveProgram}
+                onReactivate={reactivateProgram}
+              />
+            ))}
+          </div>
+          {visible.length === 0 ? (
+            <div className="border border-line bg-black/20 p-4 text-sm text-mute">
+              No active program. Generate one, or switch to All to see archived programs.
+            </div>
+          ) : null}
+        </>
       )}
 
       {sessions.length > 0 ? (

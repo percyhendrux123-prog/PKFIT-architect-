@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [todayMeals, setTodayMeals] = useState([]);
   const [habitRow, setHabitRow] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [activeProgram, setActiveProgram] = useState(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !user) return;
@@ -60,6 +61,15 @@ export default function Dashboard() {
       .order('created_at', { ascending: false })
       .limit(3)
       .then(({ data }) => setRecent(data ?? []));
+    supabase
+      .from('programs')
+      .select('*')
+      .eq('client_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setActiveProgram(data ?? null));
     supabase
       .from('meals')
       .select('*')
@@ -182,6 +192,47 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
+
+      {activeProgram ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="label">Active program</div>
+            <Link to="/workouts" className="text-xs uppercase tracking-widest2 text-gold">Open →</Link>
+          </div>
+          <article className="border border-line bg-black/30 p-5">
+            <header className="flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-2xl tracking-wider2">
+                  {activeProgram.schedule?.title ?? `Week ${activeProgram.week_number}`}
+                </h3>
+                <p className="mt-1 text-xs text-faint">
+                  {(Array.isArray(activeProgram.exercises) ? activeProgram.exercises : []).length}{' '}
+                  exercises · Week {activeProgram.week_number}
+                </p>
+              </div>
+              <Link
+                to="/workouts"
+                className="border border-gold bg-gold px-4 py-2 font-display text-xs tracking-wider2 text-bg hover:bg-[#d8b658]"
+              >
+                Log session
+              </Link>
+            </header>
+            <ul className="mt-4 grid grid-cols-1 gap-1 text-sm md:grid-cols-2">
+              {(Array.isArray(activeProgram.exercises) ? activeProgram.exercises : [])
+                .slice(0, 6)
+                .map((ex, i) => (
+                  <li key={i} className="flex items-center justify-between border-b border-line/60 py-1">
+                    <span>{ex.name ?? '—'}</span>
+                    <span className="text-[0.6rem] uppercase tracking-widest2 text-faint">
+                      {ex.sets ? `${ex.sets}×${ex.reps ?? '—'}` : ''}
+                      {ex.load ? ` @ ${ex.load}` : ''}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </article>
+        </section>
+      ) : null}
 
       {todayMeals.length > 0 ? (
         <section>
