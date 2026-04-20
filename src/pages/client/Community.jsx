@@ -1,11 +1,17 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Pin, Trash2 } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Image as ImageIcon, Pin, Trash2, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { useRealtime } from '../../hooks/useRealtime';
 import { Button } from '../../components/ui/Button';
 import { Input, Textarea } from '../../components/ui/Input';
 import { Avatar } from '../../components/ui/Avatar';
+
+function communityPhotoUrl(path) {
+  if (!path || !isSupabaseConfigured) return null;
+  const { data } = supabase.storage.from('community-photos').getPublicUrl(path);
+  return data?.publicUrl ?? null;
+}
 
 function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
   const [draft, setDraft] = useState('');
@@ -49,6 +55,22 @@ function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
       </header>
 
       <p className="mt-3 whitespace-pre-wrap text-sm text-ink/90">{post.content}</p>
+
+      {post.image_path ? (
+        <a
+          href={communityPhotoUrl(post.image_path) ?? '#'}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 block"
+        >
+          <img
+            src={communityPhotoUrl(post.image_path)}
+            alt="Attached"
+            loading="lazy"
+            className="max-h-96 w-full border border-line object-contain"
+          />
+        </a>
+      ) : null}
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs uppercase tracking-widest2 text-faint">
         <button onClick={() => onReact(post)} className="hover:text-gold">
@@ -106,7 +128,30 @@ export default function Community() {
   const { user, profile, role, refreshProfile } = useAuth();
   const [posts, setPosts] = useState([]);
   const [content, setContent] = useState('');
+  const [photoFile, setPhotoFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const photoPreview = useMemo(
+    () => (photoFile ? URL.createObjectURL(photoFile) : null),
+    [photoFile],
+  );
+  useEffect(() => () => { if (photoPreview) URL.revokeObjectURL(photoPreview); }, [photoPreview]);
+
+  function pickPhoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErr('Attachment must be an image.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErr('Image must be 10 MB or less.');
+      return;
+    }
+    setErr(null);
+    setPhotoFile(file);
+  }
 
   // Mark the feed as seen each time it's mounted so unread counts stay accurate.
   useEffect(() => {
@@ -153,14 +198,32 @@ export default function Community() {
     e.preventDefault();
     if (!content.trim() || !user) return;
     setBusy(true);
-    await supabase.from('community_posts').insert({
-      author_id: user.id,
-      content: content.trim(),
-      is_pinned: false,
-    });
-    setContent('');
-    setBusy(false);
-    await load();
+    setErr(null);
+    try {
+      let imagePath = null;
+      if (photoFile) {
+        const ext = photoFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+        imagePath = `${user.id}/post-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('community-photos')
+          .upload(imagePath, photoFile, { upsert: false, contentType: photoFile.type });
+        if (upErr) throw upErr;
+      }
+      const { error } = await supabase.from('community_posts').insert({
+        author_id: user.id,
+        content: content.trim(),
+        is_pinned: false,
+        image_path: imagePath,
+      });
+      if (error) throw error;
+      setContent('');
+      setPhotoFile(null);
+      await load();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function react(post) {
@@ -198,7 +261,28 @@ export default function Community() {
 
       <form onSubmit={createPost} className="space-y-3">
         <Textarea label="Post" rows={3} value={content} onChange={(e) => setContent(e.target.value)} placeholder="What moved today" />
-        <Button disabled={busy || !content.trim()}>{busy ? 'Posting' : 'Post'}</Button>
+        {photoPreview ? (
+          <div className="flex items-start gap-3">
+            <img src={photoPreview} alt="Attachment preview" className="max-h-48 border border-line object-contain" />
+            <button
+              type="button"
+              onClick={() => setPhotoFile(null)}
+              className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-mute hover:text-red-300"
+              aria-label="Remove image"
+            >
+              <X size={14} /> Remove
+            </button>
+          </div>
+        ) : null}
+        {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button disabled={busy || !content.trim()}>{busy ? 'Posting' : 'Post'}</Button>
+          <label className="inline-flex cursor-pointer items-center gap-2 border border-line bg-black/30 px-3 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold">
+            <ImageIcon size={14} />
+            {photoFile ? 'Change image' : 'Attach image'}
+            <input type="file" accept="image/*" className="sr-only" onChange={pickPhoto} />
+          </label>
+        </div>
       </form>
 
       <div className="space-y-3">

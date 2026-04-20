@@ -59,10 +59,11 @@ Keep a scratch notes doc open. You will copy values between dashboards.
    - `0013_meal_adherence.sql` (adds `meals.eaten` + `meals.eaten_at`)
    - `0014_stripe_events.sql` (idempotency log so duplicate Stripe webhooks are no-ops)
    - `0015_review_coach_comment.sql` (adds coach-authored note on a weekly review)
+   - `0016_community_photos.sql` (public `community-photos` bucket + `community_posts.image_path`)
 6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`, `reviews`, `conversations`, `conversation_messages`, `dm_threads`, `dm_messages`, `rate_limits`. Each should have a shield icon next to the name indicating RLS is enabled.
-7. Left sidebar → **Storage** → verify two buckets: `baseline-photos` (Private) and `avatars` (Public).
+7. Left sidebar → **Storage** → verify three buckets: `baseline-photos` (Private), `avatars` (Public), `community-photos` (Public).
 
-**Completion signal:** sixteen tables visible with RLS enabled, one private bucket, one public bucket.
+**Completion signal:** all tables visible with RLS enabled, one private bucket, two public buckets.
 
 ## 3 — Enable email auth
 
