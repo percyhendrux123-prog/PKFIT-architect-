@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Youtube } from 'lucide-react';
+import { CheckCircle2, Youtube } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Empty } from '../../components/ui/Empty';
+import { Input, Textarea } from '../../components/ui/Input';
 
 function parseYouTubeId(input = '') {
   if (!input) return null;
@@ -59,26 +60,132 @@ function ExerciseRow({ ex }) {
   );
 }
 
+function ProgramCard({ program, sessionCount, onLog }) {
+  const [open, setOpen] = useState(false);
+  const [duration, setDuration] = useState('');
+  const [rpe, setRpe] = useState('');
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const exercises = Array.isArray(program.exercises) ? program.exercises : [];
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    await onLog({
+      program,
+      duration_min: duration ? Number(duration) : null,
+      rpe_avg: rpe ? Number(rpe) : null,
+      notes: notes.trim() || null,
+    });
+    setBusy(false);
+    setOpen(false);
+    setDuration('');
+    setRpe('');
+    setNotes('');
+  }
+
+  return (
+    <article className="border border-line bg-black/30">
+      <header className="flex items-center justify-between gap-3 border-b border-line p-4">
+        <div>
+          <div className="label">Week {program.week_number}</div>
+          <h3 className="mt-1 font-display text-2xl tracking-wider2">
+            {program.schedule?.title ?? 'Program'}
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          {sessionCount > 0 ? (
+            <span className="flex items-center gap-1 text-[0.65rem] uppercase tracking-widest2 text-gold">
+              <CheckCircle2 size={12} /> {sessionCount} logged
+            </span>
+          ) : null}
+          <Badge tone={program.status === 'active' ? 'green' : 'mute'}>{program.status}</Badge>
+        </div>
+      </header>
+
+      {exercises.length === 0 ? (
+        <div className="p-4 text-xs text-faint">No exercises on this program.</div>
+      ) : (
+        <ul>
+          {exercises.map((e, i) => (
+            <ExerciseRow key={i} ex={e} />
+          ))}
+        </ul>
+      )}
+
+      <footer className="flex flex-col gap-3 border-t border-line p-4">
+        {open ? (
+          <form onSubmit={submit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="Duration (min)" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} />
+              <Input label="Avg RPE" type="number" step="0.5" min="0" max="10" value={rpe} onChange={(e) => setRpe(e.target.value)} />
+            </div>
+            <Textarea label="Notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What moved, what did not" />
+            <div className="flex gap-2">
+              <Button type="submit" disabled={busy}>{busy ? 'Logging' : 'Save session'}</Button>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-faint">Created {new Date(program.created_at).toLocaleDateString()}</span>
+            <Button onClick={() => setOpen(true)}>Log session</Button>
+          </div>
+        )}
+      </footer>
+    </article>
+  );
+}
+
 export default function Workouts() {
   const { user } = useAuth();
   const [programs, setPrograms] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!isSupabaseConfigured || !user) {
       setLoading(false);
       return;
     }
-    supabase
-      .from('programs')
-      .select('*')
-      .eq('client_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setPrograms(data ?? []);
-        setLoading(false);
-      });
+    const [{ data: prog }, { data: sess }] = await Promise.all([
+      supabase
+        .from('programs')
+        .select('*')
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('workout_sessions')
+        .select('*')
+        .eq('client_id', user.id)
+        .order('performed_at', { ascending: false })
+        .limit(30),
+    ]);
+    setPrograms(prog ?? []);
+    setSessions(sess ?? []);
+    setLoading(false);
   }, [user?.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function logSession({ program, duration_min, rpe_avg, notes }) {
+    await supabase.from('workout_sessions').insert({
+      client_id: user.id,
+      program_id: program.id,
+      exercises: program.exercises ?? [],
+      duration_min,
+      rpe_avg,
+      notes,
+    });
+    await load();
+  }
+
+  const sessionsByProgram = sessions.reduce((acc, s) => {
+    if (!s.program_id) return acc;
+    acc[s.program_id] = (acc[s.program_id] ?? 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -103,36 +210,32 @@ export default function Workouts() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {programs.map((p) => {
-            const exercises = Array.isArray(p.exercises) ? p.exercises : [];
-            return (
-              <article key={p.id} className="border border-line bg-black/30">
-                <header className="flex items-center justify-between border-b border-line p-4">
-                  <div>
-                    <div className="label">Week {p.week_number}</div>
-                    <h3 className="mt-1 font-display text-2xl tracking-wider2">
-                      {p.schedule?.title ?? 'Program'}
-                    </h3>
-                  </div>
-                  <Badge tone={p.status === 'active' ? 'green' : 'mute'}>{p.status}</Badge>
-                </header>
-                {exercises.length === 0 ? (
-                  <div className="p-4 text-xs text-faint">No exercises on this program.</div>
-                ) : (
-                  <ul>
-                    {exercises.map((e, i) => (
-                      <ExerciseRow key={i} ex={e} />
-                    ))}
-                  </ul>
-                )}
-                <footer className="border-t border-line p-3 text-xs text-faint">
-                  Created {new Date(p.created_at).toLocaleDateString()}
-                </footer>
-              </article>
-            );
-          })}
+          {programs.map((p) => (
+            <ProgramCard
+              key={p.id}
+              program={p}
+              sessionCount={sessionsByProgram[p.id] ?? 0}
+              onLog={logSession}
+            />
+          ))}
         </div>
       )}
+
+      {sessions.length > 0 ? (
+        <section>
+          <div className="label mb-2">Recent sessions</div>
+          <ul className="divide-y divide-line border border-line">
+            {sessions.slice(0, 10).map((s) => (
+              <li key={s.id} className="grid grid-cols-1 gap-2 p-3 md:grid-cols-[160px_1fr_120px_120px]">
+                <div className="label">{new Date(s.performed_at).toLocaleString()}</div>
+                <div className="truncate text-sm text-mute">{s.notes || '—'}</div>
+                <div className="text-xs text-faint">{s.duration_min ? `${s.duration_min} min` : ''}</div>
+                <div className="text-xs text-faint">{s.rpe_avg != null ? `RPE ${s.rpe_avg}` : ''}</div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

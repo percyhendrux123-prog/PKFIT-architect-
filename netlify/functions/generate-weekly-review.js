@@ -25,28 +25,39 @@ export const handler = async (event) => {
     const weekStart = startOfWeek();
     const sevenDaysAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [{ data: profile }, { data: checkIns }, { data: programs }, { data: habits }] =
-      await Promise.all([
-        admin.from('profiles').select('*').eq('id', targetClientId).maybeSingle(),
-        admin
-          .from('check_ins')
-          .select('*')
-          .eq('client_id', targetClientId)
-          .gte('created_at', sevenDaysAgoIso)
-          .order('date', { ascending: true }),
-        admin
-          .from('programs')
-          .select('*')
-          .eq('client_id', targetClientId)
-          .gte('created_at', sevenDaysAgoIso),
-        admin
-          .from('habits')
-          .select('*')
-          .eq('client_id', targetClientId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
+    const [
+      { data: profile },
+      { data: checkIns },
+      { data: programs },
+      { data: habits },
+      { data: sessions },
+    ] = await Promise.all([
+      admin.from('profiles').select('*').eq('id', targetClientId).maybeSingle(),
+      admin
+        .from('check_ins')
+        .select('*')
+        .eq('client_id', targetClientId)
+        .gte('created_at', sevenDaysAgoIso)
+        .order('date', { ascending: true }),
+      admin
+        .from('programs')
+        .select('*')
+        .eq('client_id', targetClientId)
+        .gte('created_at', sevenDaysAgoIso),
+      admin
+        .from('habits')
+        .select('*')
+        .eq('client_id', targetClientId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      admin
+        .from('workout_sessions')
+        .select('performed_at,duration_min,rpe_avg,notes')
+        .eq('client_id', targetClientId)
+        .gte('performed_at', sevenDaysAgoIso)
+        .order('performed_at', { ascending: true }),
+    ]);
 
     const habitRow = habits?.data ?? habits ?? null;
     const habitList = habitRow?.habit_list ?? [];
@@ -58,6 +69,7 @@ export const handler = async (event) => {
         : {},
       check_ins: checkIns ?? [],
       programs: programs ?? [],
+      sessions: sessions ?? [],
       habit_list: habitList,
       habit_history: habitHistory,
       week_starting: weekStart.toISOString().slice(0, 10),

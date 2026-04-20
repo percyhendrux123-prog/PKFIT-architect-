@@ -6,6 +6,7 @@ Input shape:
   "profile": { "goal": "...", "plan": "...", "loop_stage": "..." },
   "check_ins": [ { "date": "...", "weight": ..., "body_fat": ..., "notes": "..." } ],
   "programs": [ { "week_number": ..., "exercises": [...] } ],
+  "sessions": [ { "performed_at": "...", "duration_min": ..., "rpe_avg": ..., "notes": "..." } ],
   "habit_list": [ { "id": "...", "name": "..." } ],
   "habit_history": { "YYYY-MM-DD": { "<habit_id>": true|false } },
   "week_starting": "YYYY-MM-DD"
@@ -20,7 +21,7 @@ Return JSON only. No prose wrap. Shape:
   "metrics": {
     "weight_delta_kg": number (negative, zero, or positive),
     "adherence_pct": integer 0..100 (habit completion rate across the week),
-    "sessions_completed": integer (programs table rows in window)
+    "sessions_completed": integer (workout_sessions rows in window)
   }
 }
 

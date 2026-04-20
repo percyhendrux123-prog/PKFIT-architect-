@@ -18,6 +18,7 @@ export default function ClientDetail() {
   const { user, role } = useAuth();
   const [client, setClient] = useState(null);
   const [programs, setPrograms] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [checkIns, setCheckIns] = useState([]);
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
@@ -25,14 +26,16 @@ export default function ClientDetail() {
   useEffect(() => {
     if (!isSupabaseConfigured || !id) return;
     (async () => {
-      const [{ data: p }, { data: pr }, { data: ci }] = await Promise.all([
+      const [{ data: p }, { data: pr }, { data: ci }, { data: ws }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
         supabase.from('programs').select('*').eq('client_id', id).order('created_at', { ascending: false }).limit(10),
         supabase.from('check_ins').select('*').eq('client_id', id).order('date', { ascending: false }).limit(12),
+        supabase.from('workout_sessions').select('*').eq('client_id', id).order('performed_at', { ascending: false }).limit(10),
       ]);
       setClient(p);
       setPrograms(pr ?? []);
       setCheckIns(ci ?? []);
+      setSessions(ws ?? []);
     })();
   }, [id]);
 
@@ -98,7 +101,7 @@ export default function ClientDetail() {
           </section>
           {msg ? <div className="text-xs uppercase tracking-widest2 text-gold">{msg}</div> : null}
 
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardHeader label="Programs" title={`Recent (${programs.length})`} />
               <ul className="divide-y divide-line">
@@ -109,6 +112,24 @@ export default function ClientDetail() {
                   </li>
                 ))}
               </ul>
+            </Card>
+            <Card>
+              <CardHeader label="Sessions" title={`Logged (${sessions.length})`} />
+              {sessions.length === 0 ? (
+                <div className="text-sm text-mute">No sessions logged.</div>
+              ) : (
+                <ul className="divide-y divide-line">
+                  {sessions.map((s) => (
+                    <li key={s.id} className="flex items-center justify-between py-2 text-sm">
+                      <span>{new Date(s.performed_at).toLocaleDateString()}</span>
+                      <span className="text-faint">
+                        {s.duration_min ? `${s.duration_min}m` : ''}
+                        {s.rpe_avg != null ? ` · RPE ${s.rpe_avg}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Card>
             <Card>
               <CardHeader
