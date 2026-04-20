@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /$
+Allow: /login
+Allow: /signup
+Disallow: /dashboard
+Disallow: /workouts
+Disallow: /meals
+Disallow: /habits
+Disallow: /calendar
+Disallow: /community
+Disallow: /assistant
+Disallow: /reviews
+Disallow: /inbox
+Disallow: /billing
+Disallow: /profile
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /splash
+Disallow: /coach
+Disallow: /.netlify
+
+Sitemap: /sitemap.xml

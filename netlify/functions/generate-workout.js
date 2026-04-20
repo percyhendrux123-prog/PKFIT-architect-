@@ -1,6 +1,7 @@
 import { requireUser, jsonResponse, errorResponse } from './_shared/auth.js';
 import { getAdminClient } from './_shared/supabase-admin.js';
 import { getAnthropic, loadPrompt, MODEL } from './_shared/anthropic.js';
+import { checkRateLimit } from './_shared/rate-limit.js';
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') return jsonResponse(405, { error: 'Method not allowed' });
@@ -12,6 +13,20 @@ export const handler = async (event) => {
     // Only the client themself or a coach can generate for a client.
     if (targetClientId !== user.id && role !== 'coach') {
       return jsonResponse(403, { error: 'Not permitted' });
+    }
+
+    const limit = await checkRateLimit({
+      userId: user.id,
+      bucket: 'generate-workout',
+      max: 10,
+      windowSec: 3600,
+    });
+    if (!limit.allowed) {
+      return {
+        statusCode: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': String(limit.retryAfterSec ?? 60) },
+        body: JSON.stringify({ error: `Rate limit. Wait ${limit.retryAfterSec ?? 60}s.` }),
+      };
     }
 
     const system = loadPrompt('pkfit-system.md') + '\n\n' + loadPrompt('workout-generator.md');
