@@ -10,8 +10,90 @@ import { DMThread } from '../../components/DMThread';
 import { StorageImage } from '../../components/StorageImage';
 import { HabitHeatmap } from '../../components/HabitHeatmap';
 import { GenerateProgramForm, GenerateMealForm } from '../../components/GenerateProgramForm';
+import { Textarea } from '../../components/ui/Input';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 import { downloadCSV } from '../../lib/csv';
+
+function ReviewPanel({ review, onUpdated }) {
+  const [comment, setComment] = useState(review.coach_comment ?? '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
+
+  async function save() {
+    setSaving(true);
+    setErr(null);
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .update({
+          coach_comment: comment.trim() || null,
+          coach_commented_at: comment.trim() ? new Date().toISOString() : null,
+        })
+        .eq('id', review.id);
+      if (error) throw error;
+      await onUpdated?.();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="border border-gold bg-black/30 p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="label">Latest review</div>
+          <h2 className="mt-1 font-display text-2xl tracking-wider2">Week of {review.week_starting}</h2>
+        </div>
+        <div className="flex flex-wrap gap-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
+          {review.metrics?.adherence_pct != null ? (
+            <span>{review.metrics.adherence_pct}% adherence</span>
+          ) : null}
+          {review.metrics?.weight_delta_kg != null ? (
+            <span>
+              {review.metrics.weight_delta_kg > 0 ? '+' : ''}
+              {review.metrics.weight_delta_kg} kg
+            </span>
+          ) : null}
+          {review.metrics?.sessions_completed != null ? (
+            <span>{review.metrics.sessions_completed} sessions</span>
+          ) : null}
+        </div>
+      </div>
+      <p className="mt-3 max-w-reading text-sm text-ink/90">{review.summary}</p>
+      {review.adjustments?.length ? (
+        <ul className="mt-3 space-y-1 text-sm">
+          {review.adjustments.map((a, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="text-gold">→</span>
+              <span>{a}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <div className="mt-5 border-t border-line pt-4">
+        <Textarea
+          label="Coach note to client"
+          rows={2}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="One idea. Tight. Signal only."
+        />
+        {err ? <div className="mt-2 text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+        <div className="mt-3 flex items-center gap-3">
+          <Button onClick={save} disabled={saving}>{saving ? 'Saving' : 'Save note'}</Button>
+          {review.coach_commented_at ? (
+            <span className="text-[0.6rem] uppercase tracking-widest2 text-faint">
+              Last saved {new Date(review.coach_commented_at).toLocaleString()}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -167,39 +249,7 @@ export default function ClientDetail() {
           {msg ? <div className="text-xs uppercase tracking-widest2 text-gold">{msg}</div> : null}
 
           {latestReview ? (
-            <section className="border border-gold bg-black/30 p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="label">Latest review</div>
-                  <h2 className="mt-1 font-display text-2xl tracking-wider2">Week of {latestReview.week_starting}</h2>
-                </div>
-                <div className="flex flex-wrap gap-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
-                  {latestReview.metrics?.adherence_pct != null ? (
-                    <span>{latestReview.metrics.adherence_pct}% adherence</span>
-                  ) : null}
-                  {latestReview.metrics?.weight_delta_kg != null ? (
-                    <span>
-                      {latestReview.metrics.weight_delta_kg > 0 ? '+' : ''}
-                      {latestReview.metrics.weight_delta_kg} kg
-                    </span>
-                  ) : null}
-                  {latestReview.metrics?.sessions_completed != null ? (
-                    <span>{latestReview.metrics.sessions_completed} sessions</span>
-                  ) : null}
-                </div>
-              </div>
-              <p className="mt-3 max-w-reading text-sm text-ink/90">{latestReview.summary}</p>
-              {latestReview.adjustments?.length ? (
-                <ul className="mt-3 space-y-1 text-sm">
-                  {latestReview.adjustments.map((a, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-gold">→</span>
-                      <span>{a}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
+            <ReviewPanel review={latestReview} onUpdated={load} />
           ) : null}
 
           <section className="grid grid-cols-1 gap-4 md:grid-cols-3">

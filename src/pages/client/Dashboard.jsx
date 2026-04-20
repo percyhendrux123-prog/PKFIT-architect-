@@ -6,6 +6,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { deriveLoopStage, LOOP_STAGES, loopProgress, loopStageMeta } from '../../lib/loop';
+import { habitStreak, sessionStreak } from '../../lib/streaks';
 
 const cards = [
   { to: '/workouts', label: 'Training', icon: Dumbbell, copy: "Today's program. Three lifts. No filler." },
@@ -20,10 +21,13 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([]);
   const [checkIn, setCheckIn] = useState(null);
   const [todayMeals, setTodayMeals] = useState([]);
+  const [habitRow, setHabitRow] = useState(null);
+  const [sessions, setSessions] = useState([]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !user) return;
     const today = new Date().toISOString().slice(0, 10);
+    const sinceIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
     supabase
       .from('check_ins')
       .select('*')
@@ -45,7 +49,25 @@ export default function Dashboard() {
       .eq('date', today)
       .order('meal_type')
       .then(({ data }) => setTodayMeals(data ?? []));
+    supabase
+      .from('habits')
+      .select('*')
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setHabitRow(data ?? null));
+    supabase
+      .from('workout_sessions')
+      .select('performed_at')
+      .eq('client_id', user.id)
+      .gte('performed_at', sinceIso)
+      .order('performed_at', { ascending: false })
+      .then(({ data }) => setSessions(data ?? []));
   }, [user?.id]);
+
+  const hStreak = habitStreak(habitRow);
+  const sStreak = sessionStreak(sessions);
 
   async function toggleMealEaten(meal) {
     const next = !meal.eaten;
@@ -104,6 +126,25 @@ export default function Dashboard() {
           <div className="mt-3 h-1 w-full bg-line">
             <div className="h-1 bg-gold transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
           </div>
+        </Card>
+      </section>
+
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader label="Habit streak" title={`${hStreak}d`} />
+          <p className="text-xs text-faint">Consecutive days with the full stack checked.</p>
+        </Card>
+        <Card>
+          <CardHeader label="Session streak" title={`${sStreak}d`} />
+          <p className="text-xs text-faint">Consecutive days with at least one logged session.</p>
+        </Card>
+        <Card>
+          <CardHeader label="Sessions · 30d" title={String(sessions.filter((s) => (Date.now() - new Date(s.performed_at).getTime()) / 86400000 <= 30).length)} />
+          <p className="text-xs text-faint">Workouts logged in the last thirty days.</p>
+        </Card>
+        <Card>
+          <CardHeader label="Habits" title={String(habitRow?.habit_list?.length ?? 0)} />
+          <p className="text-xs text-faint">Active levers on your daily stack.</p>
         </Card>
       </section>
 

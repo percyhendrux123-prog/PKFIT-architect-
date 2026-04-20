@@ -30,7 +30,15 @@ export default function ReviewDetail() {
   if (loading) return <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>;
   if (!review) return <div className="text-sm text-mute">Review not found.</div>;
 
-  const { summary, constraints = [], adjustments = [], metrics = {}, week_starting } = review;
+  const {
+    summary,
+    constraints = [],
+    adjustments = [],
+    metrics = {},
+    week_starting,
+    coach_comment,
+    coach_commented_at,
+  } = review;
 
   return (
     <div className="space-y-6">
@@ -61,6 +69,18 @@ export default function ReviewDetail() {
         <div className="label mb-2">Diagnosis</div>
         <p className="max-w-reading whitespace-pre-wrap text-ink/90">{summary}</p>
       </section>
+
+      {coach_comment ? (
+        <section className="border border-gold bg-black/40 p-5">
+          <div className="label mb-2">Note from the coach</div>
+          <p className="max-w-reading whitespace-pre-wrap text-ink">{coach_comment}</p>
+          {coach_commented_at ? (
+            <div className="mt-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
+              {new Date(coach_commented_at).toLocaleString()}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {constraints.length > 0 ? (
         <section>
