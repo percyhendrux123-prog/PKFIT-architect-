@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { useUnreadDMs } from '../hooks/useUnreadDMs';
 import { useUnreadCommunity } from '../hooks/useUnreadCommunity';
 import { Avatar } from './ui/Avatar';
+import { NotificationBell } from './NotificationBell';
 
 const clientPrimary = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -97,6 +98,7 @@ export function Layout() {
             PKFIT
           </NavLink>
           <div className="flex items-center gap-3">
+            <NotificationBell user={user} role={role} profile={profile} />
             <Avatar name={profile?.name ?? profile?.email ?? 'Me'} path={profile?.avatar_path} size={28} />
             <span className="hidden text-xs uppercase tracking-widest2 text-faint sm:inline">
               {profile?.name ?? profile?.email ?? 'Member'}
