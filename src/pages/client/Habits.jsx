@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { habitTemplates } from '../../lib/habitTemplates';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -61,6 +62,15 @@ export default function Habits() {
     save(next);
   }
 
+  function installStack(stack) {
+    const existing = new Set(list.map((h) => h.name.toLowerCase()));
+    const additions = stack.habits
+      .filter((name) => !existing.has(name.toLowerCase()))
+      .map((name) => ({ id: crypto.randomUUID(), name }));
+    if (additions.length === 0) return;
+    save([...list, ...additions]);
+  }
+
   function toggle(habitId) {
     const nextDay = { ...todayMap, [habitId]: !todayMap[habitId] };
     const nextHistory = { ...history, [today()]: nextDay };
@@ -105,8 +115,25 @@ export default function Habits() {
       </form>
 
       {list.length === 0 ? (
-        <div className="border border-line bg-black/20 p-6 text-sm text-mute">
-          No habits yet. Keep it to three. Fewer levers, more output.
+        <div className="space-y-4">
+          <div className="border border-line bg-black/20 p-6 text-sm text-mute">
+            No habits yet. Keep it to three. Fewer levers, more output. Install a starter stack, or add your own above.
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {habitTemplates.map((t) => (
+              <article key={t.id} className="flex flex-col border border-line bg-black/30 p-4">
+                <div className="label">Stack</div>
+                <h3 className="mt-1 font-display text-2xl tracking-wider2 text-gold">{t.title}</h3>
+                <p className="mt-2 flex-1 text-sm text-mute">{t.summary}</p>
+                <ul className="mt-3 space-y-1 text-xs text-faint">
+                  {t.habits.map((h) => <li key={h}>— {h}</li>)}
+                </ul>
+                <Button className="mt-4" onClick={() => installStack(t)} disabled={busy}>
+                  Install stack
+                </Button>
+              </article>
+            ))}
+          </div>
         </div>
       ) : (
         <ul className="divide-y divide-line border border-line">
