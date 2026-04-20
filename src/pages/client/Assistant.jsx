@@ -172,6 +172,9 @@ export default function Assistant() {
             <p className="mt-1 max-w-reading text-sm text-mute">
               Mechanism over motivation. No hype. Ask the question you would ask the coach.
             </p>
+            <p className="mt-1 text-[0.6rem] uppercase tracking-widest2 text-faint">
+              Tip · Cmd/Ctrl + K from anywhere jumps here.
+            </p>
           </div>
           <ContextPinMenu
             userId={user?.id}

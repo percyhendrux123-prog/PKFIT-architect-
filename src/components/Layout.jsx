@@ -83,6 +83,24 @@ export function Layout() {
     setMoreOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    function onKey(e) {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
+        // Cmd/Ctrl+K opens the Assistant. Don't hijack inputs where users are typing.
+        const tag = document.activeElement?.tagName;
+        const isEditing =
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          document.activeElement?.isContentEditable;
+        if (isEditing) return;
+        e.preventDefault();
+        nav('/assistant');
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [nav]);
+
   async function handleSignOut() {
     await signOut();
     nav('/', { replace: true });

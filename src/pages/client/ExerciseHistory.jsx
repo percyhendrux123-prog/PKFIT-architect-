@@ -1,10 +1,39 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Download } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { aggregateExerciseHistory, estimatedOneRm } from '../../lib/exerciseStats';
 import { Sparkline } from '../../components/Sparkline';
 import { Input } from '../../components/ui/Input';
+import { downloadCSV } from '../../lib/csv';
+
+function flattenSets(sessions = []) {
+  const rows = [];
+  for (const session of sessions) {
+    const when = session.performed_at ?? session.created_at;
+    for (const ex of session.exercises ?? []) {
+      const sets = Array.isArray(ex.sets) ? ex.sets : [];
+      sets.forEach((s, i) => {
+        rows.push({
+          date: when,
+          exercise: ex.name ?? '—',
+          set: i + 1,
+          weight: s?.weight ?? '',
+          reps: s?.reps ?? '',
+          rpe: s?.rpe ?? '',
+          done: s?.done ? 'yes' : 'no',
+          note: s?.note ?? '',
+          e1rm:
+            s?.weight != null && s?.reps != null
+              ? estimatedOneRm(Number(s.weight), Number(s.reps)) ?? ''
+              : '',
+        });
+      });
+    }
+  }
+  return rows;
+}
 
 export default function ExerciseHistory() {
   const { user } = useAuth();
@@ -51,9 +80,36 @@ export default function ExerciseHistory() {
             Every logged set across every session. PRs by max weight and max estimated 1RM (Epley).
           </p>
         </div>
-        <Link to="/workouts" className="text-xs uppercase tracking-widest2 text-gold">
-          ← Workouts
-        </Link>
+        <div className="flex items-center gap-3">
+          {sessions.length > 0 ? (
+            <button
+              type="button"
+              onClick={() =>
+                downloadCSV(
+                  `pkfit-sets-${new Date().toISOString().slice(0, 10)}.csv`,
+                  flattenSets(sessions),
+                  [
+                    { key: 'date', label: 'Date' },
+                    { key: 'exercise', label: 'Exercise' },
+                    { key: 'set', label: 'Set' },
+                    { key: 'weight', label: 'Weight' },
+                    { key: 'reps', label: 'Reps' },
+                    { key: 'rpe', label: 'RPE' },
+                    { key: 'done', label: 'Done' },
+                    { key: 'e1rm', label: 'Est. 1RM' },
+                    { key: 'note', label: 'Note' },
+                  ],
+                )
+              }
+              className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold"
+            >
+              <Download size={12} /> Sets CSV
+            </button>
+          ) : null}
+          <Link to="/workouts" className="text-xs uppercase tracking-widest2 text-gold">
+            ← Workouts
+          </Link>
+        </div>
       </header>
 
       {loading ? (
