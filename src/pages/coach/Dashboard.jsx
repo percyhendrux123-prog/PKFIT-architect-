@@ -1,7 +1,36 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Download } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Card, CardHeader } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { downloadCSV } from '../../lib/csv';
+import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
+
+function daysAgoIso(days) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function computeAdherence(habitRow, days = 7) {
+  const list = habitRow?.habit_list ?? [];
+  const history = habitRow?.check_history ?? {};
+  if (list.length === 0) return null;
+  let hits = 0;
+  let slots = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < days; i += 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const day = history[key] ?? {};
+    for (const h of list) {
+      slots += 1;
+      if (day[h.id]) hits += 1;
+    }
+  }
+  return slots ? Math.round((hits / slots) * 100) : 0;
+}
 
 export default function CoachDashboard() {
   const [stats, setStats] = useState({
@@ -12,11 +41,12 @@ export default function CoachDashboard() {
     weekCheckIns: 0,
     weekPrograms: 0,
   });
+  const [triageBusy, setTriageBusy] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     (async () => {
-      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const cutoff = daysAgoIso(7);
 
       const [
         { count: clients },
@@ -56,11 +86,97 @@ export default function CoachDashboard() {
     })();
   }, []);
 
+  async function exportTriage() {
+    setTriageBusy(true);
+    try {
+      const cutoff = daysAgoIso(7);
+      const { data: clients } = await supabase
+        .from('profiles')
+        .select('id,name,email,plan,start_date,loop_stage')
+        .eq('role', 'client');
+
+      if (!clients?.length) {
+        setTriageBusy(false);
+        return;
+      }
+      const ids = clients.map((c) => c.id);
+
+      const [
+        { data: checkIns },
+        { data: sessions },
+        { data: habits },
+        { data: reviews },
+      ] = await Promise.all([
+        supabase.from('check_ins').select('client_id,weight,body_fat,date,created_at').in('client_id', ids).gte('created_at', cutoff),
+        supabase.from('workout_sessions').select('client_id,performed_at').in('client_id', ids).gte('performed_at', cutoff),
+        supabase.from('habits').select('client_id,habit_list,check_history').in('client_id', ids),
+        supabase.from('reviews').select('client_id,summary,week_starting,metrics').in('client_id', ids).order('week_starting', { ascending: false }),
+      ]);
+
+      const habitsById = {};
+      for (const h of habits ?? []) habitsById[h.client_id] = h;
+      const sessionsCount = {};
+      for (const s of sessions ?? []) sessionsCount[s.client_id] = (sessionsCount[s.client_id] ?? 0) + 1;
+      const checkInsByClient = {};
+      for (const ci of checkIns ?? []) {
+        (checkInsByClient[ci.client_id] ??= []).push(ci);
+      }
+      const latestReview = {};
+      for (const r of reviews ?? []) {
+        if (!latestReview[r.client_id]) latestReview[r.client_id] = r;
+      }
+
+      const rows = clients.map((c) => {
+        const cis = (checkInsByClient[c.id] ?? []).slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const weightDelta =
+          cis.length >= 2 && cis[0].weight != null && cis[cis.length - 1].weight != null
+            ? Math.round((cis[cis.length - 1].weight - cis[0].weight) * 10) / 10
+            : null;
+        const adherence = computeAdherence(habitsById[c.id], 7);
+        const review = latestReview[c.id];
+        return {
+          name: c.name ?? '',
+          email: c.email ?? '',
+          plan: c.plan ?? 'trial',
+          loop: loopStageMeta(deriveLoopStage(c)).label,
+          check_ins_7d: (checkInsByClient[c.id] ?? []).length,
+          latest_weight: cis[cis.length - 1]?.weight ?? '',
+          weight_delta_7d: weightDelta ?? '',
+          sessions_7d: sessionsCount[c.id] ?? 0,
+          habit_adherence_7d_pct: adherence ?? '',
+          last_review_week: review?.week_starting ?? '',
+          last_review_summary: review?.summary ? review.summary.slice(0, 200) : '',
+        };
+      });
+
+      downloadCSV(`pkfit-triage-${new Date().toISOString().slice(0, 10)}.csv`, rows, [
+        { key: 'name', label: 'Name' },
+        { key: 'email', label: 'Email' },
+        { key: 'plan', label: 'Plan' },
+        { key: 'loop', label: 'Loop stage' },
+        { key: 'check_ins_7d', label: 'Check-ins 7d' },
+        { key: 'latest_weight', label: 'Latest weight' },
+        { key: 'weight_delta_7d', label: 'Weight Δ 7d' },
+        { key: 'sessions_7d', label: 'Sessions 7d' },
+        { key: 'habit_adherence_7d_pct', label: 'Habits % 7d' },
+        { key: 'last_review_week', label: 'Last review week' },
+        { key: 'last_review_summary', label: 'Last review summary' },
+      ]);
+    } finally {
+      setTriageBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <header>
-        <div className="label mb-2">Coach</div>
-        <h1 className="font-display text-4xl tracking-wider2">Overview</h1>
+      <header className="flex items-end justify-between gap-4">
+        <div>
+          <div className="label mb-2">Coach</div>
+          <h1 className="font-display text-4xl tracking-wider2">Overview</h1>
+        </div>
+        <Button variant="ghost" onClick={exportTriage} disabled={triageBusy}>
+          <Download size={14} /> {triageBusy ? 'Compiling' : 'Monday triage CSV'}
+        </Button>
       </header>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
