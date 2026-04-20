@@ -4,20 +4,36 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Card, CardHeader } from '../../components/ui/Card';
 
 export default function CoachDashboard() {
-  const [stats, setStats] = useState({ clients: 0, mrr: 0, recent: [], flagged: [] });
+  const [stats, setStats] = useState({
+    clients: 0,
+    mrr: 0,
+    recent: [],
+    flagged: [],
+    weekCheckIns: 0,
+    weekPrograms: 0,
+  });
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     (async () => {
-      const [{ count: clients }, { data: active }, { data: recent }] = await Promise.all([
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [
+        { count: clients },
+        { data: active },
+        { data: recent },
+        { count: weekCheckIns },
+        { count: weekPrograms },
+      ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'client'),
         supabase.from('payments').select('amount,status').eq('status', 'active'),
         supabase.from('check_ins').select('*').order('created_at', { ascending: false }).limit(10),
+        supabase.from('check_ins').select('*', { count: 'exact', head: true }).gte('created_at', cutoff),
+        supabase.from('programs').select('*', { count: 'exact', head: true }).gte('created_at', cutoff),
       ]);
 
       const mrr = (active ?? []).reduce((acc, p) => acc + Number(p.amount ?? 0), 0);
 
-      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data: staleClients } = await supabase
         .from('profiles')
         .select('id,name,email')
@@ -29,7 +45,14 @@ export default function CoachDashboard() {
       const seen = new Set((recentIds ?? []).map((r) => r.client_id));
       const flagged = (staleClients ?? []).filter((c) => !seen.has(c.id)).slice(0, 8);
 
-      setStats({ clients: clients ?? 0, mrr, recent: recent ?? [], flagged });
+      setStats({
+        clients: clients ?? 0,
+        mrr,
+        recent: recent ?? [],
+        flagged,
+        weekCheckIns: weekCheckIns ?? 0,
+        weekPrograms: weekPrograms ?? 0,
+      });
     })();
   }, []);
 
@@ -51,6 +74,15 @@ export default function CoachDashboard() {
         </Card>
         <Card>
           <CardHeader label="Flagged" title={String(stats.flagged.length)} meta="No check-in 7d+" />
+        </Card>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader label="This week" title={`${stats.weekCheckIns} check-ins`} meta="Last 7 days" />
+        </Card>
+        <Card>
+          <CardHeader label="This week" title={`${stats.weekPrograms} programs`} meta="Created in last 7 days" />
         </Card>
       </section>
 
