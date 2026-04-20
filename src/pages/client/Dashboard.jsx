@@ -125,6 +125,18 @@ export default function Dashboard() {
       .eq('id', meal.id);
   }
 
+  async function toggleHabitToday(habitId) {
+    if (!habitRow) return;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const history = habitRow.check_history ?? {};
+    const dayMap = history[todayKey] ?? {};
+    const nextDay = { ...dayMap, [habitId]: !dayMap[habitId] };
+    const nextHistory = { ...history, [todayKey]: nextDay };
+    const nextRow = { ...habitRow, check_history: nextHistory };
+    setHabitRow(nextRow);
+    await supabase.from('habits').update({ check_history: nextHistory }).eq('id', habitRow.id);
+  }
+
   const loop = deriveLoopStage(profile);
   const loopMeta = loopStageMeta(loop);
   const progress = loopProgress(profile);
@@ -279,6 +291,42 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
+
+      {(habitRow?.habit_list ?? []).length > 0 ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="label">Today&apos;s stack</div>
+            <Link to="/habits" className="text-xs uppercase tracking-widest2 text-gold">Open →</Link>
+          </div>
+          <ul className="divide-y divide-line border border-line">
+            {(habitRow?.habit_list ?? []).map((h) => {
+              const todayKey = new Date().toISOString().slice(0, 10);
+              const done = Boolean(habitRow?.check_history?.[todayKey]?.[h.id]);
+              return (
+                <li key={h.id}>
+                  <button
+                    type="button"
+                    onClick={() => toggleHabitToday(h.id)}
+                    aria-pressed={done}
+                    className="flex w-full items-center gap-3 p-3 text-left hover:bg-black/30"
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 border ${done ? 'bg-gold border-gold' : 'border-line'}`}
+                    />
+                    <span
+                      className={`flex-1 font-display tracking-wider2 ${
+                        done ? 'text-faint line-through' : 'text-ink'
+                      }`}
+                    >
+                      {h.name}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       {activeProgram ? (
         <section>

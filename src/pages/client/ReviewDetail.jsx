@@ -1,9 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
+import { claude } from '../../lib/claudeClient';
+import { Button } from '../../components/ui/Button';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+
+function thisWeekStart() {
+  const d = new Date();
+  const day = d.getUTCDay();
+  const diff = (day + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - diff);
+  return d.toISOString().slice(0, 10);
+}
 
 export default function ReviewDetail() {
   const { id } = useParams();
@@ -11,6 +22,8 @@ export default function ReviewDetail() {
   const [review, setReview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [state, setState] = useState({});
+  const [regenBusy, setRegenBusy] = useState(false);
+  const [regenErr, setRegenErr] = useState(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !user || !id) {
@@ -35,6 +48,27 @@ export default function ReviewDetail() {
     await supabase.from('reviews').update({ adjustments_state: next }).eq('id', id);
   }
 
+  async function regenerate() {
+    setRegenBusy(true);
+    setRegenErr(null);
+    try {
+      const { review: fresh } = await claude.weeklyReview({});
+      // The server upserts on (client_id, week_starting). Refetch by the
+      // same id if it matches, otherwise re-pull by fresh.id for the URL we
+      // have. Either way, reload the page's review to pick up the new text.
+      const targetId = fresh?.id ?? id;
+      const { data } = await supabase.from('reviews').select('*').eq('id', targetId).maybeSingle();
+      if (data) {
+        setReview(data);
+        setState(data.adjustments_state && typeof data.adjustments_state === 'object' ? data.adjustments_state : {});
+      }
+    } catch (e) {
+      setRegenErr(e.message);
+    } finally {
+      setRegenBusy(false);
+    }
+  }
+
   const doneCount = useMemo(() => Object.values(state).filter(Boolean).length, [state]);
 
   if (loading) return <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>;
@@ -52,13 +86,23 @@ export default function ReviewDetail() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between">
+      <header className="flex items-end justify-between gap-4">
         <div>
           <div className="label mb-2">Review</div>
           <h1 className="font-display text-4xl tracking-wider2">Week of {week_starting}</h1>
         </div>
-        <Link to="/reviews" className="text-xs uppercase tracking-widest2 text-gold">← All reviews</Link>
+        <div className="flex items-center gap-3">
+          {week_starting === thisWeekStart() ? (
+            <Button variant="ghost" onClick={regenerate} disabled={regenBusy}>
+              <Sparkles size={14} /> {regenBusy ? 'Regenerating' : 'Regenerate'}
+            </Button>
+          ) : null}
+          <Link to="/reviews" className="text-xs uppercase tracking-widest2 text-gold">← All reviews</Link>
+        </div>
       </header>
+      {regenErr ? (
+        <div className="text-xs uppercase tracking-widest2 text-red-300">{regenErr}</div>
+      ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>

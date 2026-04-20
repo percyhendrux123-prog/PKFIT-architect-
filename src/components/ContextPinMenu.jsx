@@ -40,7 +40,7 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
           .limit(5),
         supabase
           .from('reviews')
-          .select('id,week_starting,summary,constraints,adjustments,metrics')
+          .select('id,week_starting,summary,constraints,adjustments,adjustments_state,metrics,coach_comment')
           .eq('client_id', userId)
           .order('week_starting', { ascending: false })
           .limit(5),
