@@ -15,6 +15,7 @@ import {
   Megaphone,
   ClipboardList,
   ClipboardCheck,
+  Inbox,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,6 +26,7 @@ const clientNav = [
   { to: '/habits', label: 'Habits', icon: Target },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/reviews', label: 'Reviews', icon: ClipboardCheck },
+  { to: '/inbox', label: 'Inbox', icon: Inbox },
   { to: '/community', label: 'Community', icon: MessageSquare },
   { to: '/assistant', label: 'Assistant', icon: Sparkles },
   { to: '/billing', label: 'Billing', icon: CreditCard },
@@ -33,6 +35,7 @@ const clientNav = [
 
 const coachNav = [
   { to: '/coach', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/coach/inbox', label: 'Inbox', icon: Inbox },
   { to: '/coach/clients', label: 'Clients', icon: Users },
   { to: '/coach/programs', label: 'Programs', icon: ClipboardList },
   { to: '/coach/revenue', label: 'Revenue', icon: BarChart3 },

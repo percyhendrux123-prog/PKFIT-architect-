@@ -44,10 +44,14 @@ Keep a scratch notes doc open. You will copy values between dashboards.
 2. Open the file `supabase/migrations/0001_init.sql` in the repo (raw GitHub URL or local checkout). Copy the entire contents.
 3. Paste into the Supabase SQL Editor. Click **Run**.
 4. Expected output: `Success. No rows returned.` (you may see notices about dropping non-existent policies — those are fine).
-5. Repeat for `supabase/migrations/0002_exercise_library.sql` (seeds the canonical exercise list).
-6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`. Each should have a shield icon next to the name indicating RLS is enabled.
+5. Repeat for every other file in `supabase/migrations/` **in filename order**:
+   - `0002_exercise_library.sql` (seeded exercise catalogue for the builder autocomplete)
+   - `0003_reviews.sql` (weekly review rows)
+   - `0004_conversations.sql` (persisted assistant conversations + messages)
+   - `0005_dms.sql` (coach-client direct-message threads + messages)
+6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`, `reviews`, `conversations`, `conversation_messages`, `dm_threads`, `dm_messages`. Each should have a shield icon next to the name indicating RLS is enabled.
 
-**Completion signal:** ten tables visible, all with RLS enabled.
+**Completion signal:** fifteen tables visible, all with RLS enabled.
 
 ## 3 — Enable email auth
 
@@ -219,6 +223,9 @@ Walk through each route once. Expected behaviour:
 | `/community` → post | Appears in a second browser tab within 2s (realtime) |
 | `/billing` → choose Performance Monthly → Stripe checkout (use test card `4242 4242 4242 4242`, any future expiry, any CVC) → complete | Webhook fires → `payments` row with status=active → `/billing` shows active plan |
 | `/billing` → Manage/Cancel | Opens Stripe customer portal |
+| `/reviews` → Generate this week | Writes a row in `reviews`; detail page shows constraints + adjustments |
+| `/inbox` → send message | New `dm_threads` + `dm_messages` rows; thread appears on coach side in `/coach/inbox` within 2s |
+| `/coach/inbox` (as coach) → open thread | Message from client appears; reply from coach arrives at `/inbox` in real time |
 | `/coach` (as coach) | Tiles populate with client count, MRR, recent check-ins |
 
 **Completion signal:** every row above behaves as expected, no errors in browser console, no 5xx in Netlify function logs.

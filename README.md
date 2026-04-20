@@ -165,8 +165,8 @@ Set all env vars in the Netlify dashboard, then connect the repo. Any push to `c
 ## Routes
 
 Public: `/`, `/login`, `/signup`, `/onboarding`, `/splash`
-Client: `/dashboard`, `/workouts`, `/workouts/builder`, `/workouts/generator`, `/meals`, `/meals/generator`, `/habits`, `/calendar`, `/community`, `/assistant`, `/billing`, `/profile`
-Coach: `/coach`, `/coach/clients`, `/coach/clients/:id`, `/coach/programs`, `/coach/revenue`, `/coach/announcements`
+Client: `/dashboard`, `/workouts`, `/workouts/builder`, `/workouts/generator`, `/meals`, `/meals/generator`, `/habits`, `/calendar`, `/reviews`, `/reviews/:id`, `/inbox`, `/community`, `/assistant`, `/billing`, `/profile`
+Coach: `/coach`, `/coach/inbox`, `/coach/clients`, `/coach/clients/:id`, `/coach/programs`, `/coach/revenue`, `/coach/announcements`
 
 ## License
 
