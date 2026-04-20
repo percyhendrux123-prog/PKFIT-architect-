@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Avatar } from '../../components/ui/Avatar';
 import { StorageImage } from '../../components/StorageImage';
+import { Card, CardHeader } from '../../components/ui/Card';
 
 export default function Profile() {
   const { user, profile, refreshProfile } = useAuth();
@@ -19,6 +20,7 @@ export default function Profile() {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [stats, setStats] = useState({ sessions: 0, photos: 0 });
 
   useEffect(() => {
     setForm({ name: profile?.name ?? '', email: profile?.email ?? user?.email ?? '' });
@@ -33,7 +35,34 @@ export default function Profile() {
       .order('date', { ascending: false })
       .limit(12)
       .then(({ data }) => setCheckIns(data ?? []));
+
+    (async () => {
+      const [{ count: sessions }, { count: photos }] = await Promise.all([
+        supabase
+          .from('workout_sessions')
+          .select('*', { count: 'exact', head: true })
+          .eq('client_id', user.id),
+        supabase
+          .from('check_ins')
+          .select('*', { count: 'exact', head: true })
+          .eq('client_id', user.id)
+          .not('photo_path', 'is', null),
+      ]);
+      setStats({ sessions: sessions ?? 0, photos: photos ?? 0 });
+    })();
   }, [user?.id]);
+
+  const earliestCheckInWithWeight = [...checkIns].reverse().find((c) => c.weight != null);
+  const latestCheckInWithWeight = checkIns.find((c) => c.weight != null);
+  const weightDelta =
+    earliestCheckInWithWeight && latestCheckInWithWeight
+      ? Math.round((Number(latestCheckInWithWeight.weight) - Number(earliestCheckInWithWeight.weight)) * 10) / 10
+      : null;
+
+  const startDate = profile?.start_date ? new Date(profile.start_date) : null;
+  const daysIn = startDate
+    ? Math.max(0, Math.floor((Date.now() - startDate.getTime()) / 86400000))
+    : null;
 
   async function saveProfile(e) {
     e.preventDefault();
@@ -141,6 +170,33 @@ export default function Profile() {
           <h1 className="font-display text-4xl tracking-wider2">Your record</h1>
         </div>
       </header>
+
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader label="Days in" title={daysIn != null ? `${daysIn}` : '—'} />
+        </Card>
+        <Card>
+          <CardHeader label="Sessions" title={String(stats.sessions)} />
+        </Card>
+        <Card>
+          <CardHeader
+            label="Weight Δ"
+            title={
+              weightDelta == null
+                ? '—'
+                : `${weightDelta > 0 ? '+' : ''}${weightDelta} kg`
+            }
+            meta={
+              earliestCheckInWithWeight && latestCheckInWithWeight
+                ? `${earliestCheckInWithWeight.weight} → ${latestCheckInWithWeight.weight}`
+                : null
+            }
+          />
+        </Card>
+        <Card>
+          <CardHeader label="Photos" title={String(stats.photos)} meta="Check-in photos" />
+        </Card>
+      </section>
 
       <section>
         <div className="label mb-2">Avatar</div>

@@ -88,6 +88,16 @@ export default function Reviews() {
                   <div className="label">Week of {r.week_starting}</div>
                   <div className="flex flex-wrap gap-2">
                     {r.coach_comment ? <Badge tone="gold">Coach note</Badge> : null}
+                    {(() => {
+                      const total = (r.adjustments ?? []).length;
+                      if (total === 0) return null;
+                      const done = Object.values(r.adjustments_state ?? {}).filter(Boolean).length;
+                      return (
+                        <Badge tone={done === total ? 'green' : 'mute'}>
+                          {done}/{total} installed
+                        </Badge>
+                      );
+                    })()}
                     {r.metrics?.adherence_pct != null ? (
                       <Badge tone={r.metrics.adherence_pct >= 80 ? 'green' : 'mute'}>
                         {r.metrics.adherence_pct}% adherence

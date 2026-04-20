@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
@@ -10,6 +10,7 @@ export default function ReviewDetail() {
   const { user } = useAuth();
   const [review, setReview] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [state, setState] = useState({});
 
   useEffect(() => {
     if (!isSupabaseConfigured || !user || !id) {
@@ -23,9 +24,18 @@ export default function ReviewDetail() {
       .maybeSingle()
       .then(({ data }) => {
         setReview(data ?? null);
+        setState(data?.adjustments_state && typeof data.adjustments_state === 'object' ? data.adjustments_state : {});
         setLoading(false);
       });
   }, [id, user?.id]);
+
+  async function toggleAdjustment(index) {
+    const next = { ...state, [index]: !state[index] };
+    setState(next);
+    await supabase.from('reviews').update({ adjustments_state: next }).eq('id', id);
+  }
+
+  const doneCount = useMemo(() => Object.values(state).filter(Boolean).length, [state]);
 
   if (loading) return <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>;
   if (!review) return <div className="text-sm text-mute">Review not found.</div>;
@@ -98,14 +108,41 @@ export default function ReviewDetail() {
 
       {adjustments.length > 0 ? (
         <section>
-          <div className="label mb-2">Next week</div>
+          <div className="mb-2 flex items-center justify-between">
+            <div className="label">Next week</div>
+            <div className="text-[0.6rem] uppercase tracking-widest2 text-faint">
+              {doneCount}/{adjustments.length} installed
+            </div>
+          </div>
           <ul className="space-y-2">
-            {adjustments.map((a, i) => (
-              <li key={i} className="flex items-start gap-3 border border-line bg-black/20 p-3">
-                <Badge tone="gold">→</Badge>
-                <span className="font-display tracking-wider2 text-ink">{a}</span>
-              </li>
-            ))}
+            {adjustments.map((a, i) => {
+              const done = Boolean(state[i]);
+              return (
+                <li key={i}>
+                  <button
+                    type="button"
+                    onClick={() => toggleAdjustment(i)}
+                    aria-pressed={done}
+                    className={`flex w-full items-start gap-3 border p-3 text-left ${
+                      done ? 'border-gold bg-black/40' : 'border-line bg-black/20'
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 inline-block h-4 w-4 shrink-0 border ${
+                        done ? 'border-gold bg-gold' : 'border-line'
+                      }`}
+                    />
+                    <span
+                      className={`font-display tracking-wider2 ${
+                        done ? 'text-faint line-through' : 'text-ink'
+                      }`}
+                    >
+                      {a}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}
