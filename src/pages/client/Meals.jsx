@@ -5,6 +5,39 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Empty } from '../../components/ui/Empty';
 
+function totals(items) {
+  const planned = { kcal: 0, p: 0, c: 0, f: 0 };
+  const eaten = { kcal: 0, p: 0, c: 0, f: 0 };
+  for (const m of items) {
+    const macros = m.macros ?? {};
+    for (const k of Object.keys(planned)) {
+      const v = Number(macros[k] ?? 0);
+      if (!Number.isNaN(v)) {
+        planned[k] += v;
+        if (m.eaten) eaten[k] += v;
+      }
+    }
+  }
+  return { planned, eaten };
+}
+
+function MacroBar({ label, planned, eaten }) {
+  const pct = planned > 0 ? Math.min(100, Math.round((eaten / planned) * 100)) : 0;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between text-[0.6rem] uppercase tracking-widest2 text-faint">
+        <span>{label}</span>
+        <span>
+          <span className="text-ink">{eaten}</span> / {planned}
+        </span>
+      </div>
+      <div className="mt-1 h-1 w-full bg-line">
+        <div className="h-1 bg-gold" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function Meals() {
   const { user } = useAuth();
   const [meals, setMeals] = useState([]);
@@ -64,6 +97,8 @@ export default function Meals() {
         <div className="space-y-6">
           {Object.entries(grouped).map(([day, items]) => {
             const done = items.filter((m) => m.eaten).length;
+            const { planned, eaten } = totals(items);
+            const anyMacros = planned.kcal > 0 || planned.p > 0;
             return (
               <section key={day}>
                 <div className="mb-2 flex items-center justify-between">
@@ -72,6 +107,14 @@ export default function Meals() {
                     {done}/{items.length} eaten
                   </div>
                 </div>
+                {anyMacros ? (
+                  <div className="mb-3 grid grid-cols-2 gap-3 border border-line bg-black/30 p-3 md:grid-cols-4">
+                    <MacroBar label="Kcal" planned={planned.kcal} eaten={eaten.kcal} />
+                    <MacroBar label="Protein" planned={planned.p} eaten={eaten.p} />
+                    <MacroBar label="Carbs" planned={planned.c} eaten={eaten.c} />
+                    <MacroBar label="Fat" planned={planned.f} eaten={eaten.f} />
+                  </div>
+                ) : null}
                 <ul className="divide-y divide-line border border-line">
                   {items.map((m) => (
                     <li
