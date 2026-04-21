@@ -63,6 +63,8 @@ Keep a scratch notes doc open. You will copy values between dashboards.
    - `0017_macro_floor.sql` (adds `profiles.target_kcal` / `target_protein_g` / `target_carbs_g` / `target_fat_g`)
    - `0018_conversation_context.sql` (adds `conversations.context` jsonb for pinned context)
    - `0019_review_adjustments_state.sql` (adds `reviews.adjustments_state` jsonb for installed-adjustment checklist)
+   - `0020_lock_privileged_profile_columns.sql` (trigger preventing clients from self-promoting to coach)
+   - `0021_units_preference.sql` (adds `profiles.units` enum, default `imperial`)
 6. Left sidebar → **Table Editor** → verify these tables exist: `profiles`, `programs`, `meals`, `habits`, `check_ins`, `community_posts`, `community_reactions`, `community_comments`, `payments`, `exercises`, `reviews`, `conversations`, `conversation_messages`, `dm_threads`, `dm_messages`, `rate_limits`. Each should have a shield icon next to the name indicating RLS is enabled.
 7. Left sidebar → **Storage** → verify three buckets: `baseline-photos` (Private), `avatars` (Public), `community-photos` (Public).
 
@@ -188,6 +190,7 @@ Save. Netlify prompts "Redeploy?" → click **Redeploy**.
    - `checkout.session.completed`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
+   - `invoice.payment_failed`
 5. Click **Add endpoint**.
 6. On the new endpoint page → **Signing secret → Reveal** → copy (`whsec_...`).
 7. Back in Netlify env vars → add `STRIPE_WEBHOOK_SECRET=<the whsec value>` → Save → Redeploy.
