@@ -28,8 +28,14 @@ function tierFromPriceId(priceId) {
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') return jsonResponse(405, { error: 'Method not allowed' });
   const sig = event.headers?.['stripe-signature'] || event.headers?.['Stripe-Signature'];
+  if (!sig) return jsonResponse(400, { error: 'Missing Stripe-Signature header' });
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!sig || !secret) return jsonResponse(400, { error: 'Missing signature' });
+  if (!secret) {
+    // Stripe does not retry 4xx. Return 500 so the event is retried once the
+    // env var is set in Netlify.
+    console.error('STRIPE_WEBHOOK_SECRET is not configured');
+    return jsonResponse(500, { error: 'Webhook secret not configured' });
+  }
 
   const stripe = getStripe();
   const raw = event.isBase64Encoded
