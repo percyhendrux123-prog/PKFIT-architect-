@@ -26,6 +26,7 @@ export const handler = async (event) => {
     await Promise.all([
       deleteStoragePrefix(admin, 'baseline-photos', user.id),
       deleteStoragePrefix(admin, 'avatars', user.id),
+      deleteStoragePrefix(admin, 'community-photos', user.id),
     ]);
 
     // admin.auth.admin.deleteUser cascades public.profiles → all child rows.
