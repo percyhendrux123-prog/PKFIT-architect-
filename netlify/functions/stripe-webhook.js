@@ -125,6 +125,23 @@ export const handler = async (event) => {
         }
         break;
       }
+      case 'invoice.payment_failed': {
+        const invoice = stripeEvent.data.object;
+        const subscriptionId = invoice.subscription;
+        const customerId = invoice.customer;
+        if (subscriptionId) {
+          await admin
+            .from('payments')
+            .update({ status: 'past_due' })
+            .eq('stripe_subscription_id', subscriptionId);
+        } else if (customerId) {
+          await admin
+            .from('payments')
+            .update({ status: 'past_due' })
+            .eq('stripe_customer_id', customerId);
+        }
+        break;
+      }
       default:
         break;
     }
