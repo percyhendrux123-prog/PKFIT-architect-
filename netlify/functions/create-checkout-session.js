@@ -1,4 +1,5 @@
 import { requireUser, jsonResponse, errorResponse } from './_shared/auth.js';
+import { getAdminClient } from './_shared/supabase-admin.js';
 import { getStripe, priceIdFor } from './_shared/stripe.js';
 
 const VALID_TIERS = new Set(['performance', 'identity', 'full', 'premium']);
@@ -16,12 +17,27 @@ export const handler = async (event) => {
     const siteUrl = process.env.VITE_SITE_URL || process.env.URL || 'http://localhost:5173';
     const stripe = getStripe();
 
+    // Reuse the Stripe customer if one already exists for this user so repeat
+    // checkouts don't create a parallel customer record. Portal lookups in
+    // create-portal-session.js then resolve correctly.
+    const admin = getAdminClient();
+    const { data: existingPayment } = await admin
+      .from('payments')
+      .select('stripe_customer_id')
+      .eq('client_id', user.id)
+      .not('stripe_customer_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceIdFor(tier, interval), quantity: 1 }],
       client_reference_id: user.id,
-      customer_email: profile?.email ?? user.email,
+      ...(existingPayment?.stripe_customer_id
+        ? { customer: existingPayment.stripe_customer_id }
+        : { customer_email: profile?.email ?? user.email }),
       metadata: { client_id: user.id, tier, interval },
       subscription_data: { metadata: { client_id: user.id, tier, interval } },
       success_url: `${siteUrl}/billing?status=success&session_id={CHECKOUT_SESSION_ID}`,
