@@ -8,9 +8,11 @@ import { Input } from '../../components/ui/Input';
 import { Avatar } from '../../components/ui/Avatar';
 import { StorageImage } from '../../components/StorageImage';
 import { Card, CardHeader } from '../../components/ui/Card';
+import { formatWeight, formatWeightDelta, kgToLbs, parseWeightToKg, weightLabel } from '../../lib/units';
 
 export default function Profile() {
   const { user, profile, refreshProfile } = useAuth();
+  const units = profile?.units ?? 'imperial';
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [form, setForm] = useState({ name: '', email: '' });
   const [checkIns, setCheckIns] = useState([]);
@@ -174,7 +176,7 @@ export default function Profile() {
         .from('check_ins')
         .insert({
           client_id: user.id,
-          weight: weight ? Number(weight) : null,
+          weight: parseWeightToKg(weight, units),
           body_fat: bodyFat ? Number(bodyFat) : null,
           notes,
           photo_path: photoPath,
@@ -215,14 +217,10 @@ export default function Profile() {
         <Card>
           <CardHeader
             label="Weight Δ"
-            title={
-              weightDelta == null
-                ? '—'
-                : `${weightDelta > 0 ? '+' : ''}${weightDelta} kg`
-            }
+            title={formatWeightDelta(weightDelta, units)}
             meta={
               earliestCheckInWithWeight && latestCheckInWithWeight
-                ? `${earliestCheckInWithWeight.weight} → ${latestCheckInWithWeight.weight}`
+                ? `${formatWeight(earliestCheckInWithWeight.weight, units)} → ${formatWeight(latestCheckInWithWeight.weight, units)}`
                 : null
             }
           />
@@ -284,7 +282,7 @@ export default function Profile() {
         <div className="label mb-2">Weekly check-in</div>
         <form onSubmit={logCheckIn} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <Input label="Weight (kg)" type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
+            <Input label={weightLabel(units)} type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
             <Input label="Body fat %" type="number" step="0.1" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} />
             <Input label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Sleep, stress, energy" />
             <label className="flex cursor-pointer items-center justify-center gap-2 border border-dashed border-line bg-black/30 px-3 text-xs uppercase tracking-widest2 text-mute hover:border-gold">
@@ -314,7 +312,10 @@ export default function Profile() {
                   checkIns,
                   [
                     { key: 'date', label: 'Date' },
-                    { key: 'weight', label: 'Weight (kg)' },
+                    {
+                      label: units === 'imperial' ? 'Weight (lbs)' : 'Weight (kg)',
+                      get: (c) => (c.weight == null ? '' : units === 'imperial' ? kgToLbs(c.weight) : c.weight),
+                    },
                     { key: 'body_fat', label: 'Body fat %' },
                     { key: 'notes', label: 'Notes' },
                   ],
@@ -333,7 +334,7 @@ export default function Profile() {
             {checkIns.map((c) => (
               <li key={c.id} className="grid grid-cols-1 gap-3 p-4 md:grid-cols-[140px_1fr_1fr_2fr_120px]">
                 <div className="label">{c.date?.slice(0, 10)}</div>
-                <div>Weight: <span className="text-ink">{c.weight ?? '—'}</span></div>
+                <div>Weight: <span className="text-ink">{formatWeight(c.weight, units)}</span></div>
                 <div>BF%: <span className="text-ink">{c.body_fat ?? '—'}</span></div>
                 <div className="text-mute">{c.notes}</div>
                 <div className="justify-self-end">

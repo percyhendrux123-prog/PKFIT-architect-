@@ -6,6 +6,7 @@ import { claude } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
 import { Empty } from '../../components/ui/Empty';
 import { Badge } from '../../components/ui/Badge';
+import { formatWeightDelta } from '../../lib/units';
 
 function thisWeekStart() {
   const d = new Date();
@@ -16,7 +17,8 @@ function thisWeekStart() {
 }
 
 export default function Reviews() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const units = profile?.units ?? 'imperial';
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -104,7 +106,7 @@ export default function Reviews() {
                       </Badge>
                     ) : null}
                     {r.metrics?.weight_delta_kg != null ? (
-                      <Badge tone="mute">{r.metrics.weight_delta_kg > 0 ? '+' : ''}{r.metrics.weight_delta_kg} kg</Badge>
+                      <Badge tone="mute">{formatWeightDelta(r.metrics.weight_delta_kg, units)}</Badge>
                     ) : null}
                   </div>
                 </div>

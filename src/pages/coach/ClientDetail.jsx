@@ -13,8 +13,9 @@ import { GenerateProgramForm, GenerateMealForm } from '../../components/Generate
 import { Textarea } from '../../components/ui/Input';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 import { downloadCSV } from '../../lib/csv';
+import { formatWeight, formatWeightDelta, kgToLbs } from '../../lib/units';
 
-function ReviewPanel({ review, onUpdated }) {
+function ReviewPanel({ review, units, onUpdated }) {
   const [comment, setComment] = useState(review.coach_comment ?? '');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
@@ -52,8 +53,7 @@ function ReviewPanel({ review, onUpdated }) {
           ) : null}
           {review.metrics?.weight_delta_kg != null ? (
             <span>
-              {review.metrics.weight_delta_kg > 0 ? '+' : ''}
-              {review.metrics.weight_delta_kg} kg
+              {formatWeightDelta(review.metrics.weight_delta_kg, units)}
             </span>
           ) : null}
           {review.metrics?.sessions_completed != null ? (
@@ -219,6 +219,7 @@ export default function ClientDetail() {
   const habitList = habits?.habit_list ?? [];
   const habitHistory = habits?.check_history ?? {};
   const latestReview = reviews[0] ?? null;
+  const clientUnits = client?.units ?? 'imperial';
 
   return (
     <div className="space-y-6">
@@ -300,7 +301,7 @@ export default function ClientDetail() {
           {msg ? <div className="text-xs uppercase tracking-widest2 text-gold">{msg}</div> : null}
 
           {latestReview ? (
-            <ReviewPanel review={latestReview} onUpdated={load} />
+            <ReviewPanel review={latestReview} units={clientUnits} onUpdated={load} />
           ) : null}
 
           <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -351,7 +352,11 @@ export default function ClientDetail() {
                           checkIns,
                           [
                             { key: 'date', label: 'Date' },
-                            { key: 'weight', label: 'Weight (kg)' },
+                            {
+                              label: clientUnits === 'imperial' ? 'Weight (lbs)' : 'Weight (kg)',
+                              get: (c) =>
+                                c.weight == null ? '' : clientUnits === 'imperial' ? kgToLbs(c.weight) : c.weight,
+                            },
                             { key: 'body_fat', label: 'Body fat %' },
                             { key: 'notes', label: 'Notes' },
                           ],
@@ -371,7 +376,7 @@ export default function ClientDetail() {
                       <StorageImage path={c.photo_path} alt="Check-in" className="h-12 w-12 shrink-0 object-cover" />
                     ) : null}
                     <span className="flex-1">{c.date?.slice(0, 10)}</span>
-                    <span className="text-faint">{c.weight ?? '—'} kg · {c.body_fat ?? '—'}%</span>
+                    <span className="text-faint">{formatWeight(c.weight, clientUnits)} · {c.body_fat ?? '—'}%</span>
                   </li>
                 ))}
               </ul>
@@ -421,7 +426,7 @@ export default function ClientDetail() {
                         <div className="mt-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
                           {latestCheckInWithPhoto.date?.slice(0, 10)}
                           {latestCheckInWithPhoto.weight != null
-                            ? ` · ${latestCheckInWithPhoto.weight} kg`
+                            ? ` · ${formatWeight(latestCheckInWithPhoto.weight, clientUnits)}`
                             : ''}
                         </div>
                       </>

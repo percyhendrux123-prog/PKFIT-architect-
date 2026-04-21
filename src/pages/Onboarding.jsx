@@ -5,11 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
+import { heightLabel, weightLabel } from '../lib/units';
 
 const steps = ['Identity', 'Baseline', 'Goal', 'Baseline photo', 'Commit'];
 
 export default function Onboarding() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const units = profile?.units ?? 'imperial';
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -115,8 +117,8 @@ export default function Onboarding() {
         )}
         {step === 1 && (
           <>
-            <Input label="Height (cm)" type="number" value={form.height_cm} onChange={set('height_cm')} />
-            <Input label="Weight (kg)" type="number" value={form.weight_kg} onChange={set('weight_kg')} />
+            <Input label={heightLabel(units)} type="number" value={form.height_cm} onChange={set('height_cm')} />
+            <Input label={weightLabel(units)} type="number" value={form.weight_kg} onChange={set('weight_kg')} />
             <Input label="Average sleep (hours)" type="number" value={form.sleep_avg} onChange={set('sleep_avg')} />
           </>
         )}

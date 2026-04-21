@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { account } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
+import { Input, Select } from '../../components/ui/Input';
 import { Card, CardHeader } from '../../components/ui/Card';
 
 export default function Settings() {
@@ -129,6 +129,21 @@ export default function Settings() {
         <div className="label mb-2">Settings</div>
         <h1 className="font-display text-4xl tracking-wider2">Account</h1>
       </header>
+
+      <Card>
+        <CardHeader label="Display" title="Units" meta="Applies to weight and height across the app" />
+        <Select
+          className="max-w-xs"
+          value={profile?.units ?? 'imperial'}
+          onChange={async (e) => {
+            await supabase.from('profiles').update({ units: e.target.value }).eq('id', user.id);
+            await refreshProfile?.();
+          }}
+        >
+          <option value="imperial">Imperial (lbs, ft/in)</option>
+          <option value="metric">Metric (kg, cm)</option>
+        </Select>
+      </Card>
 
       <Card>
         <CardHeader label="Nutrition" title="Macro floor" meta="Used on Meals to compare planned vs. eaten" />

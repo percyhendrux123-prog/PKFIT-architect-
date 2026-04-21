@@ -7,6 +7,7 @@ import { claude } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { formatWeightDelta } from '../../lib/units';
 
 function thisWeekStart() {
   const d = new Date();
@@ -18,7 +19,8 @@ function thisWeekStart() {
 
 export default function ReviewDetail() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const units = profile?.units ?? 'imperial';
   const [review, setReview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [state, setState] = useState({});
@@ -111,7 +113,7 @@ export default function ReviewDetail() {
         <Card>
           <CardHeader
             label="Weight Δ"
-            title={metrics.weight_delta_kg != null ? `${metrics.weight_delta_kg > 0 ? '+' : ''}${metrics.weight_delta_kg} kg` : '—'}
+            title={formatWeightDelta(metrics.weight_delta_kg, units)}
           />
         </Card>
         <Card>
