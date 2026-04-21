@@ -107,12 +107,18 @@ export default function ClientDetail() {
   const [checkIns, setCheckIns] = useState([]);
   const [habits, setHabits] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
   const [openForm, setOpenForm] = useState(null); // 'program' | 'meal' | null
 
   const load = useCallback(async () => {
-    if (!isSupabaseConfigured || !id) return;
+    if (!isSupabaseConfigured || !id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const [
       { data: p },
       { data: pr },
@@ -139,12 +145,19 @@ export default function ClientDetail() {
         .order('week_starting', { ascending: false })
         .limit(4),
     ]);
+    if (!p) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    setNotFound(false);
     setClient(p);
     setPrograms(pr ?? []);
     setCheckIns(ci ?? []);
     setSessions(ws ?? []);
     setHabits(hb ?? null);
     setReviews(rv ?? []);
+    setLoading(false);
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -191,7 +204,17 @@ export default function ClientDetail() {
     setBusy(null);
   }
 
-  if (!client) return <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>;
+  if (notFound) {
+    return (
+      <div className="space-y-3">
+        <div className="text-sm text-mute">Client not found.</div>
+        <Link to="/coach/clients" className="text-xs uppercase tracking-widest2 text-gold">← Roster</Link>
+      </div>
+    );
+  }
+  if (loading || !client) {
+    return <div className="text-xs uppercase tracking-widest2 text-faint">Loading client</div>;
+  }
 
   const habitList = habits?.habit_list ?? [];
   const habitHistory = habits?.check_history ?? {};
