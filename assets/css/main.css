@@ -306,6 +306,14 @@ section {
   z-index: 1;
 }
 
+.testimonial-photo {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  margin: 0 auto 32px;
+}
+
 .testimonial-card .attribution {
   font-size: 0.8rem;
   color: #C8A96E;
