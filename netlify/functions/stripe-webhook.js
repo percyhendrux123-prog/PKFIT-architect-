@@ -51,14 +51,17 @@ export const handler = async (event) => {
 
   const admin = getAdminClient();
 
-  // Idempotency: if we've already processed this event ID, 200 and bail.
-  const { data: existing } = await admin
+  // Idempotency: attempt an atomic insert. If the unique constraint on
+  // stripe_event_id rejects the row (code 23505), this event was already
+  // processed by a concurrent or prior delivery and we short-circuit.
+  const { error: dedupErr } = await admin
     .from('stripe_events')
-    .select('id')
-    .eq('stripe_event_id', stripeEvent.id)
-    .maybeSingle();
-  if (existing) {
+    .insert({ stripe_event_id: stripeEvent.id, type: stripeEvent.type });
+  if (dedupErr?.code === '23505') {
     return jsonResponse(200, { received: true, duplicate: true });
+  }
+  if (dedupErr) {
+    return jsonResponse(500, { error: dedupErr.message });
   }
 
   try {
@@ -128,11 +131,6 @@ export const handler = async (event) => {
   } catch (e) {
     return jsonResponse(500, { error: e.message });
   }
-
-  // Record only after successful processing — failed handlers will be retried.
-  await admin
-    .from('stripe_events')
-    .insert({ stripe_event_id: stripeEvent.id, type: stripeEvent.type });
 
   return jsonResponse(200, { received: true });
 };
