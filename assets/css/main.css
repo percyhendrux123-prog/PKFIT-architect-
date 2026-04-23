@@ -399,3 +399,35 @@ footer p {
     padding: 120px 0;
   }
 }
+
+/* ── Motion System ── */
+
+:root {
+  scroll-behavior: smooth;
+}
+
+@keyframes hero-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scoped to .js so no-JS users see content normally */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.js .reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.js .reveal-delay-1 { transition-delay: 0.08s; }
+.js .reveal-delay-2 { transition-delay: 0.16s; }
+.js .reveal-delay-3 { transition-delay: 0.24s; }
+.js .reveal-delay-4 { transition-delay: 0.32s; }
+.js .reveal-delay-5 { transition-delay: 0.40s; }
+.js .reveal-delay-6 { transition-delay: 0.48s; }
