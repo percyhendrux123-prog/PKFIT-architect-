@@ -12,14 +12,8 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg:   #080808;
-      --gold: #C8A96E;
-      --dim:  rgba(200,169,110,0.15);
-    }
-
     body {
-      background: var(--bg);
+      background: #080808;
       color: #fff;
       font-family: 'DM Mono', monospace;
       min-height: 100vh;
@@ -27,279 +21,409 @@
       flex-direction: column;
       align-items: center;
       padding: 64px 24px 80px;
-      gap: 48px;
+      gap: 40px;
     }
 
-    header {
-      text-align: center;
-    }
-
+    header { text-align: center; }
     header .eyebrow {
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      color: var(--gold);
-      text-transform: uppercase;
-      margin-bottom: 12px;
+      font-size: 11px; letter-spacing: 0.18em;
+      color: #C8A96E; text-transform: uppercase; margin-bottom: 12px;
     }
-
     header h1 {
       font-family: 'Bebas Neue', sans-serif;
       font-size: clamp(36px, 6vw, 56px);
-      letter-spacing: 0.04em;
-      line-height: 1;
+      letter-spacing: 0.04em; line-height: 1;
     }
+    header h1 span { color: #C8A96E; }
 
-    header h1 span { color: var(--gold); }
-
-    header p {
-      margin-top: 12px;
-      font-size: 13px;
-      color: rgba(255,255,255,0.45);
-      letter-spacing: 0.02em;
-    }
-
-    .stage {
-      display: flex;
-      gap: 48px;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: flex-start;
-    }
-
-    .label {
-      text-align: center;
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      color: rgba(255,255,255,0.3);
+    .hint {
+      font-size: 11px; letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.2);
       text-transform: uppercase;
-      margin-bottom: 16px;
-    }
-
-    .pill-demo {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: center;
-      max-width: 500px;
     }
 
     footer {
-      font-size: 11px;
-      color: rgba(255,255,255,0.2);
-      letter-spacing: 0.06em;
-      text-align: center;
+      font-size: 11px; color: rgba(255,255,255,0.15);
+      letter-spacing: 0.06em; text-align: center;
     }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="eyebrow">Design System Preview</div>
-    <h1>iOS 26 <span>Liquid Glass</span></h1>
-    <p>Components · PKFIT Architect</p>
+    <div class="eyebrow">Design System · Swipe Navigation</div>
+    <h1>PKFIT <span>Blueprint</span></h1>
   </header>
 
   <div id="root"></div>
 
-  <footer>PKFIT &copy; 2026 &mdash; ios-demo.html</footer>
+  <p class="hint">drag or swipe to navigate</p>
 
-  <!-- React + Babel via CDN (dev only, no build step required) -->
+  <footer>PKFIT &copy; 2026</footer>
+
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- iOS component library -->
   <script type="text/babel" data-type="module" src="components/iOS.jsx"></script>
 
-  <!-- Demo app — renders after iOS.jsx registers globals -->
   <script type="text/babel">
-    const { IOSDevice, IOSNavBar, IOSList, IOSListRow, IOSGlassPill } = window;
+    const { IOSDevice, IOSList, IOSListRow } = window;
 
-    // ── Phase card inside the device ──────────────────────────
-    function PhaseCard({ days, name, desc, accent }) {
+    // ── Shared primitives ──────────────────────────────────────
+
+    const GOLD   = '#C8A96E';
+    const DARK   = true;
+    const WIDTH  = 390;
+    const THRESHOLD = 52;
+
+    function Label({ children }) {
       return (
         <div style={{
-          margin: '0 16px 12px',
-          borderRadius: 20,
-          overflow: 'hidden',
-          background: '#1C1C1E',
-          padding: '16px 18px',
+          padding: '0 16px 14px',
+          fontFamily: '-apple-system, system-ui',
+          fontSize: 13, color: 'rgba(235,235,245,0.45)',
+        }}>{children}</div>
+      );
+    }
+
+    function GoldButton({ label }) {
+      return (
+        <div style={{
+          margin: '20px 16px 0',
+          height: 52, borderRadius: 14,
+          background: GOLD,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: '-apple-system, system-ui',
+          fontSize: 17, fontWeight: 700, color: '#080808', letterSpacing: 0.2,
+        }}>{label}</div>
+      );
+    }
+
+    function PhaseCard({ days, name, desc, accent = GOLD }) {
+      return (
+        <div style={{
+          margin: '0 16px 16px', padding: '18px 20px',
+          borderRadius: 20, background: '#1C1C1E',
         }}>
           <div style={{
             fontFamily: '-apple-system, system-ui',
-            fontSize: 11, fontWeight: 600,
-            letterSpacing: 0.08,
-            color: accent,
-            textTransform: 'uppercase',
-            marginBottom: 4,
+            fontSize: 11, fontWeight: 600, letterSpacing: 0.8,
+            color: accent, textTransform: 'uppercase', marginBottom: 5,
           }}>{days}</div>
           <div style={{
             fontFamily: '-apple-system, system-ui',
-            fontSize: 17, fontWeight: 700,
-            color: '#fff', marginBottom: 6,
+            fontSize: 19, fontWeight: 700, color: '#fff', marginBottom: 7,
           }}>{name}</div>
           <div style={{
             fontFamily: '-apple-system, system-ui',
             fontSize: 13, lineHeight: '18px',
-            color: 'rgba(235,235,245,0.6)',
+            color: 'rgba(235,235,245,0.55)',
           }}>{desc}</div>
         </div>
       );
     }
 
-    // ── Gold CTA button ───────────────────────────────────────
-    function CTAButton({ label }) {
-      return (
-        <div style={{
-          margin: '4px 16px 24px',
-          height: 52,
-          borderRadius: 14,
-          background: '#C8A96E',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: '-apple-system, system-ui',
-          fontSize: 17, fontWeight: 700,
-          color: '#080808',
-          letterSpacing: 0.2,
-        }}>{label}</div>
-      );
-    }
+    // ── Screen 0: Home ─────────────────────────────────────────
 
-    // ── Full demo ─────────────────────────────────────────────
-    function Demo() {
+    function HomeScreen() {
       return (
-        <div style={{
-          display: 'flex', gap: 48,
-          flexWrap: 'wrap', justifyContent: 'center', alignItems: 'flex-start',
-        }}>
-
-          {/* ── Dark device: Blueprint home screen ── */}
-          <div>
+        <div style={{ paddingBottom: 64 }}>
+          {/* Progress bar */}
+          <div style={{ padding: '0 16px 20px' }}>
             <div style={{
-              textAlign: 'center',
-              fontFamily: 'DM Mono, monospace',
-              fontSize: 11, letterSpacing: '0.14em',
-              color: 'rgba(255,255,255,0.3)',
-              textTransform: 'uppercase',
-              marginBottom: 16,
-            }}>Dark · Home</div>
-
-            <IOSDevice dark={true} title="Blueprint" width={390} height={844}>
-              {/* Greeting */}
+              fontFamily: '-apple-system, system-ui',
+              fontSize: 15, color: 'rgba(235,235,245,0.55)', marginBottom: 10,
+            }}>
+              Day <span style={{ color: GOLD, fontWeight: 700 }}>12</span> of 30
+            </div>
+            <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2 }}>
               <div style={{
-                padding: '0 16px 16px',
-                fontFamily: '-apple-system, system-ui',
-                fontSize: 15, color: 'rgba(235,235,245,0.55)',
-              }}>
-                Day <span style={{ color: '#C8A96E', fontWeight: 700 }}>12</span> of 30
-              </div>
-
-              {/* Phases */}
-              <IOSList header="Your Programme" dark={true}>
-                <IOSListRow title="Diagnosis"     detail="Days 1–7"   icon="#C8A96E" dark={true} />
-                <IOSListRow title="Correction"    detail="Days 8–16"  icon="#4CAF50" dark={true} />
-                <IOSListRow title="Identity Shift" detail="Days 17–24" icon="#2196F3" dark={true} />
-                <IOSListRow title="The Lock"      detail="Days 25–30" icon="#9C27B0" dark={true} isLast={true} />
-              </IOSList>
-
-              <div style={{ height: 20 }} />
-
-              {/* Phase cards */}
-              <PhaseCard
-                days="Days 1–7"
-                name="Diagnosis"
-                desc="Audit your body, habits, and baseline. Identify what's actually stalling you."
-                accent="#C8A96E"
-              />
-              <PhaseCard
-                days="Days 8–16 · Current"
-                name="Correction"
-                desc="Attack the weak points. Targeted protocols that address exactly what the diagnosis revealed."
-                accent="#4CAF50"
-              />
-
-              <CTAButton label="View Today's Session →" />
-            </IOSDevice>
-          </div>
-
-          {/* ── Light device: Keyboard demo ── */}
-          <div>
-            <div style={{
-              textAlign: 'center',
-              fontFamily: 'DM Mono, monospace',
-              fontSize: 11, letterSpacing: '0.14em',
-              color: 'rgba(255,255,255,0.3)',
-              textTransform: 'uppercase',
-              marginBottom: 16,
-            }}>Light · Keyboard</div>
-
-            <IOSDevice dark={false} title="Notes" width={390} height={844} keyboard={true}>
-              <div style={{ padding: '0 16px' }}>
-                <IOSList dark={false}>
-                  <IOSListRow title="Today's training notes" detail="Now" icon="#FF9500" dark={false} />
-                  <IOSListRow title="Nutrition log"          detail="2m"  icon="#34C759" dark={false} />
-                  <IOSListRow title="Weekly check-in"        detail="1h"  icon="#007AFF" dark={false} isLast={true} />
-                </IOSList>
-              </div>
-            </IOSDevice>
-          </div>
-
-          {/* ── Pills showcase ── */}
-          <div>
-            <div style={{
-              textAlign: 'center',
-              fontFamily: 'DM Mono, monospace',
-              fontSize: 11, letterSpacing: '0.14em',
-              color: 'rgba(255,255,255,0.3)',
-              textTransform: 'uppercase',
-              marginBottom: 16,
-            }}>Glass Pills</div>
-
-            {/* dark pills on dark bg */}
-            <div style={{
-              background: '#1a1a1e',
-              borderRadius: 24,
-              padding: 24,
-              display: 'flex', gap: 12, flexWrap: 'wrap',
-              justifyContent: 'center', maxWidth: 300,
-            }}>
-              {['Back', 'Share', '···', 'Done'].map(label => (
-                <IOSGlassPill key={label} dark={true} style={{ padding: '0 18px' }}>
-                  <span style={{
-                    fontFamily: '-apple-system, system-ui',
-                    fontSize: 15, fontWeight: 600,
-                    color: '#fff',
-                  }}>{label}</span>
-                </IOSGlassPill>
-              ))}
-            </div>
-
-            <div style={{ height: 16 }} />
-
-            {/* light pills on light bg */}
-            <div style={{
-              background: '#F2F2F7',
-              borderRadius: 24,
-              padding: 24,
-              display: 'flex', gap: 12, flexWrap: 'wrap',
-              justifyContent: 'center', maxWidth: 300,
-            }}>
-              {['Back', 'Share', '···', 'Done'].map(label => (
-                <IOSGlassPill key={label} dark={false} style={{ padding: '0 18px' }}>
-                  <span style={{
-                    fontFamily: '-apple-system, system-ui',
-                    fontSize: 15, fontWeight: 600,
-                    color: '#000',
-                  }}>{label}</span>
-                </IOSGlassPill>
-              ))}
+                width: '40%', height: '100%',
+                background: `linear-gradient(90deg, ${GOLD}, #e8c882)`,
+                borderRadius: 2,
+              }} />
             </div>
           </div>
 
+          {/* Active phase */}
+          <PhaseCard
+            days="Active · Days 8–16"
+            name="Correction"
+            desc="Attack the weak points. Targeted training that addresses exactly what the diagnosis revealed."
+          />
+
+          {/* All phases */}
+          <IOSList header="Programme" dark={true}>
+            <IOSListRow title="Diagnosis"      detail="Complete" icon={GOLD}    dark={true} />
+            <IOSListRow title="Correction"     detail="Day 5/9"  icon="#4CAF50" dark={true} />
+            <IOSListRow title="Identity Shift" detail="Locked"   icon="#333"    dark={true} chevron={false} />
+            <IOSListRow title="The Lock"       detail="Locked"   icon="#333"    dark={true} chevron={false} isLast={true} />
+          </IOSList>
         </div>
       );
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+    // ── Screen 1: Session ──────────────────────────────────────
+
+    function SessionScreen() {
+      return (
+        <div style={{ paddingBottom: 64 }}>
+          <Label>Correction Phase · Push Day</Label>
+
+          <IOSList header="Today's Work" dark={true}>
+            <IOSListRow title="Barbell Bench Press" detail="4 × 6"  dark={true} chevron={false} />
+            <IOSListRow title="Incline DB Press"    detail="3 × 10" dark={true} chevron={false} />
+            <IOSListRow title="Overhead Press"      detail="3 × 8"  dark={true} chevron={false} />
+            <IOSListRow title="Lateral Raise"       detail="4 × 15" dark={true} chevron={false} />
+            <IOSListRow title="Tricep Pushdown"     detail="3 × 12" dark={true} chevron={false} isLast={true} />
+          </IOSList>
+
+          <div style={{ height: 16 }} />
+
+          <IOSList header="Load Reference" dark={true}>
+            <IOSListRow title="Last session" detail="@77.5 kg" dark={true} chevron={false} />
+            <IOSListRow title="Today target" detail="@80 kg"   dark={true} chevron={false} isLast={true} />
+          </IOSList>
+
+          <GoldButton label="Start Session" />
+        </div>
+      );
+    }
+
+    // ── Screen 2: Nutrition ────────────────────────────────────
+
+    function NutritionScreen() {
+      const macros = [
+        { label: 'Protein', g: 210, color: '#4CAF50' },
+        { label: 'Carbs',   g: 325, color: '#2196F3' },
+        { label: 'Fat',     g: 80,  color: GOLD },
+      ];
+      const total = macros.reduce((s, m) => s + m.g * (m.label === 'Fat' ? 9 : 4), 0);
+
+      return (
+        <div style={{ paddingBottom: 64 }}>
+          <Label>Correction Phase · Training Day</Label>
+
+          {/* Calorie ring summary */}
+          <div style={{
+            margin: '0 16px 16px', padding: '20px',
+            borderRadius: 20, background: '#1C1C1E',
+            display: 'flex', alignItems: 'center', gap: 20,
+          }}>
+            <div style={{ textAlign: 'center', minWidth: 80 }}>
+              <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 28, fontWeight: 700, color: GOLD, lineHeight: 1 }}>2,850</div>
+              <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 11, color: 'rgba(235,235,245,0.45)', marginTop: 4 }}>kcal / day</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              {macros.map(m => (
+                <div key={m.label} style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontFamily: '-apple-system, system-ui', fontSize: 12, color: 'rgba(235,235,245,0.55)' }}>{m.label}</span>
+                    <span style={{ fontFamily: '-apple-system, system-ui', fontSize: 12, color: '#fff', fontWeight: 600 }}>{m.g}g</span>
+                  </div>
+                  <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2 }}>
+                    <div style={{ width: `${Math.round((m.g * (m.label === 'Fat' ? 9 : 4) / total) * 100)}%`, height: '100%', background: m.color, borderRadius: 2 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <IOSList header="Meal Timing" dark={true}>
+            <IOSListRow title="Pre-workout"   detail="60–90 min"   dark={true} chevron={false} />
+            <IOSListRow title="Intra-workout" detail="If >90 min"  dark={true} chevron={false} />
+            <IOSListRow title="Post-workout"  detail="Within 2 hrs" dark={true} chevron={false} isLast={true} />
+          </IOSList>
+
+          <div style={{ height: 16 }} />
+
+          <IOSList header="Hydration" dark={true}>
+            <IOSListRow title="Daily target" detail="3.5 L" dark={true} chevron={false} isLast={true} />
+          </IOSList>
+        </div>
+      );
+    }
+
+    // ── Screen 3: Progress ─────────────────────────────────────
+
+    function ProgressScreen() {
+      return (
+        <div style={{ paddingBottom: 64 }}>
+          <Label>Week 2 · End of Correction Phase</Label>
+
+          {/* Delta card */}
+          <div style={{
+            margin: '0 16px 16px', padding: '18px 20px',
+            borderRadius: 20, background: '#1C1C1E',
+            display: 'flex', gap: 0,
+          }}>
+            {[
+              { label: 'Weight',     value: '183',  unit: 'lbs',  color: '#fff' },
+              { label: '4-wk Δ',    value: '−2.4', unit: 'lbs',  color: '#4CAF50' },
+              { label: 'Strength',   value: '+4.1', unit: '%',    color: GOLD },
+            ].map((s, i) => (
+              <div key={i} style={{ flex: 1, textAlign: 'center', borderLeft: i > 0 ? '0.5px solid rgba(255,255,255,0.08)' : 'none' }}>
+                <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>
+                  {s.value}<span style={{ fontSize: 13 }}> {s.unit}</span>
+                </div>
+                <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 11, color: 'rgba(235,235,245,0.45)', marginTop: 5 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <IOSList header="Metrics" dark={true}>
+            <IOSListRow title="Body Fat Est."      detail="18.2%"  dark={true} chevron={false} />
+            <IOSListRow title="Waist"              detail="−1.5 cm" dark={true} chevron={false} />
+            <IOSListRow title="Bench Press 1RM"    detail="102 kg" dark={true} chevron={false} isLast={true} />
+          </IOSList>
+
+          <div style={{ height: 16 }} />
+
+          <IOSList header="Compliance" dark={true}>
+            <IOSListRow title="Sessions"          detail="9 / 10" dark={true} chevron={false} />
+            <IOSListRow title="Nutrition adherence" detail="85%"  dark={true} chevron={false} isLast={true} />
+          </IOSList>
+
+          <GoldButton label="Log Week 2 Check-In" />
+        </div>
+      );
+    }
+
+    // ── Swipe shell ────────────────────────────────────────────
+
+    function SwipeShell({ screens, width }) {
+      const [current, setCurrent]     = React.useState(0);
+      const [liveOffset, setOffset]   = React.useState(0);
+      const [dragging, setDragging]   = React.useState(false);
+
+      const touchRef   = React.useRef(null); // { x, y }
+      const lockRef    = React.useRef(null); // 'h' | 'v'
+      const mouseRef   = React.useRef(false);
+      const mouseStartX = React.useRef(0);
+
+      function snap(offset) {
+        if (offset < -THRESHOLD && current < screens.length - 1) setCurrent(c => c + 1);
+        else if (offset > THRESHOLD && current > 0)              setCurrent(c => c - 1);
+        setOffset(0);
+        setDragging(false);
+      }
+
+      function clamp(dx, idx) {
+        const atStart = idx === 0 && dx > 0;
+        const atEnd   = idx === screens.length - 1 && dx < 0;
+        return (atStart || atEnd) ? dx * 0.22 : dx;
+      }
+
+      // Touch
+      function onTouchStart(e) {
+        touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        lockRef.current  = null;
+      }
+
+      function onTouchMove(e) {
+        if (!touchRef.current) return;
+        const dx = e.touches[0].clientX - touchRef.current.x;
+        const dy = e.touches[0].clientY - touchRef.current.y;
+
+        if (!lockRef.current) {
+          if (Math.abs(dx) > Math.abs(dy) + 6) { lockRef.current = 'h'; setDragging(true); }
+          else if (Math.abs(dy) > 6)            { lockRef.current = 'v'; }
+        }
+
+        if (lockRef.current === 'h') setOffset(clamp(dx, current));
+      }
+
+      function onTouchEnd() {
+        if (lockRef.current === 'h') snap(liveOffset);
+        touchRef.current = null;
+        lockRef.current  = null;
+      }
+
+      // Mouse
+      function onMouseDown(e) {
+        mouseRef.current  = true;
+        mouseStartX.current = e.clientX;
+        setDragging(true);
+      }
+
+      function onMouseMove(e) {
+        if (!mouseRef.current) return;
+        setOffset(clamp(e.clientX - mouseStartX.current, current));
+      }
+
+      function onMouseUp() {
+        if (!mouseRef.current) return;
+        mouseRef.current = false;
+        snap(liveOffset);
+      }
+
+      const translateX = -(current * width) + liveOffset;
+
+      return (
+        <IOSDevice dark={true} title={screens[current].title} width={width} height={844}>
+          <div
+            style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', userSelect: 'none', cursor: dragging ? 'grabbing' : 'grab' }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+          >
+            {/* Horizontal track */}
+            <div style={{
+              display: 'flex',
+              width: `${screens.length * width}px`,
+              height: '100%',
+              transform: `translateX(${translateX}px)`,
+              transition: dragging ? 'none' : 'transform 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+              willChange: 'transform',
+            }}>
+              {screens.map((s, i) => (
+                <div key={i} style={{
+                  width, flexShrink: 0,
+                  height: '100%', overflow: 'auto',
+                  overscrollBehaviorX: 'none',
+                }}>
+                  {s.content}
+                </div>
+              ))}
+            </div>
+
+            {/* Page dots */}
+            <div style={{
+              position: 'absolute', bottom: 18, left: 0, right: 0,
+              display: 'flex', justifyContent: 'center', gap: 6,
+              pointerEvents: 'none',
+            }}>
+              {screens.map((_, i) => (
+                <div key={i} style={{
+                  height: 6,
+                  width: i === current ? 20 : 6,
+                  borderRadius: 3,
+                  background: i === current ? GOLD : 'rgba(255,255,255,0.25)',
+                  transition: 'width 0.3s ease, background 0.3s ease',
+                }} />
+              ))}
+            </div>
+          </div>
+        </IOSDevice>
+      );
+    }
+
+    // ── App ────────────────────────────────────────────────────
+
+    const SCREENS = [
+      { title: 'Blueprint', content: <HomeScreen /> },
+      { title: 'Day 12',    content: <SessionScreen /> },
+      { title: 'Nutrition', content: <NutritionScreen /> },
+      { title: 'Progress',  content: <ProgressScreen /> },
+    ];
+
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      <SwipeShell screens={SCREENS} width={WIDTH} />
+    );
   </script>
 
 </body>
