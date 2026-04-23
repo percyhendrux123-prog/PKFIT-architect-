@@ -520,3 +520,13 @@ footer p {
 .js .final-cta.visible {
   border-top-color: rgba(200, 169, 110, 0.15);
 }
+
+/* ── Feature card hover bloom ── */
+
+.feature-card {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  box-shadow: 0 0 20px rgba(200, 169, 110, 0.12);
+}
