@@ -431,3 +431,73 @@ footer p {
 .js .reveal-delay-4 { transition-delay: 0.32s; }
 .js .reveal-delay-5 { transition-delay: 0.40s; }
 .js .reveal-delay-6 { transition-delay: 0.48s; }
+
+/* ── Hero sequence (load-triggered, no JS guard needed — fades IN, never hides) ── */
+
+.hero .tag {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 0.3s;
+}
+
+.hero h1 {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 0.6s;
+}
+
+.hero .manifesto {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 0.9s;
+  position: relative;
+}
+
+/* Gold underline draws in after manifesto appears */
+.hero .manifesto::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 1px;
+  background: #C8A96E;
+  animation: manifesto-line 0.5s ease forwards 1.3s;
+}
+
+@keyframes manifesto-line {
+  to { width: 60px; }
+}
+
+.hero .subtitle {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 1.1s;
+}
+
+.hero .cta-btn {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 1.5s;
+}
+
+/* Ambient glow behind hero title */
+.hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(200, 169, 110, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  animation: hero-glow-pulse 4s ease-in-out infinite;
+  z-index: 0;
+}
+
+.hero .container {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes hero-glow-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
