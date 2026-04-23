@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iOS Design System — PKFIT</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:   #080808;
+      --gold: #C8A96E;
+      --dim:  rgba(200,169,110,0.15);
+    }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 64px 24px 80px;
+      gap: 48px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    header .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 6vw, 56px);
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+
+    header h1 span { color: var(--gold); }
+
+    header p {
+      margin-top: 12px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.02em;
+    }
+
+    .stage {
+      display: flex;
+      gap: 48px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .label {
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .pill-demo {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 500px;
+    }
+
+    footer {
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 0.06em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="eyebrow">Design System Preview</div>
+    <h1>iOS 26 <span>Liquid Glass</span></h1>
+    <p>Components · PKFIT Architect</p>
+  </header>
+
+  <div id="root"></div>
+
+  <footer>PKFIT &copy; 2026 &mdash; ios-demo.html</footer>
+
+  <!-- React + Babel via CDN (dev only, no build step required) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- iOS component library -->
+  <script type="text/babel" data-type="module" src="components/iOS.jsx"></script>
+
+  <!-- Demo app — renders after iOS.jsx registers globals -->
+  <script type="text/babel">
+    const { IOSDevice, IOSNavBar, IOSList, IOSListRow, IOSGlassPill } = window;
+
+    // ── Phase card inside the device ──────────────────────────
+    function PhaseCard({ days, name, desc, accent }) {
+      return (
+        <div style={{
+          margin: '0 16px 12px',
+          borderRadius: 20,
+          overflow: 'hidden',
+          background: '#1C1C1E',
+          padding: '16px 18px',
+        }}>
+          <div style={{
+            fontFamily: '-apple-system, system-ui',
+            fontSize: 11, fontWeight: 600,
+            letterSpacing: 0.08,
+            color: accent,
+            textTransform: 'uppercase',
+            marginBottom: 4,
+          }}>{days}</div>
+          <div style={{
+            fontFamily: '-apple-system, system-ui',
+            fontSize: 17, fontWeight: 700,
+            color: '#fff', marginBottom: 6,
+          }}>{name}</div>
+          <div style={{
+            fontFamily: '-apple-system, system-ui',
+            fontSize: 13, lineHeight: '18px',
+            color: 'rgba(235,235,245,0.6)',
+          }}>{desc}</div>
+        </div>
+      );
+    }
+
+    // ── Gold CTA button ───────────────────────────────────────
+    function CTAButton({ label }) {
+      return (
+        <div style={{
+          margin: '4px 16px 24px',
+          height: 52,
+          borderRadius: 14,
+          background: '#C8A96E',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: '-apple-system, system-ui',
+          fontSize: 17, fontWeight: 700,
+          color: '#080808',
+          letterSpacing: 0.2,
+        }}>{label}</div>
+      );
+    }
+
+    // ── Full demo ─────────────────────────────────────────────
+    function Demo() {
+      return (
+        <div style={{
+          display: 'flex', gap: 48,
+          flexWrap: 'wrap', justifyContent: 'center', alignItems: 'flex-start',
+        }}>
+
+          {/* ── Dark device: Blueprint home screen ── */}
+          <div>
+            <div style={{
+              textAlign: 'center',
+              fontFamily: 'DM Mono, monospace',
+              fontSize: 11, letterSpacing: '0.14em',
+              color: 'rgba(255,255,255,0.3)',
+              textTransform: 'uppercase',
+              marginBottom: 16,
+            }}>Dark · Home</div>
+
+            <IOSDevice dark={true} title="Blueprint" width={390} height={844}>
+              {/* Greeting */}
+              <div style={{
+                padding: '0 16px 16px',
+                fontFamily: '-apple-system, system-ui',
+                fontSize: 15, color: 'rgba(235,235,245,0.55)',
+              }}>
+                Day <span style={{ color: '#C8A96E', fontWeight: 700 }}>12</span> of 30
+              </div>
+
+              {/* Phases */}
+              <IOSList header="Your Programme" dark={true}>
+                <IOSListRow title="Diagnosis"     detail="Days 1–7"   icon="#C8A96E" dark={true} />
+                <IOSListRow title="Correction"    detail="Days 8–16"  icon="#4CAF50" dark={true} />
+                <IOSListRow title="Identity Shift" detail="Days 17–24" icon="#2196F3" dark={true} />
+                <IOSListRow title="The Lock"      detail="Days 25–30" icon="#9C27B0" dark={true} isLast={true} />
+              </IOSList>
+
+              <div style={{ height: 20 }} />
+
+              {/* Phase cards */}
+              <PhaseCard
+                days="Days 1–7"
+                name="Diagnosis"
+                desc="Audit your body, habits, and baseline. Identify what's actually stalling you."
+                accent="#C8A96E"
+              />
+              <PhaseCard
+                days="Days 8–16 · Current"
+                name="Correction"
+                desc="Attack the weak points. Targeted protocols that address exactly what the diagnosis revealed."
+                accent="#4CAF50"
+              />
+
+              <CTAButton label="View Today's Session →" />
+            </IOSDevice>
+          </div>
+
+          {/* ── Light device: Keyboard demo ── */}
+          <div>
+            <div style={{
+              textAlign: 'center',
+              fontFamily: 'DM Mono, monospace',
+              fontSize: 11, letterSpacing: '0.14em',
+              color: 'rgba(255,255,255,0.3)',
+              textTransform: 'uppercase',
+              marginBottom: 16,
+            }}>Light · Keyboard</div>
+
+            <IOSDevice dark={false} title="Notes" width={390} height={844} keyboard={true}>
+              <div style={{ padding: '0 16px' }}>
+                <IOSList dark={false}>
+                  <IOSListRow title="Today's training notes" detail="Now" icon="#FF9500" dark={false} />
+                  <IOSListRow title="Nutrition log"          detail="2m"  icon="#34C759" dark={false} />
+                  <IOSListRow title="Weekly check-in"        detail="1h"  icon="#007AFF" dark={false} isLast={true} />
+                </IOSList>
+              </div>
+            </IOSDevice>
+          </div>
+
+          {/* ── Pills showcase ── */}
+          <div>
+            <div style={{
+              textAlign: 'center',
+              fontFamily: 'DM Mono, monospace',
+              fontSize: 11, letterSpacing: '0.14em',
+              color: 'rgba(255,255,255,0.3)',
+              textTransform: 'uppercase',
+              marginBottom: 16,
+            }}>Glass Pills</div>
+
+            {/* dark pills on dark bg */}
+            <div style={{
+              background: '#1a1a1e',
+              borderRadius: 24,
+              padding: 24,
+              display: 'flex', gap: 12, flexWrap: 'wrap',
+              justifyContent: 'center', maxWidth: 300,
+            }}>
+              {['Back', 'Share', '···', 'Done'].map(label => (
+                <IOSGlassPill key={label} dark={true} style={{ padding: '0 18px' }}>
+                  <span style={{
+                    fontFamily: '-apple-system, system-ui',
+                    fontSize: 15, fontWeight: 600,
+                    color: '#fff',
+                  }}>{label}</span>
+                </IOSGlassPill>
+              ))}
+            </div>
+
+            <div style={{ height: 16 }} />
+
+            {/* light pills on light bg */}
+            <div style={{
+              background: '#F2F2F7',
+              borderRadius: 24,
+              padding: 24,
+              display: 'flex', gap: 12, flexWrap: 'wrap',
+              justifyContent: 'center', maxWidth: 300,
+            }}>
+              {['Back', 'Share', '···', 'Done'].map(label => (
+                <IOSGlassPill key={label} dark={false} style={{ padding: '0 18px' }}>
+                  <span style={{
+                    fontFamily: '-apple-system, system-ui',
+                    fontSize: 15, fontWeight: 600,
+                    color: '#000',
+                  }}>{label}</span>
+                </IOSGlassPill>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+  </script>
+
+</body>
+</html>
