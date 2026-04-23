@@ -3,179 +3,393 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Architect's Blueprint — PKFIT</title>
-  <meta name="description" content="A 30-day system that diagnoses what's stalling your physique, corrects it in structured phases, rewires the identity, and locks the new baseline in.">
+  <title>PKFIT Social Artboard Pack - Cyberpunk Manga</title>
+  <meta name="description" content="Three bold cyberpunk manga social media concepts for PKFIT, built as high-impact post-ready visual directions.">
   <link rel="canonical" href="https://pkfit-architect.netlify.app/">
-
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://pkfit-architect.netlify.app/">
-  <meta property="og:title" content="The Architect's Blueprint — PKFIT">
-  <meta property="og:description" content="A 30-day system that diagnoses what's stalling your physique, not just more discipline.">
-  <meta property="og:image" content="https://pkfit-architect.netlify.app/assets/img/copy_1BE065CB-2462-471E-9B96-8704A5802096.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="The Architect's Blueprint — PKFIT">
-  <meta name="twitter:description" content="A 30-day system that diagnoses what's stalling your physique, not just more discipline.">
-  <meta name="twitter:image" content="https://pkfit-architect.netlify.app/assets/img/copy_1BE065CB-2462-471E-9B96-8704A5802096.png">
-
-  <link rel="icon" type="image/png" href="/assets/img/favicon.png">
-  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-
-  <link rel="preload" href="/assets/fonts/bebas-neue-v16-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/assets/fonts/dm-mono-v16-latin-300.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/assets/fonts/dm-mono-v16-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/assets/fonts/dm-mono-v16-latin-500.woff2" as="font" type="font/woff2" crossorigin>
-
-  <link rel="stylesheet" href="/assets/css/main.css">
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "The Architect's Blueprint",
-    "description": "A 30-day system that diagnoses what's stalling your physique, corrects it in structured phases, rewires the identity, and locks the new baseline in.",
-    "brand": { "@type": "Brand", "name": "PKFIT" },
-    "offers": {
-      "@type": "Offer",
-      "price": "37.00",
-      "priceCurrency": "USD",
-      "availability": "https://schema.org/InStock",
-      "url": "https://percyhendrux.gumroad.com/l/khcus"
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050408;
+      --panel: #0f1220;
+      --ink: #f7f8ff;
+      --muted: #8e95b7;
+      --line: rgba(255, 255, 255, 0.12);
     }
-  }
-  </script>
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "DM Mono", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 14% 18%, rgba(0, 255, 248, 0.16), transparent 40%),
+        radial-gradient(circle at 80% 12%, rgba(255, 0, 153, 0.14), transparent 48%),
+        linear-gradient(165deg, #050408 0%, #0a0e1f 56%, #050408 100%);
+      color: var(--ink);
+      padding: 2.2rem 1rem 3rem;
+    }
+
+    main {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 1.4rem;
+    }
+
+    .intro {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      padding: 1.4rem 1.3rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .intro p {
+      max-width: 74ch;
+      color: #e4e6ff;
+      line-height: 1.45;
+      font-size: clamp(0.9rem, 1.3vw, 1rem);
+    }
+
+    .intro strong {
+      color: #01f4ff;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      display: inline-block;
+      margin-bottom: 0.6rem;
+    }
+
+    .concept {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+      background: rgba(5, 8, 17, 0.88);
+      display: grid;
+      grid-template-columns: minmax(300px, 560px) minmax(240px, 1fr);
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .poster {
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      aspect-ratio: 4 / 5;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      isolation: isolate;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1rem;
+      text-transform: uppercase;
+    }
+
+    .poster::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.09) 0,
+        rgba(255, 255, 255, 0.09) 1px,
+        transparent 1px,
+        transparent 5px
+      );
+      mix-blend-mode: soft-light;
+      opacity: 0.22;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .label,
+    .title,
+    .burst,
+    .cta {
+      position: relative;
+      z-index: 1;
+    }
+
+    .label {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid currentColor;
+      border-radius: 100px;
+      font-size: 0.68rem;
+      padding: 0.3rem 0.65rem;
+      letter-spacing: 0.16em;
+      background: rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(4px);
+    }
+
+    .title {
+      font-family: "Bebas Neue", "Arial Black", "Impact", sans-serif;
+      line-height: 0.92;
+      letter-spacing: 0.03em;
+      font-size: clamp(3rem, 10.3vw, 5.5rem);
+      text-shadow: 0 0 14px rgba(255, 255, 255, 0.22);
+      margin-bottom: 0.5rem;
+    }
+
+    .burst {
+      display: inline-block;
+      width: fit-content;
+      font-size: 0.77rem;
+      letter-spacing: 0.1em;
+      border: 1px dashed rgba(255, 255, 255, 0.7);
+      padding: 0.4rem 0.72rem;
+      background: rgba(0, 0, 0, 0.54);
+    }
+
+    .cta {
+      border: 1px solid currentColor;
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      width: fit-content;
+      padding: 0.45rem 0.7rem;
+      margin-top: 0.75rem;
+      background: rgba(0, 0, 0, 0.46);
+    }
+
+    .notes {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1rem;
+      display: grid;
+      align-content: start;
+      gap: 0.72rem;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .notes h2 {
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fdff;
+      margin-bottom: 0.15rem;
+    }
+
+    .notes p {
+      color: #ccd0e8;
+    }
+
+    .notes ul {
+      list-style: none;
+      display: grid;
+      gap: 0.5rem;
+      color: #c8ccea;
+    }
+
+    .notes li {
+      border-left: 2px solid rgba(255, 255, 255, 0.3);
+      padding-left: 0.6rem;
+    }
+
+    .notes code {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 5px;
+      padding: 0.1rem 0.34rem;
+      color: #f5f8ff;
+      margin-top: 0.18rem;
+    }
+
+    .alt-a .poster {
+      color: #5affea;
+      background:
+        radial-gradient(circle at 23% 28%, rgba(78, 255, 246, 0.62), transparent 34%),
+        radial-gradient(circle at 82% 16%, rgba(255, 0, 139, 0.54), transparent 34%),
+        linear-gradient(128deg, #1d0037 0%, #11163a 52%, #062127 100%);
+    }
+
+    .alt-a .poster::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(150deg, transparent 0 22px, rgba(255, 255, 255, 0.15) 22px 24px),
+        radial-gradient(circle at 72% 74%, rgba(255, 0, 149, 0.45), transparent 28%);
+      mix-blend-mode: screen;
+      opacity: 0.42;
+      z-index: 0;
+      animation: pulse-a 2.8s linear infinite;
+    }
+
+    .alt-a .title strong {
+      color: #ff4cbf;
+      filter: drop-shadow(0 0 8px rgba(255, 76, 191, 0.75));
+    }
+
+    .alt-b .poster {
+      color: #f6ff3d;
+      background:
+        linear-gradient(0deg, rgba(20, 27, 52, 0.58), rgba(20, 27, 52, 0.58)),
+        conic-gradient(from 70deg at 35% 25%, #3d00ff, #2f3d8f, #071025, #3d00ff);
+    }
+
+    .alt-b .poster::before {
+      content: "";
+      position: absolute;
+      inset: -15% -40%;
+      background:
+        radial-gradient(circle, rgba(0, 0, 0, 0.75) 0 25%, transparent 26%) 0 0 / 24px 24px,
+        linear-gradient(90deg, transparent 0 14px, rgba(0, 0, 0, 0.45) 14px 24px);
+      opacity: 0.45;
+      transform: rotate(-12deg);
+      z-index: 0;
+      animation: drift-b 8.8s linear infinite;
+    }
+
+    .alt-b .title strong {
+      color: #31ffe6;
+      text-shadow: 0 0 12px rgba(49, 255, 230, 0.8);
+    }
+
+    .alt-c .poster {
+      color: #ffb9d5;
+      background:
+        radial-gradient(circle at 16% 14%, rgba(255, 255, 255, 0.21), transparent 26%),
+        linear-gradient(150deg, #11080f 0%, #2d0f1f 35%, #420d33 68%, #13060f 100%);
+    }
+
+    .alt-c .poster::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(110deg, transparent 0 46%, rgba(255, 0, 115, 0.8) 47% 49%, transparent 50%),
+        linear-gradient(310deg, transparent 0 72%, rgba(255, 244, 251, 0.65) 73% 74%, transparent 75%),
+        radial-gradient(circle at 68% 24%, rgba(255, 24, 128, 0.45), transparent 21%);
+      mix-blend-mode: screen;
+      opacity: 0.46;
+      z-index: 0;
+      animation: flash-c 4.2s ease-in-out infinite;
+    }
+
+    .alt-c .title strong {
+      color: #ff5ea9;
+      text-shadow: 0 0 11px rgba(255, 94, 169, 0.85);
+    }
+
+    .concept-tag {
+      display: inline-flex;
+      width: fit-content;
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #101216;
+      background: #f6f8ff;
+      border-radius: 999px;
+      padding: 0.22rem 0.6rem;
+      margin-bottom: 0.2rem;
+    }
+
+    @keyframes pulse-a {
+      0% { opacity: 0.38; transform: translateX(0); }
+      50% { opacity: 0.54; transform: translateX(12px); }
+      100% { opacity: 0.38; transform: translateX(0); }
+    }
+
+    @keyframes drift-b {
+      0% { transform: rotate(-12deg) translateX(0); }
+      50% { transform: rotate(-12deg) translateX(20px); }
+      100% { transform: rotate(-12deg) translateX(0); }
+    }
+
+    @keyframes flash-c {
+      0% { opacity: 0.33; }
+      40% { opacity: 0.52; }
+      100% { opacity: 0.33; }
+    }
+
+    @media (max-width: 920px) {
+      .concept {
+        grid-template-columns: 1fr;
+      }
+
+      body {
+        padding: 1rem 0.75rem 2rem;
+      }
+    }
+  </style>
 </head>
 <body>
-
   <main>
-
-    <!-- ── Hero ── -->
-    <section class="hero">
-      <div class="container">
-        <span class="tag">A 30-Day System</span>
-        <h1>THE PKFIT <br><span class="gold">BLUEPRINT</span></h1>
-        <p class="manifesto">The system is the structure. The sequence is the code.</p>
-        <p class="subtitle">Stop guessing. Start building. A structured 30-day system that diagnoses your weak points, corrects them, and locks in lasting results.</p>
-        <a href="https://percyhendrux.gumroad.com/l/khcus" class="cta-btn">Get The Blueprint</a>
-      </div>
+    <section class="intro">
+      <strong>PKFIT SOCIAL ARTBOARD PACK</strong>
+      <p>Three bold, post-ready directions tuned for cyberpunk + Japanese manga energy. Each concept is built on a 4:5 frame for Instagram feed dominance and cross-posting to TikTok carousel stills.</p>
     </section>
 
-    <!-- ── Positioning ── -->
-    <section class="positioning">
-      <div class="container">
-        <p>While everyone else is selling discipline, we're diagnosing why yours disappeared.</p>
-      </div>
-    </section>
-
-    <!-- ── What You Get ── -->
-    <section class="what-you-get">
-      <div class="container">
-        <h2>WHAT YOU <span class="gold">GET</span></h2>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="number">01</div>
-            <h3>THE 30-DAY PLAN</h3>
-            <p>A complete day-by-day training and nutrition framework. Every session mapped out. Every phase with a clear purpose.</p>
-          </div>
-          <div class="feature-card">
-            <div class="number">02</div>
-            <h3>SELF-DIAGNOSIS TOOLS</h3>
-            <p>Assessments that pinpoint your weaknesses — posture, imbalances, mobility gaps — so you fix what actually matters.</p>
-          </div>
-          <div class="feature-card">
-            <div class="number">03</div>
-            <h3>NUTRITION FRAMEWORK</h3>
-            <p>No cookie-cutter meal plans. A flexible system that teaches you to eat for your goals without obsessing over every macro.</p>
-          </div>
-          <div class="feature-card">
-            <div class="number">04</div>
-            <h3>MINDSET PROTOCOLS</h3>
-            <p>The mental architecture that separates people who transform from people who quit. Identity-level change, not just motivation.</p>
-          </div>
-          <div class="feature-card">
-            <div class="number">05</div>
-            <h3>PROGRESS TRACKING</h3>
-            <p>Structured check-ins and metrics that show you exactly where you are and what to adjust — no guesswork.</p>
-          </div>
-          <div class="feature-card">
-            <div class="number">06</div>
-            <h3>LIFETIME ACCESS</h3>
-            <p>Buy once, keep forever. Run the 30-day cycle as many times as you need. Every update included.</p>
-          </div>
+    <article class="concept alt-a">
+      <div class="poster" aria-label="Concept one social artboard">
+        <span class="label">Concept 01</span>
+        <div>
+          <p class="title">GHOST<br><strong>MODE</strong></p>
+          <span class="burst">30 Day Physique Recode</span>
+          <p class="cta">Tap In -> PKFIT Blueprint</p>
         </div>
       </div>
-    </section>
+      <aside class="notes">
+        <span class="concept-tag">High Contrast Manga Noise</span>
+        <h2>Neon Samurai Cut</h2>
+        <p>Electric cyan x hot magenta color war with diagonal speed-lines. Built to stop the scroll in under one second.</p>
+        <ul>
+          <li>Hook: This is not motivation. This is system override.</li>
+          <li>Caption angle: Identity shift from tired to surgical.</li>
+          <li>Hashtags: <code>#cyberpunkfitness #mangaaesthetic #pkfit</code></li>
+        </ul>
+      </aside>
+    </article>
 
-    <!-- ── The 30-Day Structure ── -->
-    <section class="structure">
-      <div class="container">
-        <h2>THE 30-DAY <span class="gold">STRUCTURE</span></h2>
-        <p class="section-sub">Four phases. Each one builds on the last. By Day 30, the results are locked in.</p>
-
-        <div class="phases">
-          <div class="phase">
-            <div class="phase-days">DAYS 1 – 7</div>
-            <div class="phase-content">
-              <h3>DIAGNOSIS</h3>
-              <p>Audit your body, habits, and baseline. Identify postural imbalances, movement deficiencies, and nutrition gaps. You can't fix what you haven't measured.</p>
-            </div>
-          </div>
-          <div class="phase">
-            <div class="phase-days">DAYS 8 – 16</div>
-            <div class="phase-content">
-              <h3>CORRECTION</h3>
-              <p>Attack the weak points. Targeted training protocols and nutrition adjustments that address exactly what the diagnosis revealed. This is where the real work begins.</p>
-            </div>
-          </div>
-          <div class="phase">
-            <div class="phase-days">DAYS 17 – 24</div>
-            <div class="phase-content">
-              <h3>IDENTITY SHIFT</h3>
-              <p>Move from "trying to get fit" to "being fit." Rewire habits, build discipline systems, and internalize the standards that make results automatic.</p>
-            </div>
-          </div>
-          <div class="phase">
-            <div class="phase-days">DAYS 25 – 30</div>
-            <div class="phase-content">
-              <h3>THE LOCK</h3>
-              <p>Consolidate everything. Stress-test your new systems. Build the maintenance framework that ensures Day 30 isn't the end — it's the new baseline.</p>
-            </div>
-          </div>
+    <article class="concept alt-b">
+      <div class="poster" aria-label="Concept two social artboard">
+        <span class="label">Concept 02</span>
+        <div>
+          <p class="title">BREAK<br><strong>LIMITS</strong></p>
+          <span class="burst">Body Armor Build Sequence</span>
+          <p class="cta">Join The Blueprint Feed Drop</p>
         </div>
       </div>
-    </section>
+      <aside class="notes">
+        <span class="concept-tag">Acid Neon x Halftone Grid</span>
+        <h2>Glitch Mecha Signal</h2>
+        <p>Halftone manga texture over deep violet with acid yellow type. Aggressive and loud for launch announcements.</p>
+        <ul>
+          <li>Hook: The old body file has been deleted.</li>
+          <li>Caption angle: Day 1 to Day 30 as a battle arc.</li>
+          <li>Hashtags: <code>#mangafitness #animestylebranding #digitaldojo</code></li>
+        </ul>
+      </aside>
+    </article>
 
-    <!-- ── Testimonial ── -->
-    <section class="testimonial">
-      <div class="container">
-        <div class="testimonial-card">
-          <img src="/assets/img/copy_1BE065CB-2462-471E-9B96-8704A5802096.png" alt="Dele Bakare transformation — before and after, down 35 lbs" class="testimonial-photo">
-          <span class="quote-mark">"</span>
-          <blockquote>"I'd never stepped in a gym. Running a business, raising a family — I told myself I didn't have the time. So I made the time. 35 pounds down. Five, six days a week now."</blockquote>
-          <p class="attribution"><strong>Dele Bakare, 39</strong><br>Down 35 lbs · Business Owner · Husband · Father</p>
+    <article class="concept alt-c">
+      <div class="poster" aria-label="Concept three social artboard">
+        <span class="label">Concept 03</span>
+        <div>
+          <p class="title">NOISE<br><strong>OFF</strong></p>
+          <span class="burst">Silent Discipline Protocol</span>
+          <p class="cta">DM "RONIN" For The Drop</p>
         </div>
       </div>
-    </section>
-
-    <!-- ── Final CTA ── -->
-    <section class="final-cta">
-      <div class="container">
-        <h2>READY TO <span class="gold">BUILD?</span></h2>
-        <p>30 days. Four phases. One system that actually works. Stop cycling through programs and start seeing results.</p>
-        <a href="https://percyhendrux.gumroad.com/l/khcus" class="cta-btn">Get The Blueprint Now</a>
-      </div>
-    </section>
-
+      <aside class="notes">
+        <span class="concept-tag">Dark Romance x Blade Glow</span>
+        <h2>Crimson Ronin Frame</h2>
+        <p>Velvet black and blood pink treatment with blade-streak highlights. Cleaner, moodier, and premium while keeping manga tension.</p>
+        <ul>
+          <li>Hook: No excuses. No noise. Just execution.</li>
+          <li>Caption angle: Precision discipline for founders.</li>
+          <li>Hashtags: <code>#roninmindset #fitnessbranddesign #pkfitblueprint</code></li>
+        </ul>
+      </aside>
+    </article>
   </main>
-
-  <!-- ── Footer ── -->
-  <footer>
-    <div class="container">
-      <p>&copy; 2026 PKFIT. All rights reserved.</p>
-    </div>
-  </footer>
-
 </body>
 </html>
