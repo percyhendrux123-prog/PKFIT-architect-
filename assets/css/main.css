@@ -399,3 +399,202 @@ footer p {
     padding: 120px 0;
   }
 }
+
+/* ── Motion System ── */
+
+:root {
+  scroll-behavior: smooth;
+}
+
+@keyframes hero-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scoped to .js so no-JS users see content normally */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.js .reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.js .reveal-delay-1 { transition-delay: 0.08s; }
+.js .reveal-delay-2 { transition-delay: 0.16s; }
+.js .reveal-delay-3 { transition-delay: 0.24s; }
+.js .reveal-delay-4 { transition-delay: 0.32s; }
+.js .reveal-delay-5 { transition-delay: 0.40s; }
+.js .reveal-delay-6 { transition-delay: 0.48s; }
+
+/* ── Hero sequence (load-triggered, no JS guard needed — fades IN, never hides) ── */
+
+.hero .tag {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 0.3s;
+}
+
+.hero h1 {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 0.6s;
+}
+
+.hero .manifesto {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 0.9s;
+  position: relative;
+}
+
+/* Gold underline draws in after manifesto appears */
+.hero .manifesto::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 1px;
+  background: #C8A96E;
+  animation: manifesto-line 0.5s ease forwards 1.3s;
+}
+
+@keyframes manifesto-line {
+  to { width: 60px; }
+}
+
+.hero .subtitle {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 1.1s;
+}
+
+.hero .cta-btn {
+  animation: hero-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both 1.5s;
+}
+
+/* Ambient glow behind hero title */
+.hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(200, 169, 110, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  animation: hero-glow-pulse 4s ease-in-out infinite;
+  z-index: 0;
+}
+
+.hero .container {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes hero-glow-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+
+/* ── Section border reveal ── */
+
+.js .positioning,
+.js .what-you-get,
+.js .structure,
+.js .testimonial,
+.js .final-cta {
+  border-top-color: transparent;
+  transition: border-top-color 0.8s ease;
+}
+
+.js .positioning.visible,
+.js .what-you-get.visible,
+.js .structure.visible,
+.js .testimonial.visible,
+.js .final-cta.visible {
+  border-top-color: rgba(200, 169, 110, 0.15);
+}
+
+/* ── Feature card hover bloom ── */
+
+.feature-card {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  box-shadow: 0 0 20px rgba(200, 169, 110, 0.12);
+}
+
+/* ── Phase divider draw ── */
+
+/* Override existing border with animatable pseudo-element */
+.js .phase {
+  border-bottom: none;
+  position: relative;
+}
+
+.js .phase:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(200, 169, 110, 0.1);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.6s ease;
+}
+
+.js .phase.visible:not(:last-child)::after {
+  transform: scaleX(1);
+}
+
+/* Fallback: restore border when JS is absent */
+.phase:not(:last-child) {
+  border-bottom: 1px solid rgba(200, 169, 110, 0.1);
+}
+
+/* ── Final CTA breathing glow ── */
+
+@keyframes cta-breathe {
+  0%, 100% { box-shadow: inset 0 0 80px rgba(200, 169, 110, 0.03); }
+  50%       { box-shadow: inset 0 0 80px rgba(200, 169, 110, 0.09); }
+}
+
+.final-cta {
+  animation: cta-breathe 3s ease-in-out infinite;
+}
+
+/* ── CTA button shimmer on hover ── */
+
+.cta-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  transition: left 0.4s ease;
+}
+
+.cta-btn:hover::after {
+  left: 140%;
+}
