@@ -57,7 +57,7 @@
 
   <div id="root"></div>
 
-  <p class="hint">drag or swipe to navigate</p>
+  <p class="hint">drag or swipe · tap an exercise for form cues</p>
 
   <footer>PKFIT &copy; 2026</footer>
 
@@ -67,14 +67,109 @@
   <script type="text/babel" data-type="module" src="components/iOS.jsx"></script>
 
   <script type="text/babel">
-    const { IOSDevice, IOSList, IOSListRow } = window;
+    const { IOSDevice, IOSList, IOSListRow, IOSSheet } = window;
+
+    const GOLD = '#C8A96E';
+    const WIDTH = 390;
+    const THRESHOLD = 52;
+
+    // ── Exercise database ──────────────────────────────────────
+
+    const EXERCISES = {
+      'Barbell Bench Press': {
+        sets: '4 × 6', load: '@80% 1RM',
+        setup: [
+          'Lie flat — eyes directly under the bar',
+          'Grip slightly wider than shoulder-width',
+          'Pinch shoulder blades together and down',
+          'Plant feet flat and drive them into the floor',
+        ],
+        cues: [
+          'Touch lower chest — elbows at ~45° to torso',
+          'Push the bar back toward the rack, not straight up',
+          'Full lockout on every rep',
+        ],
+        avoid: [
+          'Bouncing the bar off your chest',
+          'Flaring elbows to 90°',
+          'Losing leg drive mid-set',
+        ],
+      },
+      'Incline DB Press': {
+        sets: '3 × 10', load: 'RPE 8',
+        setup: [
+          'Set bench to 30–45°',
+          'Dumbbells at shoulder level, slight wrist rotation',
+          'Feet flat, upper back against pad',
+        ],
+        cues: [
+          'Arc the path — press up and slightly in',
+          'Don\'t lock out fully at the top',
+          '3-second eccentric on every rep',
+        ],
+        avoid: [
+          'Letting elbows flare excessively',
+          'Rushing the lowering phase',
+          'Bench angle above 45° (front delt takes over)',
+        ],
+      },
+      'Overhead Press': {
+        sets: '3 × 8', load: '@70% 1RM',
+        setup: [
+          'Bar resting on front delts, elbows just in front',
+          'Grip just outside shoulder-width',
+          'Brace core hard — squeeze glutes',
+        ],
+        cues: [
+          'Press in a slight arc — bar travels back then up',
+          'Push your head through at lockout',
+          'Re-brace between every rep',
+        ],
+        avoid: [
+          'Pressing straight up without clearing the chin',
+          'Hyperextending the lower back',
+          'Soft core — it compresses the lumbar',
+        ],
+      },
+      'Lateral Raise': {
+        sets: '4 × 15', load: 'To failure',
+        setup: [
+          'Stand tall, slight bend in knees and elbows',
+          'Lean forward 10–15° at the hips',
+          'Thumbs slightly lower than pinkies',
+        ],
+        cues: [
+          'Lead with elbows, not hands',
+          'Stop at shoulder height — no higher',
+          '2-second hold at top, controlled drop',
+        ],
+        avoid: [
+          'Swinging the torso for momentum',
+          'Raising above shoulder height — traps take over',
+          'Straight arms — loses the lateral delt emphasis',
+        ],
+      },
+      'Tricep Pushdown': {
+        sets: '3 × 12', load: 'RPE 8',
+        setup: [
+          'High cable attachment — rope or straight bar',
+          'Elbows pinned to sides — they stay there',
+          'Slight forward lean at the hips',
+        ],
+        cues: [
+          'Full extension at the bottom — squeeze hard',
+          'Control the cable on the return',
+          'Keep wrists neutral throughout',
+        ],
+        avoid: [
+          'Letting elbows flare or travel forward',
+          'Using shoulder momentum to initiate reps',
+          'Partial reps — full ROM or nothing',
+        ],
+      },
+    };
 
     // ── Shared primitives ──────────────────────────────────────
-
-    const GOLD   = '#C8A96E';
-    const DARK   = true;
-    const WIDTH  = 390;
-    const THRESHOLD = 52;
 
     function Label({ children }) {
       return (
@@ -90,8 +185,7 @@
       return (
         <div style={{
           margin: '20px 16px 0',
-          height: 52, borderRadius: 14,
-          background: GOLD,
+          height: 52, borderRadius: 14, background: GOLD,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontFamily: '-apple-system, system-ui',
           fontSize: 17, fontWeight: 700, color: '#080808', letterSpacing: 0.2,
@@ -99,36 +193,114 @@
       );
     }
 
-    function PhaseCard({ days, name, desc, accent = GOLD }) {
+    // ── Exercise detail sheet ──────────────────────────────────
+
+    function SectionHead({ label }) {
       return (
         <div style={{
-          margin: '0 16px 16px', padding: '18px 20px',
-          borderRadius: 20, background: '#1C1C1E',
-        }}>
-          <div style={{
-            fontFamily: '-apple-system, system-ui',
-            fontSize: 11, fontWeight: 600, letterSpacing: 0.8,
-            color: accent, textTransform: 'uppercase', marginBottom: 5,
-          }}>{days}</div>
-          <div style={{
-            fontFamily: '-apple-system, system-ui',
-            fontSize: 19, fontWeight: 700, color: '#fff', marginBottom: 7,
-          }}>{name}</div>
-          <div style={{
-            fontFamily: '-apple-system, system-ui',
-            fontSize: 13, lineHeight: '18px',
-            color: 'rgba(235,235,245,0.55)',
-          }}>{desc}</div>
-        </div>
+          fontFamily: '-apple-system, system-ui',
+          fontSize: 11, fontWeight: 600,
+          letterSpacing: 0.9, textTransform: 'uppercase',
+          color: GOLD, marginBottom: 12,
+        }}>{label}</div>
       );
     }
 
-    // ── Screen 0: Home ─────────────────────────────────────────
+    function ExerciseSheet({ exercise, onDismiss }) {
+      const data = EXERCISES[exercise];
+      if (!data) return null;
+      const liStyle = {
+        fontFamily: '-apple-system, system-ui',
+        fontSize: 15, lineHeight: '21px',
+        color: 'rgba(235,235,245,0.85)',
+      };
+      return (
+        <IOSSheet onDismiss={onDismiss} dark={true}>
+          {/* Header */}
+          <div style={{ padding: '6px 20px 20px' }}>
+            <div style={{
+              fontFamily: '-apple-system, system-ui',
+              fontSize: 22, fontWeight: 700, color: '#fff',
+              marginBottom: 10, lineHeight: '28px',
+            }}>{exercise}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[data.sets, data.load].map(tag => (
+                <div key={tag} style={{
+                  height: 26, padding: '0 10px',
+                  borderRadius: 8,
+                  background: 'rgba(200,169,110,0.15)',
+                  border: '0.5px solid rgba(200,169,110,0.35)',
+                  display: 'flex', alignItems: 'center',
+                  fontFamily: '-apple-system, system-ui',
+                  fontSize: 12, fontWeight: 600,
+                  color: GOLD, letterSpacing: 0.2,
+                }}>{tag}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Setup */}
+          <div style={{ padding: '0 20px 20px' }}>
+            <SectionHead label="Setup" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {data.setup.map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: 11,
+                    background: 'rgba(200,169,110,0.18)',
+                    border: '0.5px solid rgba(200,169,110,0.35)',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: '-apple-system, system-ui',
+                    fontSize: 11, fontWeight: 700, color: GOLD,
+                    marginTop: 1,
+                  }}>{i + 1}</div>
+                  <div style={liStyle}>{s}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 0.5, background: 'rgba(84,84,88,0.55)', margin: '0 20px 20px' }} />
+
+          {/* Form cues */}
+          <div style={{ padding: '0 20px 20px' }}>
+            <SectionHead label="Form Cues" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {data.cues.map((c, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{ color: GOLD, fontSize: 14, marginTop: 3, flexShrink: 0 }}>◆</div>
+                  <div style={liStyle}>{c}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 0.5, background: 'rgba(84,84,88,0.55)', margin: '0 20px 20px' }} />
+
+          {/* Avoid */}
+          <div style={{ padding: '0 20px 40px' }}>
+            <SectionHead label="Avoid" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {data.avoid.map((a, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{ color: '#FF453A', fontSize: 14, marginTop: 2, flexShrink: 0, fontWeight: 700 }}>✕</div>
+                  <div style={{ ...liStyle, color: 'rgba(235,235,245,0.65)' }}>{a}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </IOSSheet>
+      );
+    }
+
+    // ── Screens ────────────────────────────────────────────────
 
     function HomeScreen() {
       return (
         <div style={{ paddingBottom: 64 }}>
-          {/* Progress bar */}
           <div style={{ padding: '0 16px 20px' }}>
             <div style={{
               fontFamily: '-apple-system, system-ui',
@@ -138,44 +310,67 @@
             </div>
             <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2 }}>
               <div style={{
-                width: '40%', height: '100%',
+                width: '40%', height: '100%', borderRadius: 2,
                 background: `linear-gradient(90deg, ${GOLD}, #e8c882)`,
-                borderRadius: 2,
               }} />
             </div>
           </div>
 
-          {/* Active phase */}
-          <PhaseCard
-            days="Active · Days 8–16"
-            name="Correction"
-            desc="Attack the weak points. Targeted training that addresses exactly what the diagnosis revealed."
-          />
+          <div style={{
+            margin: '0 16px 16px', padding: '18px 20px',
+            borderRadius: 20, background: '#1C1C1E',
+          }}>
+            <div style={{
+              fontFamily: '-apple-system, system-ui',
+              fontSize: 11, fontWeight: 600, letterSpacing: 0.8,
+              color: GOLD, textTransform: 'uppercase', marginBottom: 5,
+            }}>Active · Days 8–16</div>
+            <div style={{
+              fontFamily: '-apple-system, system-ui',
+              fontSize: 19, fontWeight: 700, color: '#fff', marginBottom: 7,
+            }}>Correction</div>
+            <div style={{
+              fontFamily: '-apple-system, system-ui',
+              fontSize: 13, lineHeight: '18px', color: 'rgba(235,235,245,0.55)',
+            }}>
+              Attack the weak points. Targeted training that addresses exactly what your diagnosis revealed.
+            </div>
+          </div>
 
-          {/* All phases */}
           <IOSList header="Programme" dark={true}>
             <IOSListRow title="Diagnosis"      detail="Complete" icon={GOLD}    dark={true} />
             <IOSListRow title="Correction"     detail="Day 5/9"  icon="#4CAF50" dark={true} />
-            <IOSListRow title="Identity Shift" detail="Locked"   icon="#333"    dark={true} chevron={false} />
-            <IOSListRow title="The Lock"       detail="Locked"   icon="#333"    dark={true} chevron={false} isLast={true} />
+            <IOSListRow title="Identity Shift" detail="Locked"   icon="#2a2a2e" dark={true} chevron={false} />
+            <IOSListRow title="The Lock"       detail="Locked"   icon="#2a2a2e" dark={true} chevron={false} isLast={true} />
           </IOSList>
         </div>
       );
     }
 
-    // ── Screen 1: Session ──────────────────────────────────────
-
-    function SessionScreen() {
+    function SessionScreen({ onExercise }) {
+      const exercises = [
+        'Barbell Bench Press',
+        'Incline DB Press',
+        'Overhead Press',
+        'Lateral Raise',
+        'Tricep Pushdown',
+      ];
+      const details = ['4 × 6', '3 × 10', '3 × 8', '4 × 15', '3 × 12'];
       return (
         <div style={{ paddingBottom: 64 }}>
           <Label>Correction Phase · Push Day</Label>
 
           <IOSList header="Today's Work" dark={true}>
-            <IOSListRow title="Barbell Bench Press" detail="4 × 6"  dark={true} chevron={false} />
-            <IOSListRow title="Incline DB Press"    detail="3 × 10" dark={true} chevron={false} />
-            <IOSListRow title="Overhead Press"      detail="3 × 8"  dark={true} chevron={false} />
-            <IOSListRow title="Lateral Raise"       detail="4 × 15" dark={true} chevron={false} />
-            <IOSListRow title="Tricep Pushdown"     detail="3 × 12" dark={true} chevron={false} isLast={true} />
+            {exercises.map((name, i) => (
+              <IOSListRow
+                key={name}
+                title={name}
+                detail={details[i]}
+                dark={true}
+                isLast={i === exercises.length - 1}
+                onClick={() => onExercise(name)}
+              />
+            ))}
           </IOSList>
 
           <div style={{ height: 16 }} />
@@ -186,11 +381,18 @@
           </IOSList>
 
           <GoldButton label="Start Session" />
+
+          <div style={{
+            margin: '14px 16px 0',
+            fontFamily: '-apple-system, system-ui',
+            fontSize: 12, color: 'rgba(235,235,245,0.3)',
+            textAlign: 'center',
+          }}>
+            Tap any exercise to see form cues
+          </div>
         </div>
       );
     }
-
-    // ── Screen 2: Nutrition ────────────────────────────────────
 
     function NutritionScreen() {
       const macros = [
@@ -199,30 +401,34 @@
         { label: 'Fat',     g: 80,  color: GOLD },
       ];
       const total = macros.reduce((s, m) => s + m.g * (m.label === 'Fat' ? 9 : 4), 0);
-
       return (
         <div style={{ paddingBottom: 64 }}>
           <Label>Correction Phase · Training Day</Label>
 
-          {/* Calorie ring summary */}
           <div style={{
             margin: '0 16px 16px', padding: '20px',
             borderRadius: 20, background: '#1C1C1E',
             display: 'flex', alignItems: 'center', gap: 20,
           }}>
-            <div style={{ textAlign: 'center', minWidth: 80 }}>
-              <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 28, fontWeight: 700, color: GOLD, lineHeight: 1 }}>2,850</div>
-              <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 11, color: 'rgba(235,235,245,0.45)', marginTop: 4 }}>kcal / day</div>
+            <div style={{ textAlign: 'center', minWidth: 76 }}>
+              <div style={{
+                fontFamily: '-apple-system, system-ui',
+                fontSize: 28, fontWeight: 700, color: GOLD, lineHeight: 1,
+              }}>2,850</div>
+              <div style={{
+                fontFamily: '-apple-system, system-ui',
+                fontSize: 11, color: 'rgba(235,235,245,0.4)', marginTop: 5,
+              }}>kcal / day</div>
             </div>
             <div style={{ flex: 1 }}>
               {macros.map(m => (
-                <div key={m.label} style={{ marginBottom: 8 }}>
+                <div key={m.label} style={{ marginBottom: 9 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontFamily: '-apple-system, system-ui', fontSize: 12, color: 'rgba(235,235,245,0.55)' }}>{m.label}</span>
+                    <span style={{ fontFamily: '-apple-system, system-ui', fontSize: 12, color: 'rgba(235,235,245,0.5)' }}>{m.label}</span>
                     <span style={{ fontFamily: '-apple-system, system-ui', fontSize: 12, color: '#fff', fontWeight: 600 }}>{m.g}g</span>
                   </div>
                   <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2 }}>
-                    <div style={{ width: `${Math.round((m.g * (m.label === 'Fat' ? 9 : 4) / total) * 100)}%`, height: '100%', background: m.color, borderRadius: 2 }} />
+                    <div style={{ width: `${Math.round(m.g * (m.label === 'Fat' ? 9 : 4) / total * 100)}%`, height: '100%', background: m.color, borderRadius: 2 }} />
                   </div>
                 </div>
               ))}
@@ -230,8 +436,8 @@
           </div>
 
           <IOSList header="Meal Timing" dark={true}>
-            <IOSListRow title="Pre-workout"   detail="60–90 min"   dark={true} chevron={false} />
-            <IOSListRow title="Intra-workout" detail="If >90 min"  dark={true} chevron={false} />
+            <IOSListRow title="Pre-workout"   detail="60–90 min"    dark={true} chevron={false} />
+            <IOSListRow title="Intra-workout" detail="If >90 min"   dark={true} chevron={false} />
             <IOSListRow title="Post-workout"  detail="Within 2 hrs" dark={true} chevron={false} isLast={true} />
           </IOSList>
 
@@ -244,44 +450,50 @@
       );
     }
 
-    // ── Screen 3: Progress ─────────────────────────────────────
-
     function ProgressScreen() {
       return (
         <div style={{ paddingBottom: 64 }}>
           <Label>Week 2 · End of Correction Phase</Label>
 
-          {/* Delta card */}
           <div style={{
             margin: '0 16px 16px', padding: '18px 20px',
             borderRadius: 20, background: '#1C1C1E',
-            display: 'flex', gap: 0,
+            display: 'flex',
           }}>
             {[
-              { label: 'Weight',     value: '183',  unit: 'lbs',  color: '#fff' },
-              { label: '4-wk Δ',    value: '−2.4', unit: 'lbs',  color: '#4CAF50' },
-              { label: 'Strength',   value: '+4.1', unit: '%',    color: GOLD },
+              { label: 'Weight',   value: '183',  unit: 'lbs', color: '#fff' },
+              { label: '4-wk Δ',  value: '−2.4', unit: 'lbs', color: '#4CAF50' },
+              { label: 'Strength', value: '+4.1', unit: '%',   color: GOLD },
             ].map((s, i) => (
-              <div key={i} style={{ flex: 1, textAlign: 'center', borderLeft: i > 0 ? '0.5px solid rgba(255,255,255,0.08)' : 'none' }}>
-                <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1 }}>
-                  {s.value}<span style={{ fontSize: 13 }}> {s.unit}</span>
+              <div key={i} style={{
+                flex: 1, textAlign: 'center',
+                borderLeft: i > 0 ? '0.5px solid rgba(255,255,255,0.08)' : 'none',
+              }}>
+                <div style={{
+                  fontFamily: '-apple-system, system-ui',
+                  fontSize: 22, fontWeight: 700, color: s.color, lineHeight: 1,
+                }}>
+                  {s.value}<span style={{ fontSize: 12 }}> {s.unit}</span>
                 </div>
-                <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 11, color: 'rgba(235,235,245,0.45)', marginTop: 5 }}>{s.label}</div>
+                <div style={{
+                  fontFamily: '-apple-system, system-ui',
+                  fontSize: 11, color: 'rgba(235,235,245,0.4)', marginTop: 5,
+                }}>{s.label}</div>
               </div>
             ))}
           </div>
 
           <IOSList header="Metrics" dark={true}>
-            <IOSListRow title="Body Fat Est."      detail="18.2%"  dark={true} chevron={false} />
-            <IOSListRow title="Waist"              detail="−1.5 cm" dark={true} chevron={false} />
-            <IOSListRow title="Bench Press 1RM"    detail="102 kg" dark={true} chevron={false} isLast={true} />
+            <IOSListRow title="Body Fat Est."    detail="18.2%"   dark={true} chevron={false} />
+            <IOSListRow title="Waist"            detail="−1.5 cm" dark={true} chevron={false} />
+            <IOSListRow title="Bench 1RM"        detail="102 kg"  dark={true} chevron={false} isLast={true} />
           </IOSList>
 
           <div style={{ height: 16 }} />
 
           <IOSList header="Compliance" dark={true}>
-            <IOSListRow title="Sessions"          detail="9 / 10" dark={true} chevron={false} />
-            <IOSListRow title="Nutrition adherence" detail="85%"  dark={true} chevron={false} isLast={true} />
+            <IOSListRow title="Sessions"            detail="9 / 10" dark={true} chevron={false} />
+            <IOSListRow title="Nutrition adherence" detail="85%"    dark={true} chevron={false} isLast={true} />
           </IOSList>
 
           <GoldButton label="Log Week 2 Check-In" />
@@ -291,15 +503,23 @@
 
     // ── Swipe shell ────────────────────────────────────────────
 
-    function SwipeShell({ screens, width }) {
-      const [current, setCurrent]     = React.useState(0);
-      const [liveOffset, setOffset]   = React.useState(0);
-      const [dragging, setDragging]   = React.useState(false);
+    function SwipeShell({ width }) {
+      const [current, setCurrent]   = React.useState(0);
+      const [liveOffset, setOffset] = React.useState(0);
+      const [dragging, setDragging] = React.useState(false);
+      const [activeEx, setActiveEx] = React.useState(null);
 
-      const touchRef   = React.useRef(null); // { x, y }
-      const lockRef    = React.useRef(null); // 'h' | 'v'
-      const mouseRef   = React.useRef(false);
+      const touchRef    = React.useRef(null);
+      const lockRef     = React.useRef(null);
+      const mouseRef    = React.useRef(false);
       const mouseStartX = React.useRef(0);
+
+      const screens = [
+        { title: 'Blueprint', content: <HomeScreen /> },
+        { title: 'Day 12',    content: <SessionScreen onExercise={setActiveEx} /> },
+        { title: 'Nutrition', content: <NutritionScreen /> },
+        { title: 'Progress',  content: <ProgressScreen /> },
+      ];
 
       function snap(offset) {
         if (offset < -THRESHOLD && current < screens.length - 1) setCurrent(c => c + 1);
@@ -309,48 +529,40 @@
       }
 
       function clamp(dx, idx) {
-        const atStart = idx === 0 && dx > 0;
-        const atEnd   = idx === screens.length - 1 && dx < 0;
-        return (atStart || atEnd) ? dx * 0.22 : dx;
+        const edge = (idx === 0 && dx > 0) || (idx === screens.length - 1 && dx < 0);
+        return edge ? dx * 0.22 : dx;
       }
 
-      // Touch
       function onTouchStart(e) {
+        if (activeEx) return;
         touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         lockRef.current  = null;
       }
-
       function onTouchMove(e) {
-        if (!touchRef.current) return;
+        if (activeEx || !touchRef.current) return;
         const dx = e.touches[0].clientX - touchRef.current.x;
         const dy = e.touches[0].clientY - touchRef.current.y;
-
         if (!lockRef.current) {
           if (Math.abs(dx) > Math.abs(dy) + 6) { lockRef.current = 'h'; setDragging(true); }
           else if (Math.abs(dy) > 6)            { lockRef.current = 'v'; }
         }
-
         if (lockRef.current === 'h') setOffset(clamp(dx, current));
       }
-
       function onTouchEnd() {
         if (lockRef.current === 'h') snap(liveOffset);
-        touchRef.current = null;
-        lockRef.current  = null;
+        touchRef.current = null; lockRef.current = null;
       }
 
-      // Mouse
       function onMouseDown(e) {
-        mouseRef.current  = true;
+        if (activeEx) return;
+        mouseRef.current   = true;
         mouseStartX.current = e.clientX;
         setDragging(true);
       }
-
       function onMouseMove(e) {
         if (!mouseRef.current) return;
         setOffset(clamp(e.clientX - mouseStartX.current, current));
       }
-
       function onMouseUp() {
         if (!mouseRef.current) return;
         mouseRef.current = false;
@@ -362,7 +574,12 @@
       return (
         <IOSDevice dark={true} title={screens[current].title} width={width} height={844}>
           <div
-            style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', userSelect: 'none', cursor: dragging ? 'grabbing' : 'grab' }}
+            style={{
+              width: '100%', height: '100%',
+              overflow: 'hidden', position: 'relative',
+              userSelect: 'none',
+              cursor: activeEx ? 'default' : dragging ? 'grabbing' : 'grab',
+            }}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -407,22 +624,18 @@
                 }} />
               ))}
             </div>
+
+            {/* Exercise detail sheet */}
+            {activeEx && (
+              <ExerciseSheet exercise={activeEx} onDismiss={() => setActiveEx(null)} />
+            )}
           </div>
         </IOSDevice>
       );
     }
 
-    // ── App ────────────────────────────────────────────────────
-
-    const SCREENS = [
-      { title: 'Blueprint', content: <HomeScreen /> },
-      { title: 'Day 12',    content: <SessionScreen /> },
-      { title: 'Nutrition', content: <NutritionScreen /> },
-      { title: 'Progress',  content: <ProgressScreen /> },
-    ];
-
     ReactDOM.createRoot(document.getElementById('root')).render(
-      <SwipeShell screens={SCREENS} width={WIDTH} />
+      <SwipeShell width={WIDTH} />
     );
   </script>
 

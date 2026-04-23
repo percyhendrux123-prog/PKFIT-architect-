@@ -122,18 +122,23 @@ function IOSNavBar({ title = 'Title', dark = false, trailingIcon = true }) {
 // ─────────────────────────────────────────────────────────────
 // Grouped list (inset card, r:26) + row (52px)
 // ─────────────────────────────────────────────────────────────
-function IOSListRow({ title, detail, icon, chevron = true, isLast = false, dark = false }) {
+function IOSListRow({ title, detail, icon, chevron = true, isLast = false, dark = false, onClick }) {
   const text = dark ? '#fff' : '#000';
   const sec = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
   const ter = dark ? 'rgba(235,235,245,0.3)' : 'rgba(60,60,67,0.3)';
   const sep = dark ? 'rgba(84,84,88,0.65)' : 'rgba(60,60,67,0.12)';
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', minHeight: 52,
-      padding: '0 16px', position: 'relative',
-      fontFamily: '-apple-system, system-ui', fontSize: 17,
-      letterSpacing: -0.43,
-    }}>
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', minHeight: 52,
+        padding: '0 16px', position: 'relative',
+        fontFamily: '-apple-system, system-ui', fontSize: 17,
+        letterSpacing: -0.43,
+        cursor: onClick ? 'pointer' : 'default',
+        WebkitTapHighlightColor: 'rgba(0,0,0,0)',
+      }}
+    >
       {icon && (
         <div style={{
           width: 30, height: 30, borderRadius: 7, background: icon,
@@ -324,6 +329,88 @@ function IOSKeyboard({ dark = false }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// Bottom sheet — slides up over device content
+// ─────────────────────────────────────────────────────────────
+function IOSSheet({ onDismiss, children, dark = false }) {
+  const [revealed, setRevealed] = React.useState(false);
+  const [leaving, setLeaving]   = React.useState(false);
+  const [dragY, setDragY]       = React.useState(0);
+  const startY = React.useRef(null);
+
+  React.useEffect(() => {
+    requestAnimationFrame(() => setRevealed(true));
+  }, []);
+
+  function dismiss() {
+    setLeaving(true);
+    setTimeout(onDismiss, 340);
+  }
+
+  function onTouchStart(e) { startY.current = e.touches[0].clientY; }
+  function onTouchMove(e) {
+    if (startY.current === null) return;
+    const dy = e.touches[0].clientY - startY.current;
+    if (dy > 0) setDragY(dy);
+  }
+  function onTouchEnd() {
+    if (dragY > 80) dismiss(); else setDragY(0);
+    startY.current = null;
+  }
+
+  const isLive = dragY > 0 && !leaving;
+  const ty = leaving ? '100%' : revealed ? `${dragY}px` : '100%';
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 100 }}>
+      {/* backdrop */}
+      <div
+        onClick={dismiss}
+        style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(0,0,0,0.52)',
+          backdropFilter: 'blur(5px)',
+          WebkitBackdropFilter: 'blur(5px)',
+          opacity: (revealed && !leaving) ? 1 : 0,
+          transition: 'opacity 0.28s ease',
+        }}
+      />
+      {/* sheet */}
+      <div
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          background: dark ? '#1C1C1E' : '#F2F2F7',
+          borderRadius: '26px 26px 0 0',
+          maxHeight: '80%',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+          transform: `translateY(${ty})`,
+          transition: isLive ? 'none' : 'transform 0.36s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+          boxShadow: '0 -8px 40px rgba(0,0,0,0.35)',
+        }}
+      >
+        {/* drag handle */}
+        <div style={{
+          display: 'flex', justifyContent: 'center',
+          padding: '10px 0 6px', flexShrink: 0, cursor: 'ns-resize',
+        }}>
+          <div style={{
+            width: 36, height: 4, borderRadius: 2,
+            background: dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)',
+          }} />
+        </div>
+        {/* scrollable body */}
+        <div style={{ overflow: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 Object.assign(window, {
-  IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard,
+  IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard, IOSSheet,
 });
