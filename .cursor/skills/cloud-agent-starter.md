@@ -57,7 +57,7 @@ Run/test workflow:
    - Image paths resolve and no 404s appear in network panel.
 4. Fast terminal checks:
    - `rg "@font-face|url\\('/assets/fonts" assets/css/main.css`
-   - `rg "assets/img|favicon|apple-touch-icon|og.png" blueprint-landing.html`
+   - `rg "assets/img|favicon|apple-touch-icon|og.png" blueprint-landing.html || echo "No explicit image/icon refs in page (valid for some variants)."`
 
 ### Area C: Content playbooks (`content/*.md`)
 
@@ -77,7 +77,7 @@ When to use: regenerating OG image/favicon placeholders.
 
 Run/test workflow:
 1. Install script deps only when needed:
-   - `python3 -m pip install Pillow fonttools`
+   - `python3 -m pip install Pillow fonttools brotli`
 2. Run:
    - `python3 scripts/generate-brand-placeholders.py`
 3. Verify outputs:
