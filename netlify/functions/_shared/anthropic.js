@@ -14,9 +14,30 @@ export function getAnthropic() {
   return client;
 }
 
+// Resolve the prompt file across dev and the Netlify Lambda bundle. esbuild
+// can relocate _shared/anthropic.js, so import.meta.url's dirname doesn't always
+// land at netlify/functions/_shared/. Try the most likely candidates in order
+// and surface every path tried if none match — that error is far easier to
+// diagnose than the bare ENOENT we used to throw.
 export function loadPrompt(name) {
-  const path = resolve(here, '..', '_prompts', name);
-  return readFileSync(path, 'utf8');
+  const candidates = [
+    resolve(here, '..', '_prompts', name),                         // dev: functions/_shared/ -> ../_prompts
+    resolve(here, '..', 'functions', '_prompts', name),            // bundle: netlify/_shared/ -> ../functions/_prompts
+    resolve(here, '_prompts', name),                                // co-located
+    resolve(process.cwd(), 'netlify', 'functions', '_prompts', name),
+    resolve(process.cwd(), 'netlify', '_prompts', name),
+  ];
+  let lastErr;
+  for (const candidate of candidates) {
+    try {
+      return readFileSync(candidate, 'utf8');
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw new Error(
+    `loadPrompt: could not find ${name}. Tried: ${candidates.join(', ')}. Last error: ${lastErr?.message}`,
+  );
 }
 
 // Latest Claude Sonnet 4 model. "claude-sonnet-4" in the brief maps to this
