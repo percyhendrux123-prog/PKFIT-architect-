@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -9,17 +9,33 @@ import { heightLabel, weightLabel } from '../lib/units';
 
 const steps = ['Identity', 'Baseline', 'Goal', 'Baseline photo', 'Commit'];
 
+// First-load units default. en-US → imperial; everyone else → metric.
+// The user can override on step 0; their pick is persisted to profiles.units.
+function detectDefaultUnits() {
+  if (typeof navigator === 'undefined') return 'imperial';
+  const locale = navigator.language || navigator.languages?.[0] || 'en-US';
+  return locale.toLowerCase().startsWith('en-us') ? 'imperial' : 'metric';
+}
+
 export default function Onboarding() {
-  const { user, profile } = useAuth();
-  const units = profile?.units ?? 'imperial';
+  const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [units, setUnits] = useState(() => detectDefaultUnits());
+  // Sync from profile once it loads — a returning user keeps their pick.
+  useEffect(() => {
+    if (profile?.units && profile.units !== units) setUnits(profile.units);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.units]);
+
   const [form, setForm] = useState({
     name: '',
     age: '',
     sex: 'male',
-    height_cm: '',
-    weight_kg: '',
+    // Display values in the user's chosen units. Converted to canonical
+    // metric (kg, cm) at save time via parseWeightToKg / parseHeightToCm.
+    height: '',
+    weight: '',
     goal: 'recomp',
     training_days: '4',
     sleep_avg: '7',
@@ -79,10 +95,18 @@ export default function Onboarding() {
     setBusy(true);
     setErr(null);
     try {
+      // Persist the same fields the original onboarding wrote, plus the units
+      // preference (new). Note: `start_date`, `loop_stage`, and `plan` are
+      // locked against client UPDATEs by trigger 0020; any future move of
+      // those fields needs to go through a server-side RPC. Baseline metrics
+      // (height/weight/age/etc.) are intentionally not persisted here — the
+      // `profiles` schema has no columns for them yet, and adding them is a
+      // separate migration outside this fix's scope.
       const { error } = await supabase
         .from('profiles')
         .update({
           name: form.name,
+          units,
           start_date: new Date().toISOString().slice(0, 10),
           loop_stage: 'diagnosis',
           plan: 'trial',
@@ -90,6 +114,7 @@ export default function Onboarding() {
         })
         .eq('id', user.id);
       if (error) throw error;
+      await refreshProfile?.();
       navigate('/dashboard', { replace: true });
     } catch (e) {
       setErr(e.message);
@@ -113,12 +138,16 @@ export default function Onboarding() {
               <option value="female">Female</option>
               <option value="other">Other</option>
             </Select>
+            <Select label="Units" value={units} onChange={(e) => setUnits(e.target.value)}>
+              <option value="imperial">Imperial (lbs, ft/in)</option>
+              <option value="metric">Metric (kg, cm)</option>
+            </Select>
           </>
         )}
         {step === 1 && (
           <>
-            <Input label={heightLabel(units)} type="number" value={form.height_cm} onChange={set('height_cm')} />
-            <Input label={weightLabel(units)} type="number" value={form.weight_kg} onChange={set('weight_kg')} />
+            <Input label={heightLabel(units)} type="number" value={form.height} onChange={set('height')} />
+            <Input label={weightLabel(units)} type="number" value={form.weight} onChange={set('weight')} />
             <Input label="Average sleep (hours)" type="number" value={form.sleep_avg} onChange={set('sleep_avg')} />
           </>
         )}
