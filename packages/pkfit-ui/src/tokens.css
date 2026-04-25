@@ -1,0 +1,402 @@
+/* ------------------------------------------------------------------
+   @pkfit/ui — ATLAS canon tokens + shared component CSS
+   Mirror of the pattern in pkfit-intake/public/index.html and
+   pkfit-checkin/public/index.html. Single source of truth.
+   ATLAS reference: ~/Desktop/ATLAS.md §3 (tokens), §5 (grid), §12 (axiom credit)
+   ------------------------------------------------------------------ */
+
+:root {
+  --field: #0F1318;
+  --deep: #0A0D12;
+  --surface: #1B2028;
+  --surface-up: #23292F;
+  --cream: #F5F1E8;
+  --cream-dim: rgba(245, 241, 232, 0.72);
+  --cream-ghost: rgba(245, 241, 232, 0.40);
+  --cream-muted: rgba(245, 241, 232, 0.55);
+  --moon: #A5B0BD;
+  --moon-dim: #7F8A98;
+  --moon-bright: #BFC9D3;
+  --grid: rgba(245, 241, 232, 0.035);
+  --notch: rgba(245, 241, 232, 0.12);
+  --rule: rgba(245, 241, 232, 0.08);
+  --radius: 12px;
+  --radius-lg: 14px;
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Animations ------------------------------------------------------ */
+@keyframes pkfit-fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pkfit-cardIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pkfit-blink { 50% { opacity: 0; } }
+@keyframes pkfit-typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30%           { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Turn / Bubble --------------------------------------------------- */
+.pk-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  animation: pkfit-fadeUp 0.42s cubic-bezier(.2,.7,.2,1);
+}
+.pk-turn.pk-turn--client { align-self: flex-end; align-items: flex-end; max-width: 86%; }
+.pk-turn.pk-turn--agent  { align-self: flex-start; width: 100%; }
+
+.pk-meta-row {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cream-muted);
+}
+.pk-meta-row .pk-who--moon { color: var(--moon); }
+
+.pk-bubble {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--cream);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.pk-turn--client .pk-bubble {
+  background: var(--surface-up);
+  padding: 10px 16px;
+  border-radius: 18px 18px 4px 18px;
+  border: 1px solid var(--rule);
+  font-size: 15px;
+}
+.pk-turn--agent .pk-bubble { max-width: 560px; }
+
+.pk-caret {
+  display: inline-block;
+  width: 8px; height: 1.05em;
+  background: var(--moon);
+  vertical-align: -2px;
+  margin-left: 2px;
+  animation: pkfit-blink 0.9s steps(1) infinite;
+  border-radius: 1px;
+}
+
+.pk-typing { display: inline-flex; gap: 4px; align-items: center; padding: 6px 0; }
+.pk-typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cream-muted);
+  animation: pkfit-typing 1.4s ease-in-out infinite;
+}
+.pk-typing span:nth-child(2) { animation-delay: 0.16s; }
+.pk-typing span:nth-child(3) { animation-delay: 0.32s; }
+
+/* Generic card ---------------------------------------------------- */
+.pk-card {
+  margin-top: 4px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 16px;
+  max-width: 560px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: pkfit-cardIn 0.45s cubic-bezier(.2,.7,.2,1) forwards;
+  animation-delay: 0.06s;
+}
+.pk-card-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cream-muted);
+  margin-bottom: 14px;
+}
+
+/* Chips ----------------------------------------------------------- */
+.pk-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pk-chip {
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--cream-dim);
+  font-family: var(--sans);
+  font-size: 13px;
+  letter-spacing: 0.005em;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+.pk-chip:hover {
+  border-color: var(--moon);
+  color: var(--moon);
+  background: rgba(165, 176, 189, 0.04);
+}
+.pk-chip.pk-chip--ghost { color: var(--cream-muted); }
+.pk-chip:disabled { cursor: default; }
+
+/* Slider ---------------------------------------------------------- */
+.pk-slider-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 12px;
+}
+.pk-slider-head .pk-slider-label {
+  font-family: var(--sans); font-size: 14px; color: var(--cream); font-weight: 500;
+}
+.pk-slider-head .pk-slider-value {
+  font-family: var(--mono); font-size: 13px; color: var(--moon);
+}
+.pk-slider input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 4px;
+  background: var(--rule);
+  border-radius: 2px; outline: none; cursor: pointer;
+}
+.pk-slider input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--moon); cursor: pointer;
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--moon);
+}
+.pk-slider input[type=range]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--moon); cursor: pointer; border: 3px solid var(--surface);
+}
+.pk-slider-ticks {
+  display: flex; justify-content: space-between;
+  margin-top: 6px;
+  font-family: var(--mono); font-size: 10px; color: var(--cream-muted);
+  letter-spacing: 0.08em;
+}
+
+/* Submit button (shared by SliderCard + EmailCard) --------------- */
+.pk-submit-btn {
+  margin-top: 16px; width: 100%;
+  padding: 12px;
+  background: var(--moon);
+  color: var(--field);
+  border: none;
+  border-radius: 10px;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.18s ease;
+}
+.pk-submit-btn:hover { background: var(--moon-bright); }
+.pk-submit-btn:active { transform: translateY(0); }
+.pk-submit-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+/* Streak card ----------------------------------------------------- */
+.pk-streak-card {
+  margin-top: 6px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 16px;
+  max-width: 560px;
+  display: flex; align-items: baseline; gap: 16px;
+}
+.pk-streak-card .pk-streak-num {
+  font-family: var(--serif);
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--moon);
+  line-height: 1;
+}
+.pk-streak-card .pk-streak-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--cream-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+}
+.pk-streak-card .pk-streak-cue {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--cream);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  line-height: 1.45;
+}
+.pk-streak-body { flex: 1; }
+
+/* Next-step card -------------------------------------------------- */
+.pk-next-step-card {
+  margin-top: 6px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 16px;
+  max-width: 560px;
+}
+.pk-next-step-card .pk-ns-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cream-muted);
+  margin-bottom: 10px;
+}
+.pk-next-step-card .pk-ns-cue {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--cream);
+  line-height: 1.45;
+}
+
+/* CTA card -------------------------------------------------------- */
+.pk-cta-card {
+  margin-top: 6px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  max-width: 560px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.pk-cta-card .pk-cta-text {
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--cream-dim);
+  flex: 1; min-width: 220px;
+}
+.pk-cta-card .pk-cta-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.pk-cta-btn {
+  background: transparent;
+  border: 1px solid var(--moon-dim);
+  color: var(--moon);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.pk-cta-btn:hover { border-color: var(--moon); background: rgba(165, 176, 189, 0.05); }
+.pk-cta-btn.pk-cta-btn--ghost { border-color: var(--rule); color: var(--cream-muted); }
+
+/* Email / Input card --------------------------------------------- */
+.pk-input-card {
+  margin-top: 4px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  max-width: 560px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: pkfit-cardIn 0.45s cubic-bezier(.2,.7,.2,1) forwards;
+  animation-delay: 0.06s;
+}
+.pk-input-card .pk-field-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cream-muted);
+  margin-bottom: 10px;
+}
+.pk-input-card input[type=text],
+.pk-input-card input[type=email] {
+  width: 100%;
+  background: var(--surface-up);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--cream);
+  outline: none;
+  transition: border-color 0.18s ease;
+}
+.pk-input-card input:focus { border-color: var(--moon-dim); }
+.pk-input-card input::placeholder { color: var(--cream-muted); }
+.pk-input-card .pk-submit-btn {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+}
+.pk-input-card .pk-field-err {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #E79797;
+  letter-spacing: 0.04em;
+  display: none;
+}
+.pk-input-card .pk-field-err.pk-field-err--visible { display: block; }
+
+/* Composer -------------------------------------------------------- */
+.pk-composer-wrap {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 20px 28px 28px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  display: flex; justify-content: center;
+  background: linear-gradient(180deg, rgba(15,19,24,0) 0%, rgba(15,19,24,0.92) 40%, var(--field) 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+.pk-composer {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 560px;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-up);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 6px 6px 6px 20px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.pk-composer:focus-within {
+  border-color: var(--moon-dim);
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.35);
+}
+.pk-composer input {
+  flex: 1;
+  background: transparent;
+  border: none; outline: none;
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 15px;
+}
+.pk-composer input::placeholder { color: var(--cream-muted); }
+.pk-composer input:disabled { cursor: not-allowed; }
+.pk-send-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--moon);
+  color: var(--field);
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.pk-send-btn:hover { background: var(--moon-bright); }
+.pk-send-btn:disabled { opacity: 0.4; cursor: default; background: var(--moon-dim); }
+.pk-send-btn svg { width: 16px; height: 16px; }
+
+/* Responsive ------------------------------------------------------ */
+@media (max-width: 640px) {
+  .pk-composer-wrap { padding: 16px 18px 22px; }
+  .pk-turn--agent .pk-bubble { font-size: 15px; }
+}
