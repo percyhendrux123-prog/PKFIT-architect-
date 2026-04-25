@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { registerServiceWorker } from './lib/registerSW.js';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -17,3 +18,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </React.StrictMode>,
 );
+
+// Register the PKFIT service worker (no-op in dev).
+registerServiceWorker();
