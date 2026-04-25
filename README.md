@@ -243,6 +243,40 @@ node scripts/smoke-trainerize-import.js
 
 These markers are non-invasive — no schema migration is required. A future migration could add explicit `external_id text unique` columns for cleaner audit; flagged in the import contract doc.
 
+## How AXIOM Overseer works
+
+AXIOM Overseer is a Netlify scheduled function that posts a daily editor's brief
+on the pkfit-app build to Slack. It sits above the bench — it does not ship
+code. It reads the GitHub repo, synthesizes what matters (open PRs and their CI
+state, issues by priority, 24-hour merge velocity, blockers), and posts a single
+markdown block once a day.
+
+- Source: `netlify/functions/axiom-overseer.js`
+- Schedule: `0 13 * * *` UTC (08:00 CT during CDT, 07:00 CT during CST). See
+  the comment in `netlify.toml` for seasonal handling.
+- Required env vars (Netlify dashboard, never committed):
+  - `GITHUB_TOKEN` — repo-read scope, no write
+  - `GITHUB_OWNER`, `GITHUB_REPO` — defaulted to this repo if unset
+  - `SLACK_WEBHOOK_URL_OPS` — dedicated ops webhook; **do not** point at a
+    customer-facing channel
+  - `DRY_RUN=1` — disables Slack post and returns the rendered markdown in the
+    function response (used by `npm run axiom:smoke`)
+
+To smoke-test locally:
+
+```
+GITHUB_TOKEN=ghp_xxx DRY_RUN=1 npm run axiom:smoke
+```
+
+The output is the exact markdown that would land in Slack. Paste it into a
+Slack preview to verify formatting before flipping `DRY_RUN`.
+
+To trigger the deployed function on demand (after deploy):
+
+```
+netlify functions:invoke axiom-overseer --no-identity
+```
+
 ## License
 
 Proprietary. All rights reserved.
