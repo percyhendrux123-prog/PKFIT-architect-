@@ -118,13 +118,13 @@ export async function runImport({ admin, coachId, payload, dryRun }) {
   });
 
   // 5) Meals + adherence (adherence reads the meal map written here).
-  const mealIdMap = await importMeals({
+  const { mealIdMap, existingAdherence } = await importMeals({
     admin, clientId, meals: payload.meals ?? [],
     dryRun, imported, skipped,
   });
   await applyMealAdherence({
     admin, adherence: payload.meal_adherence ?? [],
-    mealIdMap, dryRun, imported, skipped,
+    mealIdMap, existingAdherence, dryRun, imported, skipped,
   });
 
   // 6) Progress photos. Storage upload + check_ins.photo_path update.
@@ -311,13 +311,27 @@ async function importCheckIns({ admin, clientId, checkins, dryRun, imported, ski
 // ─── meals ─────────────────────────────────────────────────────────────
 
 async function importMeals({ admin, clientId, meals, dryRun, imported, skipped }) {
-  // Always return a map: trainerize_meal_id → supabase meal id.
+  // Returns { mealIdMap, existingAdherence }.
+  //   mealIdMap         : trainerize_meal_id → supabase meal id
+  //   existingAdherence : trainerize_meal_id → { eaten, eaten_at } as it sits
+  //                       on disk BEFORE this run. applyMealAdherence consults
+  //                       it to skip UPDATEs whose new state already matches,
+  //                       which is what makes the importer idempotent on the
+  //                       adherence pass.
   const mealIdMap = new Map();
+  const existingAdherence = new Map();
   // Pre-load existing meals so adherence can target rows from prior imports.
-  const existingByTzId = await fetchExistingByTzId(admin, 'meals', clientId, 'items');
-  for (const [tzId, row] of existingByTzId) mealIdMap.set(tzId, row.id);
+  // Pull eaten / eaten_at too so the adherence pass can dedupe idempotently.
+  const existingByTzId = await fetchExistingByTzId(admin, 'meals', clientId, 'items', ['eaten', 'eaten_at']);
+  for (const [tzId, row] of existingByTzId) {
+    mealIdMap.set(tzId, row.id);
+    existingAdherence.set(tzId, {
+      eaten: row.eaten ?? false,
+      eaten_at: row.eaten_at ?? null,
+    });
+  }
 
-  if (meals.length === 0) return mealIdMap;
+  if (meals.length === 0) return { mealIdMap, existingAdherence };
 
   for (const m of meals) {
     if (!m.trainerize_id) {
@@ -342,15 +356,29 @@ async function importMeals({ admin, clientId, meals, dryRun, imported, skipped }
     mealIdMap.set(m.trainerize_id, data.id);
     imported.meals += 1;
   }
-  return mealIdMap;
+  return { mealIdMap, existingAdherence };
 }
 
-async function applyMealAdherence({ admin, adherence, mealIdMap, dryRun, imported, skipped }) {
+async function applyMealAdherence({ admin, adherence, mealIdMap, existingAdherence, dryRun, imported, skipped }) {
   if (adherence.length === 0) return;
   for (const a of adherence) {
     const r = resolveAdherence(a, mealIdMap);
     if (!r.ok) {
       skipped.meal_adherence.push({ trainerize_meal_id: a.trainerize_meal_id, reason: r.reason });
+      continue;
+    }
+    // Idempotency: if this meal was loaded from a prior import and the row
+    // already carries the same { eaten, eaten_at } we are about to write,
+    // the UPDATE is a no-op. Skip it so re-running the importer does not
+    // inflate counters or touch updated_at on rows the coach has not in
+    // fact changed. Freshly inserted meals (in this same run) are absent
+    // from existingAdherence, so they always fall through to the UPDATE.
+    const current = existingAdherence?.get(a.trainerize_meal_id);
+    if (current && current.eaten === r.update.eaten && current.eaten_at === r.update.eaten_at) {
+      skipped.meal_adherence.push({
+        trainerize_meal_id: a.trainerize_meal_id,
+        reason: 'already imported (matching eaten state)',
+      });
       continue;
     }
     if (dryRun) {
@@ -362,6 +390,9 @@ async function applyMealAdherence({ admin, adherence, mealIdMap, dryRun, importe
       skipped.meal_adherence.push({ trainerize_meal_id: a.trainerize_meal_id, reason: `db error: ${error.message}` });
       continue;
     }
+    // Track what we just wrote so duplicate adherence rows later in the
+    // same payload see the live state rather than the pre-run state.
+    existingAdherence?.set(a.trainerize_meal_id, { eaten: r.update.eaten, eaten_at: r.update.eaten_at });
     imported.meal_adherence += 1;
   }
 }
@@ -509,12 +540,13 @@ async function importMessages({ admin, clientId, coachId, messages, dryRun, impo
 // Pulls existing rows for this client and indexes them by their embedded
 // _meta.trainerize_id. Filtering on `<jsonb>->'_meta'->>'trainerize_id'` is
 // done client-side (the row count is per-client, never huge).
-async function fetchExistingByTzId(admin, table, clientId, jsonbColumn) {
-  const { data } = await admin.from(table).select(`id, ${jsonbColumn}`).eq('client_id', clientId);
+async function fetchExistingByTzId(admin, table, clientId, jsonbColumn, extraCols = []) {
+  const cols = ['id', jsonbColumn, ...extraCols].join(', ');
+  const { data } = await admin.from(table).select(cols).eq('client_id', clientId);
   const map = new Map();
   for (const row of data ?? []) {
     const id = extractTrainerizeIdFromJsonbWrap(row[jsonbColumn]);
-    if (id) map.set(id, { id: row.id, [jsonbColumn]: row[jsonbColumn] });
+    if (id) map.set(id, { ...row });
   }
   return map;
 }
