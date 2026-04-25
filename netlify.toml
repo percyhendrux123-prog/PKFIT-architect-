@@ -19,6 +19,13 @@
 [functions."client-assistant"]
   included_files = ["netlify/functions/_prompts/*"]
 
+
+[functions."axiom-overseer"]
+  # Daily editor's morning brief. 13:00 UTC = 08:00 CT during CDT.
+  # During CST (winter), this lands at 07:00 CT. If a strict 08:00-CT-year-round
+  # is required, switch the schedule by season or move to a Cowork-loop runner.
+  schedule = "0 13 * * *"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
