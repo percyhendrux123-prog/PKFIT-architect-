@@ -3,7 +3,21 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-const here = dirname(fileURLToPath(import.meta.url));
+// Resolve "here" lazily — for legacy `export const handler` functions, esbuild
+// bundles to CJS where import.meta.url is undefined. Computing this at module
+// load would throw before loadPrompt ever runs. Use a getter that returns null
+// on any failure; the loader falls back to cwd-based candidates.
+function computeHere() {
+  try {
+    if (typeof import.meta?.url === 'string') {
+      return dirname(fileURLToPath(import.meta.url));
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}
+const here = computeHere();
 
 let client = null;
 export function getAnthropic() {
@@ -14,19 +28,35 @@ export function getAnthropic() {
   return client;
 }
 
-// Resolve the prompt file across dev and the Netlify Lambda bundle. esbuild
-// can relocate _shared/anthropic.js, so import.meta.url's dirname doesn't always
-// land at netlify/functions/_shared/. Try the most likely candidates in order
-// and surface every path tried if none match — that error is far easier to
-// diagnose than the bare ENOENT we used to throw.
+// Resolve the prompt file across dev and the Netlify Lambda bundle. Two
+// independent variables can move:
+//   1. esbuild can relocate _shared/anthropic.js, so import.meta.url's dirname
+//      doesn't always land at netlify/functions/_shared/.
+//   2. Legacy `export const handler` functions get bundled as CJS, where
+//      import.meta.url is undefined and `here` resolves to null.
+// Try every reasonable candidate in order and surface every path tried if
+// none match — that error is far easier to diagnose than the bare ENOENT.
 export function loadPrompt(name) {
-  const candidates = [
-    resolve(here, '..', '_prompts', name),                         // dev: functions/_shared/ -> ../_prompts
-    resolve(here, '..', 'functions', '_prompts', name),            // bundle: netlify/_shared/ -> ../functions/_prompts
-    resolve(here, '_prompts', name),                                // co-located
-    resolve(process.cwd(), 'netlify', 'functions', '_prompts', name),
-    resolve(process.cwd(), 'netlify', '_prompts', name),
-  ];
+  const candidates = [];
+  if (here) {
+    candidates.push(
+      resolve(here, '..', '_prompts', name),               // dev: functions/_shared -> ../_prompts
+      resolve(here, '..', 'functions', '_prompts', name),  // bundle: netlify/_shared -> ../functions/_prompts
+      resolve(here, '_prompts', name),                      // co-located
+    );
+  }
+  // Lambda runtime always has cwd === /var/task. Netlify ships included_files
+  // at the same relative path under /var/task, so this is the reliable fallback
+  // when import.meta.url is unavailable.
+  const cwd = process.cwd();
+  candidates.push(
+    resolve(cwd, 'netlify', 'functions', '_prompts', name),
+    resolve(cwd, 'netlify', '_prompts', name),
+    resolve(cwd, '_prompts', name),
+    resolve('/var/task', 'netlify', 'functions', '_prompts', name),
+    resolve('/var/task', 'netlify', '_prompts', name),
+  );
+
   let lastErr;
   for (const candidate of candidates) {
     try {
