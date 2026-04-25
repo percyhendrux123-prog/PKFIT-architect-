@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
-import { heightLabel, weightLabel } from '../lib/units';
+import { heightLabel, parseHeightToCm, parseWeightToKg, weightLabel } from '../lib/units';
 
 const steps = ['Identity', 'Baseline', 'Goal', 'Baseline photo', 'Commit'];
 
@@ -95,18 +95,18 @@ export default function Onboarding() {
     setBusy(true);
     setErr(null);
     try {
-      // Persist the same fields the original onboarding wrote, plus the units
-      // preference (new). Note: `start_date`, `loop_stage`, and `plan` are
-      // locked against client UPDATEs by trigger 0020; any future move of
-      // those fields needs to go through a server-side RPC. Baseline metrics
-      // (height/weight/age/etc.) are intentionally not persisted here — the
-      // `profiles` schema has no columns for them yet, and adding them is a
-      // separate migration outside this fix's scope.
+      // Convert display values to canonical metric (kg, cm) for storage. A
+      // non-numeric or empty entry collapses to null — we never poison the
+      // row with NaN. Display layer converts back via cmToFeetInches/kgToLbs.
+      // Note: `start_date`, `loop_stage`, and `plan` are locked against client
+      // UPDATEs by trigger 0020; that's a pre-existing issue tracked separately.
       const { error } = await supabase
         .from('profiles')
         .update({
           name: form.name,
           units,
+          height_cm: parseHeightToCm(form.height, units),
+          weight_kg: parseWeightToKg(form.weight, units),
           start_date: new Date().toISOString().slice(0, 10),
           loop_stage: 'diagnosis',
           plan: 'trial',
