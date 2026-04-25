@@ -18,8 +18,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { runImport } from './trainerize-import.js';
-import { makeFakeAdmin } from '../../tests/support/fakeSupabase.js';
+import { runImport } from '../../netlify/functions/trainerize-import.js';
+import { makeFakeAdmin } from '../support/fakeSupabase.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturePath = join(__dirname, '..', '..', 'tests', 'fixtures', 'trainerize-sample.json');
