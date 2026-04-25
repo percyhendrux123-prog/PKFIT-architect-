@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, KeyRound, Save, Trash2 } from 'lucide-react';
+import { Bell, BellOff, Download, KeyRound, Save, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { account } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
 import { Input, Select } from '../../components/ui/Input';
 import { Card, CardHeader } from '../../components/ui/Card';
+import {
+  pushSupported,
+  requestNotifications,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from '../../lib/push';
 
 export default function Settings() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -27,6 +33,13 @@ export default function Settings() {
   const [targetBusy, setTargetBusy] = useState(false);
   const [targetMsg, setTargetMsg] = useState(null);
 
+  // Notifications state
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg] = useState(null);
+  const [pushErr, setPushErr] = useState(null);
+  const [pushOk, setPushOk] = useState(false);
+
   useEffect(() => {
     setTarget({
       target_kcal: profile?.target_kcal ?? '',
@@ -35,6 +48,28 @@ export default function Settings() {
       target_fat_g: profile?.target_fat_g ?? '',
     });
   }, [profile]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function detect() {
+      const ok = pushSupported();
+      if (cancelled) return;
+      setPushOk(ok);
+      if (!ok) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (cancelled) return;
+        setPushEnabled(!!sub && Notification.permission === 'granted');
+      } catch {
+        // ignore — toggle simply stays off
+      }
+    }
+    detect();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function saveTarget(e) {
     e.preventDefault();
@@ -123,6 +158,45 @@ export default function Settings() {
     }
   }
 
+  async function enablePush() {
+    setPushBusy(true);
+    setPushMsg(null);
+    setPushErr(null);
+    try {
+      const perm = await requestNotifications();
+      if (perm !== 'granted') {
+        setPushErr(
+          perm === 'denied'
+            ? 'Notifications are blocked in browser settings.'
+            : 'Permission was not granted.',
+        );
+        return;
+      }
+      await subscribeToPush();
+      setPushEnabled(true);
+      setPushMsg('Notifications enabled.');
+    } catch (e) {
+      setPushErr(e.message);
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function disablePush() {
+    setPushBusy(true);
+    setPushMsg(null);
+    setPushErr(null);
+    try {
+      await unsubscribeFromPush();
+      setPushEnabled(false);
+      setPushMsg('Notifications disabled.');
+    } catch (e) {
+      setPushErr(e.message);
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -143,6 +217,44 @@ export default function Settings() {
           <option value="imperial">Imperial (lbs, ft/in)</option>
           <option value="metric">Metric (kg, cm)</option>
         </Select>
+      </Card>
+
+      <Card>
+        <CardHeader
+          label="Notifications"
+          title="Push notifications"
+          meta="Coach DMs, workout reminders, and weekly review nudges"
+        />
+        {!pushOk ? (
+          <p className="max-w-reading text-sm text-mute">
+            This browser does not support web push. On iPhone, install PKFIT to your home
+            screen first, then return here.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <p className="max-w-reading text-sm text-mute">
+              Receive a system notification when your coach sends you a DM, when a workout
+              is scheduled, or when a weekly review is ready.
+            </p>
+            <div className="flex items-center gap-3">
+              {pushEnabled ? (
+                <Button variant="ghost" onClick={disablePush} disabled={pushBusy}>
+                  <BellOff size={14} /> {pushBusy ? 'Working' : 'Disable notifications'}
+                </Button>
+              ) : (
+                <Button onClick={enablePush} disabled={pushBusy}>
+                  <Bell size={14} /> {pushBusy ? 'Enabling' : 'Enable notifications'}
+                </Button>
+              )}
+              {pushMsg ? (
+                <span className="text-xs uppercase tracking-widest2 text-gold">{pushMsg}</span>
+              ) : null}
+              {pushErr ? (
+                <span className="text-xs uppercase tracking-widest2 text-red-300">{pushErr}</span>
+              ) : null}
+            </div>
+          </div>
+        )}
       </Card>
 
       <Card>
