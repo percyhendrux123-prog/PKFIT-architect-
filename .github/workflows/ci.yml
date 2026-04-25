@@ -1,24 +1,34 @@
 name: CI
 
+# Smoke test: triggers on push and pull_request to any branch.
+# Target runtime: ~3 min. Steps deliberately minimal — fast feedback only.
+# Tests placeholder: re-enable when Vitest lands (see issue: test coverage).
+
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
-    branches: [main]
+    branches: ['**']
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+
       - run: npm ci --no-audit --no-fund
-      - run: npm run lint
+
       - run: npm run build
         env:
+          # Vite needs these defined at build time. Real values live in Netlify env.
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: placeholder
           VITE_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+
+      # Placeholder for `npm test` once Vitest is wired up.
+      # - run: npm test
