@@ -2,7 +2,7 @@ name: CI
 
 # Smoke test: triggers on push and pull_request to any branch.
 # Target runtime: ~3 min. Steps deliberately minimal — fast feedback only.
-# Tests placeholder: re-enable when Vitest lands (see issue: test coverage).
+# Vitest unit tests run after the build step (see vitest.config.ts).
 
 on:
   push:
@@ -30,5 +30,6 @@ jobs:
           VITE_SUPABASE_ANON_KEY: placeholder
           VITE_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
 
-      # Placeholder for `npm test` once Vitest is wired up.
-      # - run: npm test
+      # Vitest unit tests + coverage gate. All netlify function deps are
+      # mocked, so no env vars or network access required.
+      - run: npm run test:coverage
