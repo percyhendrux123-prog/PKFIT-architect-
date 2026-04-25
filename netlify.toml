@@ -9,15 +9,22 @@
 
 [functions]
   node_bundler = "esbuild"
+  # All functions that load prompts at runtime need the prompt files shipped
+  # alongside the bundle. Listing the glob at the top level keeps this in
+  # sync if a new function adds loadPrompt() — it just works.
+  included_files = ["netlify/functions/_prompts/**"]
 
 [functions."generate-workout"]
-  included_files = ["netlify/functions/_prompts/*"]
+  included_files = ["netlify/functions/_prompts/**"]
 
 [functions."generate-meal-plan"]
-  included_files = ["netlify/functions/_prompts/*"]
+  included_files = ["netlify/functions/_prompts/**"]
+
+[functions."generate-weekly-review"]
+  included_files = ["netlify/functions/_prompts/**"]
 
 [functions."client-assistant"]
-  included_files = ["netlify/functions/_prompts/*"]
+  included_files = ["netlify/functions/_prompts/**"]
 
 
 [functions."axiom-overseer"]
