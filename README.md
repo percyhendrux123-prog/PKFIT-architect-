@@ -168,6 +168,81 @@ Public: `/`, `/login`, `/signup`, `/onboarding`, `/splash`
 Client: `/dashboard`, `/workouts`, `/workouts/builder`, `/workouts/generator`, `/meals`, `/meals/generator`, `/habits`, `/calendar`, `/reviews`, `/reviews/:id`, `/inbox`, `/community`, `/assistant`, `/billing`, `/profile`
 Coach: `/coach`, `/coach/inbox`, `/coach/clients`, `/coach/clients/:id`, `/coach/programs`, `/coach/revenue`, `/coach/announcements`
 
+## Migrating a client from Trainerize
+
+The importer ingests a Trainerize export (JSON) and writes the client's history into Supabase. Coach-auth only. Idempotent — re-running with the same payload skips already-imported rows.
+
+**Endpoint:** `POST /.netlify/functions/trainerize-import`
+
+**Auth:** Bearer token of a user whose `profiles.role = 'coach'`. The authed coach's UUID is also used as `author_id` for any messages with `direction: "from_coach"` in the export.
+
+**Request body:**
+
+```json
+{
+  "trainerize_export":   { ... see docs/trainerize-import-contract.md ... },
+  "trainerize_client_id": "tz_client_847211",
+  "dry_run":              false
+}
+```
+
+`trainerize_client_id` must equal `trainerize_export.client.trainerize_id` — the importer rejects payload-swap mistakes during a bulk migration.
+
+**Response shape:**
+
+```json
+{
+  "status":             "ok" | "partial" | "failed",
+  "client_id_supabase": "uuid",
+  "imported": { "programs": N, "sessions": N, "checkins": N,
+                "meals": N, "meal_adherence": N, "photos": N, "messages": N },
+  "skipped":  { ...per-section, with reasons },
+  "warnings": [ "..." ],
+  "dry_run":            false
+}
+```
+
+`status: "partial"` means at least one row was skipped for a reason other than already-imported (e.g., a meal-adherence tick referenced a meal that doesn't exist in the export). The skipped block tells you exactly what didn't land and why.
+
+**End-to-end example:**
+
+```bash
+TOKEN=$(supabase login token)   # or your existing coach JWT
+
+curl -X POST https://<site>/.netlify/functions/trainerize-import \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  --data @tests/fixtures/trainerize-sample.json
+```
+
+**Dry-run first.** Set `"dry_run": true` to walk the entire payload through the mappers and dedup logic without writing to Supabase or Storage. The response shows what *would* have happened.
+
+```bash
+jq '. + {dry_run: true}' tests/fixtures/trainerize-sample.json \
+  | curl -X POST https://<site>/.netlify/functions/trainerize-import \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" --data @-
+```
+
+**Local smoke (no Supabase needed):** runs the orchestrator against an in-memory fake admin and asserts idempotency.
+
+```bash
+node scripts/smoke-trainerize-import.js
+# → "SMOKE OK" if every assertion passes
+```
+
+**Companion issue:** the input JSON contract is consumed by Issue #19 (Apify Trainerize scraper). The full schema lives at `docs/trainerize-import-contract.md`; the canonical example is `tests/fixtures/trainerize-sample.json`. When the scraper lands, its output must validate against `_schema_version: "1.0.0"`.
+
+**Idempotency mechanics.** The schema has no `trainerize_*_id` columns, so the importer dedups via:
+
+- `profiles`: email is the natural key (`auth.users.email`).
+- `programs`, `workout_sessions`, `meals`: a `_meta.trainerize_id` marker is embedded inside the existing `jsonb` column (`exercises` / `items`) and matched on re-run.
+- `check_ins`: natural key `(client_id, date)` — Trainerize allows one weigh-in per day.
+- `dm_messages`: content hash on `(thread_id, sent_at, content)`.
+- `progress_photos`: deterministic Storage path `<client_id>/checkin-<iso>-<trainerize_id>.<ext>` with upsert.
+
+These markers are non-invasive — no schema migration is required. A future migration could add explicit `external_id text unique` columns for cleaner audit; flagged in the import contract doc.
+
 ## License
 
 Proprietary. All rights reserved.
