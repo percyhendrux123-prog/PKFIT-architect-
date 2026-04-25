@@ -1,0 +1,150 @@
+{
+  "_schema_version": "1.0.0",
+  "_source": "trainerize-export",
+  "_exported_at": "2026-04-20T14:32:00Z",
+  "client": {
+    "trainerize_id": "tz_client_847211",
+    "email": "fakeclient@example-pkfit-test.invalid",
+    "name": "Test Client",
+    "joined_at": "2026-01-15T00:00:00Z",
+    "plan_label": "Performance Standard",
+    "weight_unit": "lbs",
+    "height_unit": "in",
+    "starting_weight_kg": 86.2,
+    "starting_height_cm": 180.3
+  },
+  "programs": [
+    {
+      "trainerize_id": "tz_program_30021",
+      "week_number": 1,
+      "title": "Week 1 — Recomp Block A",
+      "status": "archived",
+      "schedule": {
+        "title": "Week 1 — Recomp Block A",
+        "days": ["mon", "tue", "thu", "fri"]
+      },
+      "exercises": [
+        { "name": "Back Squat", "sets": 3, "reps": "5-7", "rir": 2, "notes": "Add 5 lb if all sets at top of range." },
+        { "name": "Bench Press", "sets": 3, "reps": "5-7", "rir": 2 },
+        { "name": "Romanian Deadlift", "sets": 3, "reps": "8-10", "rir": 2 },
+        { "name": "Pull-Up", "sets": 3, "reps": "AMRAP", "rir": 0 }
+      ]
+    },
+    {
+      "trainerize_id": "tz_program_30048",
+      "week_number": 2,
+      "title": "Week 2 — Recomp Block A",
+      "status": "active",
+      "schedule": {
+        "title": "Week 2 — Recomp Block A",
+        "days": ["mon", "tue", "thu", "fri"]
+      },
+      "exercises": [
+        { "name": "Back Squat", "sets": 3, "reps": "5-7", "rir": 2 },
+        { "name": "Bench Press", "sets": 3, "reps": "5-7", "rir": 2 },
+        { "name": "Romanian Deadlift", "sets": 3, "reps": "8-10", "rir": 2 },
+        { "name": "Pull-Up", "sets": 3, "reps": "AMRAP", "rir": 0 }
+      ]
+    }
+  ],
+  "workout_sessions": [
+    {
+      "trainerize_id": "tz_session_991020",
+      "trainerize_program_id": "tz_program_30021",
+      "performed_at": "2026-01-19T17:08:00Z",
+      "duration_min": 62,
+      "rpe_avg": 7.5,
+      "notes": "Squat felt heavy. RDL strong.",
+      "exercises": [
+        { "name": "Back Squat", "sets": [{ "weight_kg": 102.5, "reps": 6, "rpe": 8 }, { "weight_kg": 102.5, "reps": 6, "rpe": 8 }, { "weight_kg": 102.5, "reps": 5, "rpe": 9 }] },
+        { "name": "Bench Press", "sets": [{ "weight_kg": 75.0, "reps": 7, "rpe": 7 }, { "weight_kg": 75.0, "reps": 6, "rpe": 7 }, { "weight_kg": 75.0, "reps": 6, "rpe": 8 }] },
+        { "name": "Romanian Deadlift", "sets": [{ "weight_kg": 110.0, "reps": 10, "rpe": 7 }, { "weight_kg": 110.0, "reps": 9, "rpe": 7 }, { "weight_kg": 110.0, "reps": 9, "rpe": 8 }] }
+      ]
+    },
+    {
+      "trainerize_id": "tz_session_991115",
+      "trainerize_program_id": "tz_program_30048",
+      "performed_at": "2026-01-26T17:11:00Z",
+      "duration_min": 58,
+      "rpe_avg": 7.0,
+      "notes": "",
+      "exercises": [
+        { "name": "Back Squat", "sets": [{ "weight_kg": 105.0, "reps": 6, "rpe": 8 }, { "weight_kg": 105.0, "reps": 6, "rpe": 8 }, { "weight_kg": 105.0, "reps": 6, "rpe": 8 }] }
+      ]
+    }
+  ],
+  "check_ins": [
+    {
+      "trainerize_id": "tz_checkin_55001",
+      "date": "2026-01-19",
+      "weight_kg": 85.7,
+      "body_fat_pct": 18.4,
+      "notes": "Sleep 7h average."
+    },
+    {
+      "trainerize_id": "tz_checkin_55102",
+      "date": "2026-01-26",
+      "weight_kg": 85.3,
+      "body_fat_pct": 18.1,
+      "notes": ""
+    }
+  ],
+  "meals": [
+    {
+      "trainerize_id": "tz_meal_77410",
+      "date": "2026-01-19",
+      "day": "mon",
+      "meal_type": "breakfast",
+      "items": [
+        { "name": "Oats", "grams": 80, "kcal": 305, "protein_g": 11, "carbs_g": 54, "fat_g": 5 },
+        { "name": "Whey", "grams": 30, "kcal": 120, "protein_g": 24, "carbs_g": 3, "fat_g": 2 }
+      ],
+      "macros": { "kcal": 425, "protein_g": 35, "carbs_g": 57, "fat_g": 7 }
+    },
+    {
+      "trainerize_id": "tz_meal_77411",
+      "date": "2026-01-19",
+      "day": "mon",
+      "meal_type": "lunch",
+      "items": [
+        { "name": "Chicken breast", "grams": 200, "kcal": 330, "protein_g": 62, "carbs_g": 0, "fat_g": 7 },
+        { "name": "White rice", "grams": 250, "kcal": 325, "protein_g": 6, "carbs_g": 71, "fat_g": 1 }
+      ],
+      "macros": { "kcal": 655, "protein_g": 68, "carbs_g": 71, "fat_g": 8 }
+    }
+  ],
+  "meal_adherence": [
+    { "trainerize_meal_id": "tz_meal_77410", "eaten": true, "eaten_at": "2026-01-19T07:42:00Z" },
+    { "trainerize_meal_id": "tz_meal_77411", "eaten": true, "eaten_at": "2026-01-19T13:05:00Z" },
+    { "trainerize_meal_id": "tz_meal_77412_orphan", "eaten": true, "eaten_at": "2026-01-19T18:10:00Z" }
+  ],
+  "progress_photos": [
+    {
+      "trainerize_id": "tz_photo_22001",
+      "checkin_date": "2026-01-19",
+      "captured_at": "2026-01-19T07:30:00Z",
+      "mime_type": "image/jpeg",
+      "data_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+    }
+  ],
+  "messages": [
+    {
+      "trainerize_id": "tz_msg_88001",
+      "sent_at": "2026-01-15T10:00:00Z",
+      "direction": "from_coach",
+      "content": "Welcome aboard. First check-in is Sunday."
+    },
+    {
+      "trainerize_id": "tz_msg_88002",
+      "sent_at": "2026-01-15T10:14:00Z",
+      "direction": "from_client",
+      "content": "Got it. Squat depth question — should I be hitting parallel?"
+    },
+    {
+      "trainerize_id": "tz_msg_88003",
+      "sent_at": "2026-01-15T10:32:00Z",
+      "direction": "from_coach",
+      "content": "Below parallel when mobility allows. Hip crease below knee crease."
+    }
+  ]
+}
