@@ -13,6 +13,7 @@ import {
   Inbox,
   LayoutDashboard,
   Settings as SettingsIcon,
+  ShieldCheck,
   LogOut,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -63,6 +64,10 @@ export default function HomeScreen() {
   });
 
   const badges = { dms: unreadDMs, community: role === 'coach' ? 0 : unreadCommunity };
+  // Owner gets an extra tile that links to /owner. Hidden for everyone else.
+  const apps = role === 'owner'
+    ? [...APPS, { to: '/owner', label: 'Owner', icon: ShieldCheck }]
+    : APPS;
 
   // Cmd/Ctrl+K shortcut to Assistant — same shortcut Layout.jsx wires.
   useEffect(() => {
@@ -129,7 +134,7 @@ export default function HomeScreen() {
           className="grid gap-y-7 gap-x-4"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))' }}
         >
-          {APPS.map((app) => (
+          {apps.map((app) => (
             <AppIcon
               key={app.to}
               to={app.to}

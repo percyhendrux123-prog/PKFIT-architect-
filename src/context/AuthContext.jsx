@@ -3,6 +3,20 @@ import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 
+// Client-side owner hint used only for UI visibility (showing the /owner
+// tile, theming, etc.). Server-side `OWNER_EMAILS` is the source of truth
+// for any privileged action — bypassing the client check just shows an
+// extra link that the server still rejects.
+const OWNER_EMAILS = (import.meta.env.VITE_OWNER_EMAILS ?? '')
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
+function isOwnerEmail(email) {
+  if (!email) return false;
+  return OWNER_EMAILS.includes(String(email).trim().toLowerCase());
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -71,7 +85,9 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(() => {
     const user = session?.user ?? null;
-    const role = profile?.role ?? null;
+    const baseRole = profile?.role ?? null;
+    const role = isOwnerEmail(user?.email) ? 'owner' : baseRole;
+    const isOwner = role === 'owner';
 
     async function signIn(email, password) {
       if (!isSupabaseConfigured) throw new Error('Supabase not configured');
@@ -98,6 +114,7 @@ export function AuthProvider({ children }) {
       user,
       profile,
       role,
+      isOwner,
       loading,
       signIn,
       signUp,

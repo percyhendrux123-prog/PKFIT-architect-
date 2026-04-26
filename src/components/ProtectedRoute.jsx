@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Spinner } from './ui/Empty';
 
 export function ProtectedRoute({ children, role }) {
-  const { user, profile, loading, isSupabaseConfigured } = useAuth();
+  const { user, profile, role: effectiveRole, loading, isSupabaseConfigured } = useAuth();
   const location = useLocation();
 
   if (!isSupabaseConfigured) {
@@ -21,6 +21,9 @@ export function ProtectedRoute({ children, role }) {
 
   if (loading) return <div className="p-10"><Spinner /></div>;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+
+  // Owner bypasses role gates entirely — sees client + coach surfaces.
+  if (effectiveRole === 'owner') return children;
 
   if (role && profile && profile.role !== role) {
     return <Navigate to={profile.role === 'coach' ? '/coach' : '/home'} replace />;

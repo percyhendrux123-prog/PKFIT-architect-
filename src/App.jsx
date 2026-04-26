@@ -5,6 +5,7 @@ import { RequiresActiveSubscription } from './components/RequiresActiveSubscript
 
 import Landing from './pages/Landing.jsx';
 import HomeScreen from './pages/HomeScreen.jsx';
+import Owner from './pages/Owner.jsx';
 import Splash from './pages/Splash.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -63,6 +64,18 @@ export default function App() {
       >
         <Route path="/home" element={<HomeScreen />} />
       </Route>
+
+      {/* Owner panel — only matters if the signed-in user's email is in
+          OWNER_EMAILS server-side. The page itself enforces, so any client
+          that sneaks here just sees the "Owner only" message. */}
+      <Route
+        path="/owner"
+        element={
+          <ProtectedRoute>
+            <Owner />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Client-protected (with sidebar/dock chrome) */}
       <Route

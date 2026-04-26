@@ -17,7 +17,8 @@ const ALLOW_WITHOUT_SUBSCRIPTION = new Set([
   '/inbox',
 ]);
 
-export function isActiveSubscriber(profile) {
+export function isActiveSubscriber(profile, role) {
+  if (role === 'owner') return true;
   if (!profile) return false;
   if (profile.role === 'coach') return true;
   if (PAID_PLANS.has(profile.plan)) return true;
@@ -26,7 +27,7 @@ export function isActiveSubscriber(profile) {
 }
 
 export function RequiresActiveSubscription({ children }) {
-  const { profile, loading } = useAuth();
+  const { profile, role, loading } = useAuth();
   const location = useLocation();
 
   if (loading || !profile) {
@@ -43,7 +44,7 @@ export function RequiresActiveSubscription({ children }) {
   const content = children ?? <Outlet />;
 
   if (ALLOW_WITHOUT_SUBSCRIPTION.has(location.pathname)) return content;
-  if (isActiveSubscriber(profile)) return content;
+  if (isActiveSubscriber(profile, role)) return content;
 
   return <Navigate to="/billing" replace state={{ from: location.pathname, reason: 'subscription' }} />;
 }

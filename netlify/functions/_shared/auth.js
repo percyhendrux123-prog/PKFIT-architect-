@@ -1,4 +1,5 @@
 import { getAnonClient, getAdminClient } from './supabase-admin.js';
+import { isOwnerEmail } from './owner.js';
 
 export async function requireUser(event) {
   const header = event.headers?.authorization || event.headers?.Authorization;
@@ -18,7 +19,11 @@ export async function requireUser(event) {
 
   const admin = getAdminClient();
   const { data: profile } = await admin.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
-  return { user: data.user, profile, role: profile?.role ?? 'client' };
+  // Owner identity is established by server env var, never DB state. The
+  // owner role overrides whatever role the profile row claims so a
+  // privileged action cannot be unlocked by tampering with profiles.role.
+  const role = isOwnerEmail(data.user.email) ? 'owner' : profile?.role ?? 'client';
+  return { user: data.user, profile, role };
 }
 
 export function jsonResponse(statusCode, body) {

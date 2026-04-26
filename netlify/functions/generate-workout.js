@@ -11,12 +11,12 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
 
     const targetClientId = body.clientId ?? user.id;
-    // Only the client themself or a coach can generate for a client.
-    if (targetClientId !== user.id && role !== 'coach') {
+    // Only the client themself, a coach, or the owner can generate for a client.
+    if (targetClientId !== user.id && role !== 'coach' && role !== 'owner') {
       return jsonResponse(403, { error: 'Not permitted' });
     }
 
-    const limit = await checkRateLimit({
+    const limit = role === 'owner' ? { allowed: true } : await checkRateLimit({
       userId: user.id,
       bucket: 'generate-workout',
       max: 10,
@@ -40,7 +40,7 @@ export const handler = async (event) => {
       profile: body.profile ?? null,
     };
 
-    const { model, apiKeyOverride } = resolveModelAndKey(profile);
+    const { model, apiKeyOverride } = resolveModelAndKey(profile, role);
     const anthropic = getAnthropic(apiKeyOverride);
     const resp = await anthropic.messages.create({
       model,

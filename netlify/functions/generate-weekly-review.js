@@ -19,11 +19,11 @@ export const handler = async (event) => {
     const { user, role } = await requireUser(event);
     const body = JSON.parse(event.body || '{}');
     const targetClientId = body.clientId ?? user.id;
-    if (targetClientId !== user.id && role !== 'coach') {
+    if (targetClientId !== user.id && role !== 'coach' && role !== 'owner') {
       return jsonResponse(403, { error: 'Not permitted' });
     }
 
-    const limit = await checkRateLimit({
+    const limit = role === 'owner' ? { allowed: true } : await checkRateLimit({
       userId: user.id,
       bucket: 'generate-weekly-review',
       max: 5,
@@ -123,7 +123,7 @@ export const handler = async (event) => {
     };
 
     const system = loadPrompt('pkfit-system.md') + '\n\n' + loadPrompt('weekly-review.md');
-    const { model, apiKeyOverride } = resolveModelAndKey(profile);
+    const { model, apiKeyOverride } = resolveModelAndKey(profile, role);
     const anthropic = getAnthropic(apiKeyOverride);
     const resp = await anthropic.messages.create({
       model,
