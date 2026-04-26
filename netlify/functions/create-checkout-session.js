@@ -2,7 +2,7 @@ import { requireUser, jsonResponse, errorResponse } from './_shared/auth.js';
 import { getAdminClient } from './_shared/supabase-admin.js';
 import { getStripe, priceIdFor } from './_shared/stripe.js';
 
-const VALID_TIERS = new Set(['performance', 'identity', 'full', 'premium']);
+const VALID_TIERS = new Set(['tier1', 'tier2', 'tier3']);
 const VALID_INTERVALS = new Set(['monthly', 'annual']);
 
 export const handler = async (event) => {

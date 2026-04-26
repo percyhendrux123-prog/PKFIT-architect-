@@ -19,13 +19,14 @@ function computeHere() {
 }
 const here = computeHere();
 
-let client = null;
-export function getAnthropic() {
-  if (client) return client;
+let defaultClient = null;
+export function getAnthropic(apiKeyOverride) {
+  if (apiKeyOverride) return new Anthropic({ apiKey: apiKeyOverride });
+  if (defaultClient) return defaultClient;
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY missing');
-  client = new Anthropic({ apiKey });
-  return client;
+  defaultClient = new Anthropic({ apiKey });
+  return defaultClient;
 }
 
 // Resolve the prompt file across dev and the Netlify Lambda bundle. Two
@@ -70,9 +71,22 @@ export function loadPrompt(name) {
   );
 }
 
-// Latest Claude Sonnet 4 model. "claude-sonnet-4" in the brief maps to this
-// dated ID so a dated model is pinned in production.
-export const MODEL = 'claude-sonnet-4-5-20250929';
+// Tier → model routing. Tier 1 ($250) gets Haiku 4.5, Tier 2 ($475) gets
+// Sonnet 4.6, Tier 3 ($750) gets Opus 4.7. Trial defaults to Haiku.
+export const MODEL_BY_TIER = {
+  trial: 'claude-haiku-4-5-20251001',
+  tier1: 'claude-haiku-4-5-20251001',
+  tier2: 'claude-sonnet-4-6',
+  tier3: 'claude-opus-4-7',
+};
+
+export function pickModel(tier) {
+  return MODEL_BY_TIER[tier] || MODEL_BY_TIER.trial;
+}
+
+// Back-compat shim: scheduled functions and tests that don't have a caller
+// tier (e.g. axiom-overseer cron) fall back to Sonnet.
+export const MODEL = MODEL_BY_TIER.tier2;
 
 // Strip characters that violate PKFIT voice (emoji, exclamation points).
 // Safe to run per-chunk: only character-level substitutions, no trim.

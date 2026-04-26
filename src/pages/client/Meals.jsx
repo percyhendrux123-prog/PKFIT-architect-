@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Camera } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Empty } from '../../components/ui/Empty';
+import { SnapMealModal } from '../../components/SnapMealModal';
 
 function totals(items) {
   const planned = { kcal: 0, p: 0, c: 0, f: 0 };
@@ -67,6 +69,7 @@ export default function Meals() {
   const { user, profile } = useAuth();
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [snapOpen, setSnapOpen] = useState(false);
 
   const floor = useMemo(
     () => ({
@@ -93,6 +96,23 @@ export default function Meals() {
   }, [user?.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function logSnap(payload) {
+    if (!user) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const row = {
+      client_id: user.id,
+      day: today,
+      date: today,
+      meal_type: payload.meal_type ?? 'meal',
+      items: payload.items ?? [],
+      macros: payload.macros ?? {},
+      eaten: true,
+      eaten_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase.from('meals').insert(row).select().maybeSingle();
+    if (!error && data) setMeals((list) => [data, ...list]);
+  }
 
   async function toggleEaten(meal) {
     const next = !meal.eaten;
@@ -149,8 +169,19 @@ export default function Meals() {
           <div className="label mb-2">Nutrition</div>
           <h1 className="font-display text-4xl tracking-wider2">Meal plan</h1>
         </div>
-        <Button as={Link} to="/meals/generator">AI Meal plan</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="ghost" onClick={() => setSnapOpen(true)}>
+            <Camera size={14} className="mr-2" /> Snap a meal
+          </Button>
+          <Button as={Link} to="/meals/generator">AI Meal plan</Button>
+        </div>
       </header>
+
+      <SnapMealModal
+        open={snapOpen}
+        onClose={() => setSnapOpen(false)}
+        onConfirm={logSnap}
+      />
 
       {loading ? (
         <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>

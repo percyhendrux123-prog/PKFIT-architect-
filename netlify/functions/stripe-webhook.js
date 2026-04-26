@@ -13,14 +13,22 @@ function mapStatus(s) {
 
 function tierFromPriceId(priceId) {
   const map = {
-    [process.env.STRIPE_PRICE_PERFORMANCE_MONTHLY]: 'performance',
-    [process.env.STRIPE_PRICE_PERFORMANCE_ANNUAL]: 'performance',
-    [process.env.STRIPE_PRICE_IDENTITY_MONTHLY]: 'identity',
-    [process.env.STRIPE_PRICE_IDENTITY_ANNUAL]: 'identity',
-    [process.env.STRIPE_PRICE_FULL_MONTHLY]: 'full',
-    [process.env.STRIPE_PRICE_FULL_ANNUAL]: 'full',
-    [process.env.STRIPE_PRICE_PREMIUM_MONTHLY]: 'premium',
-    [process.env.STRIPE_PRICE_PREMIUM_ANNUAL]: 'premium',
+    [process.env.STRIPE_PRICE_TIER1_MONTHLY]: 'tier1',
+    [process.env.STRIPE_PRICE_TIER1_ANNUAL]: 'tier1',
+    [process.env.STRIPE_PRICE_TIER2_MONTHLY]: 'tier2',
+    [process.env.STRIPE_PRICE_TIER2_ANNUAL]: 'tier2',
+    [process.env.STRIPE_PRICE_TIER3_MONTHLY]: 'tier3',
+    [process.env.STRIPE_PRICE_TIER3_ANNUAL]: 'tier3',
+    // Legacy price IDs map to the new tier they roll up to. Retained so
+    // already-active subscriptions keep resolving until they renew.
+    [process.env.STRIPE_PRICE_PERFORMANCE_MONTHLY]: 'tier1',
+    [process.env.STRIPE_PRICE_PERFORMANCE_ANNUAL]: 'tier1',
+    [process.env.STRIPE_PRICE_IDENTITY_MONTHLY]: 'tier1',
+    [process.env.STRIPE_PRICE_IDENTITY_ANNUAL]: 'tier1',
+    [process.env.STRIPE_PRICE_FULL_MONTHLY]: 'tier2',
+    [process.env.STRIPE_PRICE_FULL_ANNUAL]: 'tier2',
+    [process.env.STRIPE_PRICE_PREMIUM_MONTHLY]: 'tier3',
+    [process.env.STRIPE_PRICE_PREMIUM_ANNUAL]: 'tier3',
   };
   return map[priceId] ?? null;
 }

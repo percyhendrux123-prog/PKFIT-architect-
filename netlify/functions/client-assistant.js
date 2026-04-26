@@ -1,5 +1,7 @@
 import { getAdminClient, getAnonClient } from './_shared/supabase-admin.js';
-import { getAnthropic, loadPrompt, MODEL, sanitizeVoice, bannedTokensCleanup } from './_shared/anthropic.js';
+import { getAnthropic, loadPrompt, sanitizeVoice, bannedTokensCleanup } from './_shared/anthropic.js';
+import { resolveModelAndKey } from './_shared/tier.js';
+import { isOwnerEmail } from './_shared/owner.js';
 import { checkRateLimit } from './_shared/rate-limit.js';
 
 const MAX_CONTEXT_MESSAGES = 24;
@@ -94,7 +96,9 @@ export default async (req) => {
     });
   }
 
-  const limit = await checkRateLimit({
+  const isOwner = isOwnerEmail(user.email);
+
+  const limit = isOwner ? { allowed: true } : await checkRateLimit({
     userId: user.id,
     bucket: 'assistant',
     max: ASSISTANT_RPM,
@@ -108,6 +112,14 @@ export default async (req) => {
   }
 
   const admin = getAdminClient();
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('plan, byo_anthropic_key_encrypted')
+    .eq('id', user.id)
+    .maybeSingle();
+  const role = isOwner ? 'owner' : profile?.role ?? 'client';
+  const { model, apiKeyOverride } = resolveModelAndKey(profile, role);
 
   let conversationId = body.conversationId ?? null;
   let conversationContext = [];
@@ -157,10 +169,14 @@ export default async (req) => {
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
 
+  // Owner gets a separate, unrestricted Quiet Assassin system prompt — no
+  // client-coaching scope refusals (medical / legal / financial / off-topic).
+  // The pkfit-system.md voice rules still apply: no emoji, no exclamation
+  // points, mechanism-first.
   const system =
     loadPrompt('pkfit-system.md') +
     '\n\n' +
-    loadPrompt('client-assistant.md') +
+    loadPrompt(role === 'owner' ? 'owner-assistant.md' : 'client-assistant.md') +
     renderPinnedContext(conversationContext);
 
   const encoder = new TextEncoder();
@@ -174,9 +190,9 @@ export default async (req) => {
 
       let fullText = '';
       try {
-        const anthropic = getAnthropic();
+        const anthropic = getAnthropic(apiKeyOverride);
         const anthStream = anthropic.messages.stream({
-          model: MODEL,
+          model,
           max_tokens: 1024,
           system,
           messages,

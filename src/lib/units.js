@@ -83,3 +83,17 @@ export function parseHeightToCm(input, units = 'imperial') {
   if (Number.isNaN(n)) return null;
   return units === 'imperial' ? inchesToCm(n) : round1(n);
 }
+
+// Convert separate feet and inches inputs to cm. Either may be empty.
+export function feetInchesToCm(feet, inches) {
+  const f = Number(feet || 0);
+  const i = Number(inches || 0);
+  if (Number.isNaN(f) && Number.isNaN(i)) return null;
+  if (!feet && !inches) return null;
+  const totalInches = (Number.isNaN(f) ? 0 : f) * 12 + (Number.isNaN(i) ? 0 : i);
+  return round1(totalInches * 2.54);
+}
+
+export function lbsToKgRaw(lbs) {
+  return lbsToKg(lbs);
+}

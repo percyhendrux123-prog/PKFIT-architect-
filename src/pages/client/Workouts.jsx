@@ -15,9 +15,22 @@ function parseYouTubeId(input = '') {
   return m?.[1] ?? (input.length === 11 ? input : null);
 }
 
-function ExerciseRow({ ex }) {
+// kebab-case slug for the curated exercise_videos lookup. Strips parens,
+// trims trailing variants, lowercases. e.g. "Back Squat (paused)" → "back-squat".
+function exerciseSlug(name = '') {
+  return String(name)
+    .toLowerCase()
+    .replace(/\(.+?\)/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .trim();
+}
+
+function ExerciseRow({ ex, videoLibrary }) {
   const [open, setOpen] = useState(false);
-  const videoId = parseYouTubeId(ex.youtube);
+  const inlineId = parseYouTubeId(ex.youtube);
+  const fallbackId = videoLibrary?.[exerciseSlug(ex.name ?? ex.title ?? '')] ?? null;
+  const videoId = inlineId ?? fallbackId;
   const note = ex.cues || ex.notes;
 
   return (
@@ -61,7 +74,7 @@ function ExerciseRow({ ex }) {
   );
 }
 
-function ProgramCard({ program, sessionCount, onLog, onArchive, onReactivate }) {
+function ProgramCard({ program, sessionCount, onLog, onArchive, onReactivate, videoLibrary }) {
   const [open, setOpen] = useState(false);
 
   const exercises = Array.isArray(program.exercises) ? program.exercises : [];
@@ -111,7 +124,7 @@ function ProgramCard({ program, sessionCount, onLog, onArchive, onReactivate }) 
       ) : (
         <ul>
           {exercises.map((e, i) => (
-            <ExerciseRow key={i} ex={e} />
+            <ExerciseRow key={i} ex={e} videoLibrary={videoLibrary} />
           ))}
         </ul>
       )}
@@ -136,6 +149,21 @@ export default function Workouts() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('active');
+  const [videoLibrary, setVideoLibrary] = useState({});
+
+  // Curated demo videos: slug → youtube_id. Loaded once and used as a
+  // fallback when an exercise row lacks an inline `youtube` field.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    supabase
+      .from('exercise_videos')
+      .select('slug,youtube_id')
+      .then(({ data }) => {
+        const map = {};
+        for (const row of data ?? []) map[row.slug] = row.youtube_id;
+        setVideoLibrary(map);
+      });
+  }, []);
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured || !user) {
@@ -247,6 +275,7 @@ export default function Workouts() {
                 onLog={logSession}
                 onArchive={archiveProgram}
                 onReactivate={reactivateProgram}
+                videoLibrary={videoLibrary}
               />
             ))}
           </div>

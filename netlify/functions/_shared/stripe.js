@@ -32,6 +32,11 @@ export function __resetStripeClients() {
 }
 
 export const PLAN_AMOUNTS = {
+  // Active tiers (tier-aware Claude routing): Haiku / Sonnet / Opus.
+  tier1: { monthly: 250, annual: 2490 },
+  tier2: { monthly: 475, annual: 4731 },
+  tier3: { monthly: 750, annual: 7470 },
+  // Legacy plan names retained so historical payments rows still resolve.
   performance: { monthly: 250, annual: 2490 },
   identity: { monthly: 350, annual: 3486 },
   full: { monthly: 450, annual: 4482 },

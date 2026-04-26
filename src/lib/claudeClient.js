@@ -38,6 +38,26 @@ export const claude = {
   weeklyReview: (input) => callFunction('generate-weekly-review', input),
 };
 
+// Strip the data: URL prefix Gemini doesn't want when sending inline data.
+function stripDataUrl(maybeDataUrl) {
+  if (typeof maybeDataUrl !== 'string') return maybeDataUrl;
+  const m = maybeDataUrl.match(/^data:([^;]+);base64,(.*)$/);
+  if (!m) return maybeDataUrl;
+  return m[2];
+}
+
+export const gemini = {
+  // image: base64 (with or without data: prefix); mimeType: image/jpeg etc.
+  mealPhoto: ({ image, mimeType }) =>
+    callFunction('gemini-meal-photo', { image: stripDataUrl(image), mimeType }),
+  // audio: base64; mimeType: audio/webm etc.
+  voiceTurn: ({ audio, mimeType }) =>
+    callFunction('gemini-voice-turn', { audio: stripDataUrl(audio), mimeType }),
+  // video: base64; mimeType: video/mp4 etc.; exercise: optional string label.
+  formCheck: ({ video, mimeType, exercise }) =>
+    callFunction('gemini-form-check', { video: stripDataUrl(video), mimeType, exercise }),
+};
+
 // Parse a text/event-stream body into { event, data } frames.
 function parseSseFrame(raw) {
   const lines = raw.split(/\r?\n/);
@@ -108,4 +128,19 @@ export const account = {
 
 export const coach = {
   exportClient: (clientId) => callFunction('coach-export-client', { clientId }),
+};
+
+export const profileApi = {
+  // Update intake / medical / consent / name. Medical is encrypted at rest.
+  update: (input) => callFunction('update-profile', input),
+  getMedical: () => callFunction('get-my-medical', {}),
+};
+
+export const apify = {
+  importTrainerize: (sourceUrl) => callFunction('apify-import', { sourceUrl }),
+};
+
+export const images = {
+  generate: ({ prompt, model, aspect_ratio, num_images, style_prompt }) =>
+    callFunction('generate-image', { prompt, model, aspect_ratio, num_images, style_prompt }),
 };

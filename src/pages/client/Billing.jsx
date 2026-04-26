@@ -8,53 +8,52 @@ import { Badge } from '../../components/ui/Badge';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Spinner } from '../../components/ui/Empty';
 
+const LEGACY_TIER_MAP = {
+  performance: 'tier1',
+  identity: 'tier1',
+  full: 'tier2',
+  premium: 'tier3',
+};
+
 const PLANS = [
   {
-    tier: 'performance',
-    label: 'Performance Standard',
+    tier: 'tier1',
+    label: 'Standard',
     monthly: 250,
+    model: 'Claude Haiku',
     headline: 'Diagnose. Program. Lock.',
     features: [
       'Programmed lifting split',
       'Macro floor + meal scaffolding',
       'Weekly written check-in',
-      'Inbox response within 48 hours',
+      'Claude Haiku coaching chat',
     ],
   },
   {
-    tier: 'identity',
-    label: 'Identity Architecture',
-    monthly: 350,
+    tier: 'tier2',
+    label: 'Integration',
+    monthly: 475,
+    model: 'Claude Sonnet',
     headline: 'Performance plus the loop work.',
     features: [
-      'Everything in Performance',
+      'Everything in Standard',
       'Habit stack design + tracking',
-      'Identity mapping session',
-      'Inbox response within 24 hours',
+      'Identity mapping + nutrition adjustments',
+      'Claude Sonnet coaching chat',
     ],
   },
   {
-    tier: 'full',
-    label: 'Full Integration',
-    monthly: 450,
-    headline: 'Training, nutrition, habits, all locked.',
-    features: [
-      'Everything in Identity',
-      'Loop reviews twice per week',
-      'Nutrition adjustments on demand',
-      'Direct DM thread with the coach',
-    ],
-  },
-  {
-    tier: 'premium',
-    label: 'Premium',
+    tier: 'tier3',
+    label: 'Architect',
     monthly: 750,
-    headline: 'Direct access. Faster cycle.',
+    model: 'Claude Opus',
+    headline: 'Direct access. Highest reasoning.',
     features: [
-      'Everything in Full Integration',
+      'Everything in Integration',
       'Same-day inbox response',
       'Quarterly in-depth review',
-      'Priority on protocol updates',
+      'Claude Opus coaching chat',
+      'Optional: bring your own Anthropic API key',
     ],
   },
 ];
@@ -65,6 +64,12 @@ function annualEffective(monthly) {
 
 function annualSavings(monthly) {
   return Math.round(monthly * 12 * 0.17);
+}
+
+function normalizeTier(plan) {
+  if (!plan || plan === 'trial') return null;
+  if (plan === 'tier1' || plan === 'tier2' || plan === 'tier3') return plan;
+  return LEGACY_TIER_MAP[plan] ?? null;
 }
 
 export default function Billing() {
@@ -95,7 +100,7 @@ export default function Billing() {
     };
   }, [user?.id]);
 
-  const currentTier = profile?.plan && profile.plan !== 'trial' ? profile.plan : null;
+  const currentTier = normalizeTier(profile?.plan);
   const isActive = payment?.status === 'active';
 
   async function checkout(tier) {
@@ -138,7 +143,7 @@ export default function Billing() {
         <Card>
           <CardHeader
             label="Active"
-            title={PLANS.find((p) => p.tier === payment.plan)?.label ?? payment.plan ?? 'Subscription'}
+            title={PLANS.find((p) => p.tier === normalizeTier(payment.plan))?.label ?? payment.plan ?? 'Subscription'}
             meta={
               payment.current_period_end
                 ? `${payment.cancel_at_period_end ? 'Ends' : 'Renews'} ${new Date(payment.current_period_end).toLocaleDateString()}`
@@ -186,7 +191,7 @@ export default function Billing() {
         </p>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {PLANS.map((p) => {
           const annual = annualEffective(p.monthly);
           const price = interval === 'annual' ? annual : p.monthly;
@@ -217,7 +222,8 @@ export default function Billing() {
                   ${annual}/yr on annual
                 </div>
               )}
-              <p className="mt-4 text-sm text-ink">{p.headline}</p>
+              <div className="mt-3 text-xs uppercase tracking-widest2 text-faint">{p.model}</div>
+              <p className="mt-3 text-sm text-ink">{p.headline}</p>
               <ul className="mt-4 flex-1 space-y-2 text-sm text-mute">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">

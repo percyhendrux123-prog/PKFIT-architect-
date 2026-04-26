@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { CinematicIntro } from '../components/CinematicIntro';
 
 const features = [
   { n: '01', title: 'Diagnosis Protocol', body: 'Baseline intake. Body composition, sleep, stress, lifts. Signal over story.' },
@@ -19,6 +20,7 @@ const phases = [
 export default function Landing() {
   return (
     <div className="min-h-screen bg-bg text-ink">
+      <CinematicIntro />
       <section className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-5 py-24">
         <div className="label mb-4">The PKFIT Blueprint · A 30-Day System</div>
         <h1 className="font-display text-[clamp(3rem,8vw,7rem)] leading-[0.95] tracking-wider2 text-gold">

@@ -164,8 +164,19 @@ export default function Onboarding() {
       } catch {
         /* ignore */
       }
+      // If signup captured consent versions in user_metadata, persist them
+      // to profiles.consent now that we have an authenticated session.
+      const consentMeta = user?.user_metadata?.consent;
+      if (consentMeta) {
+        try {
+          const { profileApi } = await import('../lib/claudeClient');
+          await profileApi.update({ consent: consentMeta });
+        } catch {
+          // Non-fatal: user can re-accept under Settings if this fails.
+        }
+      }
       await refreshProfile?.();
-      navigate('/dashboard', { replace: true });
+      navigate('/home', { replace: true });
     } catch (e) {
       setErr(e.message);
     } finally {

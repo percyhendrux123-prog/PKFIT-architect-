@@ -269,7 +269,10 @@ describe('stripe-webhook', () => {
       expect(row.stripe_customer_id).toBe('cus_abc');
       expect(row.stripe_subscription_id).toBe('sub_xyz');
       expect(row.client_id).toBe('client-1');
-      expect(row.plan).toBe('performance');
+      // Legacy STRIPE_PRICE_PERFORMANCE_MONTHLY now maps to tier1 (the
+      // tier-simplification rollup). Subscription metadata.tier is ignored
+      // when a price ID resolves a tier — the price ID is the source of truth.
+      expect(row.plan).toBe('tier1');
       expect(row.status).toBe('active');
       expect(row.amount).toBe(250);
       expect(upsertCall.args[1]).toEqual({ onConflict: 'stripe_subscription_id' });
@@ -277,7 +280,7 @@ describe('stripe-webhook', () => {
       // Profile update happens because we have both client_id and a tier.
       const profileUpdate = supabaseMock.__calls.find((c) => c.method === 'profiles.update');
       expect(profileUpdate).toBeDefined();
-      expect(profileUpdate.args[0]).toEqual({ plan: 'performance' });
+      expect(profileUpdate.args[0]).toEqual({ plan: 'tier1' });
     });
 
     it('maps unknown subscription status values to incomplete', async () => {

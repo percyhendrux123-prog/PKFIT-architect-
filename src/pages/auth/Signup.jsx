@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { CURRENT } from '../../lib/legalVersions';
 
 export default function Signup() {
   const { signUp, isSupabaseConfigured } = useAuth();
@@ -10,16 +11,28 @@ export default function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [tos, setTos] = useState(false);
+  const [coaching, setCoaching] = useState(false);
+  const [privacy, setPrivacy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [sent, setSent] = useState(false);
 
+  const consentReady = tos && coaching && privacy;
+
   async function onSubmit(e) {
     e.preventDefault();
+    if (!consentReady) {
+      setErr('Read and accept all three agreements to continue.');
+      return;
+    }
     setErr(null);
     setBusy(true);
     try {
-      await signUp(email, password, { name });
+      // Pass consent versions through user metadata. Onboarding (or
+      // /update-profile after first login) writes the row to profiles.consent
+      // with timestamp + UA — auth signup itself can't write to other tables.
+      await signUp(email, password, { name, consent: CURRENT });
       setSent(true);
     } catch (e) {
       const msg = (e?.message ?? '').toLowerCase();
@@ -72,11 +85,64 @@ export default function Signup() {
             onChange={(e) => setPassword(e.target.value)}
           />
           <p className="text-[0.65rem] uppercase tracking-widest2 text-faint">Eight characters minimum.</p>
+
+          <fieldset className="space-y-2 border border-line bg-black/30 p-3 text-xs text-mute">
+            <legend className="px-1 label">Agreements</legend>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={tos}
+                onChange={(e) => setTos(e.target.checked)}
+                className="mt-0.5 accent-gold"
+                required
+              />
+              <span>
+                I have read and accept the{' '}
+                <Link to="/legal/terms" target="_blank" className="text-gold underline">
+                  Terms of Service
+                </Link>
+                .
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={coaching}
+                onChange={(e) => setCoaching(e.target.checked)}
+                className="mt-0.5 accent-gold"
+                required
+              />
+              <span>
+                I have read and accept the{' '}
+                <Link to="/legal/coaching" target="_blank" className="text-gold underline">
+                  Coaching Agreement
+                </Link>
+                , including the assumption of risk.
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={privacy}
+                onChange={(e) => setPrivacy(e.target.checked)}
+                className="mt-0.5 accent-gold"
+                required
+              />
+              <span>
+                I have read the{' '}
+                <Link to="/legal/privacy" target="_blank" className="text-gold underline">
+                  Privacy Policy
+                </Link>{' '}
+                and consent to the processing described.
+              </span>
+            </label>
+          </fieldset>
+
           {err ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
           {!isSupabaseConfigured ? (
             <div className="border border-line p-3 text-xs text-faint">Supabase environment not set. Signup is inactive.</div>
           ) : null}
-          <Button type="submit" disabled={busy || !isSupabaseConfigured} className="w-full">
+          <Button type="submit" disabled={busy || !isSupabaseConfigured || !consentReady} className="w-full">
             {busy ? 'Creating' : 'Create account'}
           </Button>
         </form>

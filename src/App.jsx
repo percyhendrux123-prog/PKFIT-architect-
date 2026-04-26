@@ -4,7 +4,14 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequiresActiveSubscription } from './components/RequiresActiveSubscription';
 
 import Landing from './pages/Landing.jsx';
+import HomeScreen from './pages/HomeScreen.jsx';
+import Owner from './pages/Owner.jsx';
+import ImageLab from './pages/owner/ImageLab.jsx';
 import Splash from './pages/Splash.jsx';
+import Terms from './pages/legal/Terms.jsx';
+import CoachingAgreement from './pages/legal/Coaching.jsx';
+import Privacy from './pages/legal/Privacy.jsx';
+import Import from './pages/client/Import.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Migrate from './pages/Migrate.jsx';
@@ -49,8 +56,44 @@ export default function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/migrate/:token" element={<Migrate />} />
+      <Route path="/legal/terms" element={<Terms />} />
+      <Route path="/legal/coaching" element={<CoachingAgreement />} />
+      <Route path="/legal/privacy" element={<Privacy />} />
 
-      {/* Client-protected */}
+      {/* iPhone-style home screen — outside the Layout chrome so it occupies
+          the full viewport with its own dock. Still gated by auth + active
+          subscription. */}
+      <Route
+        element={
+          <ProtectedRoute role="client">
+            <RequiresActiveSubscription />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/home" element={<HomeScreen />} />
+      </Route>
+
+      {/* Owner panel — only matters if the signed-in user's email is in
+          OWNER_EMAILS server-side. The page itself enforces, so any client
+          that sneaks here just sees the "Owner only" message. */}
+      <Route
+        path="/owner"
+        element={
+          <ProtectedRoute>
+            <Owner />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner/images"
+        element={
+          <ProtectedRoute>
+            <ImageLab />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Client-protected (with sidebar/dock chrome) */}
       <Route
         element={
           <ProtectedRoute role="client">
@@ -78,6 +121,7 @@ export default function App() {
         <Route path="/billing" element={<Billing />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/import" element={<Import />} />
       </Route>
 
       {/* Coach-protected */}

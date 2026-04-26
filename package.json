@@ -17,9 +17,11 @@
     "axiom:smoke": "node scripts/axiom-smoke.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@pkfit/ui": "*",
     "@stripe/stripe-js": "^4.8.0",
     "@supabase/supabase-js": "^2.45.4",
+    "framer-motion": "^11.18.2",
     "lucide-react": "^0.454.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -34,6 +34,13 @@ vi.mock('../netlify/functions/_shared/anthropic.js', () => ({
   getAnthropic: () => anthropicMock,
   loadPrompt: (...args) => loadPromptMock(...args),
   MODEL: 'claude-test-model',
+  MODEL_BY_TIER: {
+    trial: 'claude-test-model',
+    tier1: 'claude-test-model',
+    tier2: 'claude-test-model',
+    tier3: 'claude-test-model',
+  },
+  pickModel: () => 'claude-test-model',
   sanitizeVoice: (t) => t,
   bannedTokensCleanup: (t) => (t ?? '').trim(),
 }));

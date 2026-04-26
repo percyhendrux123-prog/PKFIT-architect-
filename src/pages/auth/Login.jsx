@@ -19,7 +19,7 @@ export default function Login() {
     setBusy(true);
     try {
       await signIn(email, password);
-      const dest = location.state?.from || '/dashboard';
+      const dest = location.state?.from || '/home';
       navigate(dest, { replace: true });
     } catch (e) {
       const msg = (e?.message ?? '').toLowerCase();

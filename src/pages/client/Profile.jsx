@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Avatar } from '../../components/ui/Avatar';
 import { StorageImage } from '../../components/StorageImage';
 import { Card, CardHeader } from '../../components/ui/Card';
+import { IntakePanel } from '../../components/IntakePanel';
 import { formatWeight, formatWeightDelta, kgToLbs, parseWeightToKg, weightLabel } from '../../lib/units';
 
 export default function Profile() {
@@ -301,6 +302,8 @@ export default function Profile() {
           {profileErr ? <span role="alert" className="text-xs uppercase tracking-widest2 text-signal">{profileErr}</span> : null}
         </div>
       </form>
+
+      <IntakePanel profile={profile} />
 
       <section>
         <div className="label mb-2">Weekly check-in</div>
