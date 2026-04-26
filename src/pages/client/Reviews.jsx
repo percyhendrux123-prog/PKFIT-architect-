@@ -72,14 +72,22 @@ export default function Reviews() {
         </Button>
       </header>
 
-      {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+      {err ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
 
       {loading ? (
-        <div className="text-xs uppercase tracking-widest2 text-faint">Loading</div>
+        <div className="space-y-3" aria-hidden="true">
+          <div className="h-32 animate-pulse border border-line bg-black/40" />
+          <div className="h-32 animate-pulse border border-line bg-black/40" />
+        </div>
       ) : rows.length === 0 ? (
         <Empty
           title="No review installed"
           body="Log a check-in, then generate the week. The loop closes here."
+          action={
+            <Button onClick={generate} disabled={busy}>
+              {busy ? 'Generating' : 'Generate this week'}
+            </Button>
+          }
         />
       ) : (
         <ul className="space-y-4">

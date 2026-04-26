@@ -65,20 +65,26 @@ export default function Calendar() {
         </div>
         <div className="flex gap-2">
           <button
+            type="button"
+            aria-label="Previous month"
             onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-            className="border border-line px-3 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold"
+            className="border border-line px-3 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
           >
             Prev
           </button>
           <button
+            type="button"
+            aria-label="Jump to current month"
             onClick={() => setCursor(new Date())}
-            className="border border-line px-3 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold"
+            className="border border-line px-3 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
           >
             Today
           </button>
           <button
+            type="button"
+            aria-label="Next month"
             onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-            className="border border-line px-3 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold"
+            className="border border-line px-3 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
           >
             Next
           </button>

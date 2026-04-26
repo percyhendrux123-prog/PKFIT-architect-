@@ -81,7 +81,7 @@ function ReviewPanel({ review, units, onUpdated }) {
           onChange={(e) => setComment(e.target.value)}
           placeholder="One idea. Tight. Signal only."
         />
-        {err ? <div className="mt-2 text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+        {err ? <div className="mt-2 text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
         <div className="mt-3 flex items-center gap-3">
           <Button onClick={save} disabled={saving}>{saving ? 'Saving' : 'Save note'}</Button>
           {review.coach_commented_at ? (

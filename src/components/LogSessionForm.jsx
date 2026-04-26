@@ -212,7 +212,7 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
                         type="button"
                         onClick={() => removeSet(exIdx, setIdx)}
                         aria-label={`Remove set ${setIdx + 1}`}
-                        className="text-mute hover:text-red-300"
+                        className="text-mute hover:text-signal"
                       >
                         <Trash2 size={14} />
                       </button>

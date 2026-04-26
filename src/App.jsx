@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RequiresActiveSubscription } from './components/RequiresActiveSubscription';
 
 import Landing from './pages/Landing.jsx';
 import Splash from './pages/Splash.jsx';
@@ -51,7 +52,9 @@ export default function App() {
       <Route
         element={
           <ProtectedRoute role="client">
-            <Layout />
+            <RequiresActiveSubscription>
+              <Layout />
+            </RequiresActiveSubscription>
           </ProtectedRoute>
         }
       >

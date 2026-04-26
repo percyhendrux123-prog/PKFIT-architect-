@@ -103,7 +103,7 @@ export default function ReviewDetail() {
         </div>
       </header>
       {regenErr ? (
-        <div className="text-xs uppercase tracking-widest2 text-red-300">{regenErr}</div>
+        <div className="text-xs uppercase tracking-widest2 text-signal">{regenErr}</div>
       ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">

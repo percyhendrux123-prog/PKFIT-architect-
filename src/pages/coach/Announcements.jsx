@@ -67,7 +67,7 @@ export default function Announcements() {
       </form>
 
       {msg ? <div className="text-xs uppercase tracking-widest2 text-gold">{msg}</div> : null}
-      {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+      {err ? <div className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
     </div>
   );
 }

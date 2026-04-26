@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Spinner } from '../../components/ui/Empty';
 import { deriveLoopStage, LOOP_STAGES, loopProgress, loopStageMeta } from '../../lib/loop';
 import { habitStreak, sessionStreak } from '../../lib/streaks';
 
@@ -24,7 +25,7 @@ function FloorBar({ label, eaten, floor }) {
       <div className="flex items-baseline justify-between text-[0.6rem] uppercase tracking-widest2 text-faint">
         <span>{label}</span>
         <span>
-          <span className={short ? 'text-red-300' : 'text-ink'}>{eaten}</span> / {floor}
+          <span className={short ? 'text-signal' : 'text-ink'}>{eaten}</span> / {floor}
         </span>
       </div>
       <div className="mt-1 h-1 w-full bg-line">
@@ -44,9 +45,12 @@ export default function Dashboard() {
   const [activeProgram, setActiveProgram] = useState(null);
 
   const [reviewThisWeek, setReviewThisWeek] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !user) return;
+    if (!isSupabaseConfigured || !user) return undefined;
+    let cancelled = false;
     const today = new Date().toISOString().slice(0, 10);
     const sinceIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -57,58 +61,45 @@ export default function Dashboard() {
       d.setUTCDate(d.getUTCDate() - diff);
       return d.toISOString().slice(0, 10);
     })();
-    supabase
-      .from('check_ins')
-      .select('*')
-      .eq('client_id', user.id)
-      .order('date', { ascending: false })
-      .limit(1)
-      .then(({ data }) => setCheckIn(data?.[0] ?? null));
-    supabase
-      .from('programs')
-      .select('*')
-      .eq('client_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(3)
-      .then(({ data }) => setRecent(data ?? []));
-    supabase
-      .from('programs')
-      .select('*')
-      .eq('client_id', user.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => setActiveProgram(data ?? null));
-    supabase
-      .from('meals')
-      .select('*')
-      .eq('client_id', user.id)
-      .eq('date', today)
-      .order('meal_type')
-      .then(({ data }) => setTodayMeals(data ?? []));
-    supabase
-      .from('habits')
-      .select('*')
-      .eq('client_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => setHabitRow(data ?? null));
-    supabase
-      .from('workout_sessions')
-      .select('performed_at')
-      .eq('client_id', user.id)
-      .gte('performed_at', sinceIso)
-      .order('performed_at', { ascending: false })
-      .then(({ data }) => setSessions(data ?? []));
-    supabase
-      .from('reviews')
-      .select('id,week_starting')
-      .eq('client_id', user.id)
-      .eq('week_starting', weekStart)
-      .maybeSingle()
-      .then(({ data }) => setReviewThisWeek(data ?? null));
+
+    setLoading(true);
+    setLoadError(null);
+
+    Promise.all([
+      supabase.from('check_ins').select('*').eq('client_id', user.id).order('date', { ascending: false }).limit(1),
+      supabase.from('programs').select('*').eq('client_id', user.id).order('created_at', { ascending: false }).limit(3),
+      supabase.from('programs').select('*').eq('client_id', user.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('meals').select('*').eq('client_id', user.id).eq('date', today).order('meal_type'),
+      supabase.from('habits').select('*').eq('client_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('workout_sessions').select('performed_at').eq('client_id', user.id).gte('performed_at', sinceIso).order('performed_at', { ascending: false }),
+      supabase.from('reviews').select('id,week_starting').eq('client_id', user.id).eq('week_starting', weekStart).maybeSingle(),
+    ])
+      .then(([ci, recents, active, todayM, habit, sess, review]) => {
+        if (cancelled) return;
+        const firstError = [ci, recents, active, todayM, habit, sess, review].find((r) => r?.error);
+        if (firstError?.error) {
+          setLoadError(firstError.error.message ?? 'Could not load dashboard.');
+          setLoading(false);
+          return;
+        }
+        setCheckIn(ci.data?.[0] ?? null);
+        setRecent(recents.data ?? []);
+        setActiveProgram(active.data ?? null);
+        setTodayMeals(todayM.data ?? []);
+        setHabitRow(habit.data ?? null);
+        setSessions(sess.data ?? []);
+        setReviewThisWeek(review.data ?? null);
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setLoadError(e?.message ?? 'Could not load dashboard.');
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const hStreak = habitStreak(habitRow);
@@ -193,6 +184,25 @@ export default function Dashboard() {
     return null;
   })();
 
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <section>
+          <div className="label mb-2">Today</div>
+          <h1 className="font-display text-[clamp(2rem,5vw,3rem)] tracking-wider2 text-ink">
+            {profile?.name ? `Hello, ${profile.name}.` : 'Welcome back.'}
+          </h1>
+        </section>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="h-28 animate-pulse border border-line bg-black/40" aria-hidden="true" />
+          <div className="h-28 animate-pulse border border-line bg-black/40" aria-hidden="true" />
+          <div className="h-28 animate-pulse border border-line bg-black/40" aria-hidden="true" />
+        </div>
+        <Spinner />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <section>
@@ -205,11 +215,20 @@ export default function Dashboard() {
         </p>
       </section>
 
+      {loadError ? (
+        <section role="alert" className="border border-signal/40 bg-black/40 p-4">
+          <div className="label text-signal">Load issue</div>
+          <p className="mt-1 text-sm text-mute">
+            Some surfaces could not be reached. {loadError}
+          </p>
+        </section>
+      ) : null}
+
       {missingLink ? (
-        <section className="border border-red-500/40 bg-black/40 p-5">
+        <section className="border border-signal/40 bg-black/40 p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="label text-red-300">{missingLink.label} · drift</div>
+              <div className="label text-signal">{missingLink.label} · drift</div>
               <h3 className="mt-1 font-display text-2xl tracking-wider2">{missingLink.title}</h3>
               <p className="mt-1 max-w-reading text-sm text-mute">{missingLink.body}</p>
             </div>

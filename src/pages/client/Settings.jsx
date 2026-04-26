@@ -250,7 +250,7 @@ export default function Settings() {
                 <span className="text-xs uppercase tracking-widest2 text-gold">{pushMsg}</span>
               ) : null}
               {pushErr ? (
-                <span className="text-xs uppercase tracking-widest2 text-red-300">{pushErr}</span>
+                <span className="text-xs uppercase tracking-widest2 text-signal">{pushErr}</span>
               ) : null}
             </div>
           </div>
@@ -263,24 +263,36 @@ export default function Settings() {
           <Input
             label="Kcal"
             type="number"
+            min="0"
+            max="6000"
+            inputMode="numeric"
             value={target.target_kcal}
             onChange={(e) => setTarget({ ...target, target_kcal: e.target.value })}
           />
           <Input
             label="Protein (g)"
             type="number"
+            min="0"
+            max="500"
+            inputMode="numeric"
             value={target.target_protein_g}
             onChange={(e) => setTarget({ ...target, target_protein_g: e.target.value })}
           />
           <Input
             label="Carbs (g)"
             type="number"
+            min="0"
+            max="800"
+            inputMode="numeric"
             value={target.target_carbs_g}
             onChange={(e) => setTarget({ ...target, target_carbs_g: e.target.value })}
           />
           <Input
             label="Fat (g)"
             type="number"
+            min="0"
+            max="300"
+            inputMode="numeric"
             value={target.target_fat_g}
             onChange={(e) => setTarget({ ...target, target_fat_g: e.target.value })}
           />
@@ -300,7 +312,7 @@ export default function Settings() {
         <form onSubmit={changePassword} className="max-w-md space-y-3">
           <Input label="New password" type="password" autoComplete="new-password" value={pw1} onChange={(e) => setPw1(e.target.value)} />
           <Input label="Confirm new password" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
-          {pwErr ? <div className="text-xs uppercase tracking-widest2 text-red-300">{pwErr}</div> : null}
+          {pwErr ? <div className="text-xs uppercase tracking-widest2 text-signal">{pwErr}</div> : null}
           {pwMsg ? <div className="text-xs uppercase tracking-widest2 text-gold">{pwMsg}</div> : null}
           <Button type="submit" disabled={pwBusy || !pw1 || !pw2}>
             <KeyRound size={14} /> {pwBusy ? 'Updating' : 'Update password'}
@@ -314,7 +326,7 @@ export default function Settings() {
           Downloads every row you own across profile, programs, meals, habits, check-ins, reviews, payments, sessions,
           community activity, assistant conversations, and direct messages. JSON format.
         </p>
-        {exportErr ? <div className="mt-3 text-xs uppercase tracking-widest2 text-red-300">{exportErr}</div> : null}
+        {exportErr ? <div className="mt-3 text-xs uppercase tracking-widest2 text-signal">{exportErr}</div> : null}
         <div className="mt-4">
           <Button onClick={exportData} variant="ghost" disabled={exportBusy}>
             <Download size={14} /> {exportBusy ? 'Assembling' : 'Download export'}
@@ -336,7 +348,7 @@ export default function Settings() {
             onChange={(e) => setDeleteConfirm(e.target.value)}
             placeholder="DELETE"
           />
-          {deleteErr ? <div className="text-xs uppercase tracking-widest2 text-red-300">{deleteErr}</div> : null}
+          {deleteErr ? <div className="text-xs uppercase tracking-widest2 text-signal">{deleteErr}</div> : null}
           <Button variant="danger" onClick={deleteAccount} disabled={deleteBusy || deleteConfirm !== 'DELETE'}>
             <Trash2 size={14} /> {deleteBusy ? 'Deleting' : 'Delete account'}
           </Button>

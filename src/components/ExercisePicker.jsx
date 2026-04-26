@@ -98,35 +98,45 @@ export function ExercisePicker({ value, onPick, placeholder = 'Exercise', classN
         aria-activedescendant={open && filtered[active] ? `exercise-option-${filtered[active].id}` : undefined}
         className="w-full border border-line bg-black/40 px-4 py-3 font-body text-ink placeholder:text-faint focus:border-gold"
       />
-      {open && filtered.length > 0 ? (
-        <ul
-          id="exercise-picker-list"
-          ref={listRef}
-          role="listbox"
-          className="absolute left-0 right-0 z-10 mt-1 max-h-64 overflow-y-auto border border-line bg-bg shadow-xl"
-        >
-          {filtered.map((o, i) => (
-            <li key={o.id} id={`exercise-option-${o.id}`} role="option" aria-selected={i === active}>
-              <button
-                type="button"
-                onMouseEnter={() => setActive(i)}
-                onClick={() => {
-                  onPick(o);
-                  setQuery(o.name);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm ${
-                  i === active ? 'bg-black/60' : 'hover:bg-black/40'
-                }`}
-              >
-                <span className="font-display tracking-wider2 text-ink">{o.name}</span>
-                <span className="text-[0.6rem] uppercase tracking-widest2 text-faint">
-                  {[o.primary_muscle, o.equipment].filter(Boolean).join(' · ')}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+      {open ? (
+        filtered.length > 0 ? (
+          <ul
+            id="exercise-picker-list"
+            ref={listRef}
+            role="listbox"
+            className="absolute left-0 right-0 z-10 mt-1 max-h-64 overflow-y-auto border border-line bg-bg shadow-xl"
+          >
+            {filtered.map((o, i) => (
+              <li key={o.id} id={`exercise-option-${o.id}`} role="option" aria-selected={i === active}>
+                <button
+                  type="button"
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => {
+                    onPick(o);
+                    setQuery(o.name);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm ${
+                    i === active ? 'bg-black/60' : 'hover:bg-black/40'
+                  }`}
+                >
+                  <span className="font-display tracking-wider2 text-ink">{o.name}</span>
+                  <span className="text-[0.6rem] uppercase tracking-widest2 text-faint">
+                    {[o.primary_muscle, o.equipment].filter(Boolean).join(' · ')}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : query.trim().length > 0 ? (
+          <div
+            id="exercise-picker-list"
+            role="status"
+            className="absolute left-0 right-0 z-10 mt-1 border border-line bg-bg px-4 py-3 text-xs uppercase tracking-widest2 text-faint shadow-xl"
+          >
+            No match. Type the exercise name as it should appear.
+          </div>
+        ) : null
       ) : null}
     </div>
   );

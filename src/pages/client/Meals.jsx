@@ -55,7 +55,7 @@ function MacroBar({ label, planned, eaten, floor }) {
         <div className="h-1 bg-gold" style={{ width: `${pct}%` }} />
       </div>
       {plannedBelowFloor ? (
-        <div className="mt-1 text-[0.55rem] uppercase tracking-widest2 text-red-300">
+        <div className="mt-1 text-[0.55rem] uppercase tracking-widest2 text-signal">
           Below floor
         </div>
       ) : null}

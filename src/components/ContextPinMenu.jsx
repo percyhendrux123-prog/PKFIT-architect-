@@ -127,7 +127,7 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
               type="button"
               onClick={() => remove(i)}
               aria-label="Remove pinned context"
-              className="ml-1 text-mute hover:text-red-300"
+              className="ml-1 text-mute hover:text-signal"
             >
               <X size={10} />
             </button>
@@ -144,7 +144,7 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
         <div className="relative">
           <div className="absolute left-0 top-1 z-20 w-80 max-w-[90vw] border border-line bg-bg shadow-2xl">
             <Section title="Programs">
-              {options.programs.length === 0 ? <Empty /> : options.programs.map((p) => (
+              {options.programs.length === 0 ? <Empty title="Nothing here" /> : options.programs.map((p) => (
                 <OptionRow
                   key={p.id}
                   label={p.schedule?.title ?? `Week ${p.week_number}`}
@@ -153,7 +153,7 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
               ))}
             </Section>
             <Section title="Check-ins">
-              {options.checkIns.length === 0 ? <Empty /> : options.checkIns.map((c) => (
+              {options.checkIns.length === 0 ? <Empty title="Nothing here" /> : options.checkIns.map((c) => (
                 <OptionRow
                   key={c.id}
                   label={`${c.date?.slice(0, 10)} · ${c.weight ?? '—'} kg`}
@@ -162,7 +162,7 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
               ))}
             </Section>
             <Section title="Reviews">
-              {options.reviews.length === 0 ? <Empty /> : options.reviews.map((r) => (
+              {options.reviews.length === 0 ? <Empty title="Nothing here" /> : options.reviews.map((r) => (
                 <OptionRow
                   key={r.id}
                   label={`Week of ${r.week_starting}`}
@@ -171,7 +171,7 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
               ))}
             </Section>
             <Section title="Sessions">
-              {options.sessions.length === 0 ? <Empty /> : options.sessions.map((s) => (
+              {options.sessions.length === 0 ? <Empty title="Nothing here" /> : options.sessions.map((s) => (
                 <OptionRow
                   key={s.id}
                   label={`${new Date(s.performed_at).toLocaleDateString()}${s.rpe_avg != null ? ` · RPE ${s.rpe_avg}` : ''}`}
@@ -180,7 +180,7 @@ export function ContextPinMenu({ userId, conversationId, pins, onChange }) {
               ))}
             </Section>
             <Section title="Habit stack">
-              {!options.habits?.habit_list?.length ? <Empty /> : (
+              {!options.habits?.habit_list?.length ? <Empty title="Nothing here" /> : (
                 <OptionRow
                   label={`${options.habits.habit_list.length} habits`}
                   onClick={() => add({ type: 'habits', data: options.habits })}

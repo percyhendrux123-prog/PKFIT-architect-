@@ -6,6 +6,7 @@ import { Input, Select } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Avatar } from '../../components/ui/Avatar';
+import { Empty, Spinner } from '../../components/ui/Empty';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 import { downloadCSV } from '../../lib/csv';
 
@@ -24,17 +25,24 @@ export default function Clients() {
   const [lastActive, setLastActive] = useState({});
   const [q, setQ] = useState('');
   const [plan, setPlan] = useState('all');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
     (async () => {
       const { data: rows } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'client')
         .order('created_at', { ascending: false });
+      if (cancelled) return;
       const clientRows = rows ?? [];
       setClients(clientRows);
+      setLoading(false);
       if (!clientRows.length) return;
       const ids = clientRows.map((c) => c.id);
 
@@ -43,6 +51,7 @@ export default function Clients() {
         supabase.from('workout_sessions').select('client_id,performed_at').in('client_id', ids),
         supabase.from('dm_threads').select('client_id,last_activity_at').in('client_id', ids),
       ]);
+      if (cancelled) return;
 
       const map = {};
       function touch(id, iso) {
@@ -54,6 +63,9 @@ export default function Clients() {
       for (const r of threads.data ?? []) touch(r.client_id, r.last_activity_at);
       setLastActive(map);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = useMemo(() => {
@@ -114,17 +126,24 @@ export default function Clients() {
         </Select>
       </div>
 
+      {loading ? (
+        <div className="border border-line bg-black/20 p-6"><Spinner /></div>
+      ) : clients.length === 0 ? (
+        <Empty title="No clients yet" body="When clients sign up, they show up here." />
+      ) : filtered.length === 0 ? (
+        <Empty title="No matches" body="Adjust the search or plan filter." />
+      ) : (
       <div className="overflow-x-auto border border-line">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-line text-xs uppercase tracking-widest2 text-faint">
             <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Plan</th>
-              <th className="px-4 py-3">Loop</th>
-              <th className="px-4 py-3">Last active</th>
-              <th className="px-4 py-3">Joined</th>
-              <th className="px-4 py-3"></th>
+              <th scope="col" className="px-4 py-3">Name</th>
+              <th scope="col" className="px-4 py-3">Email</th>
+              <th scope="col" className="px-4 py-3">Plan</th>
+              <th scope="col" className="px-4 py-3">Loop</th>
+              <th scope="col" className="px-4 py-3">Last active</th>
+              <th scope="col" className="px-4 py-3">Joined</th>
+              <th scope="col" className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -145,7 +164,7 @@ export default function Clients() {
                     if (!rel) return '—';
                     const daysAgo = Math.floor((Date.now() - new Date(lastActive[c.id]).getTime()) / 86400000);
                     return (
-                      <span className={daysAgo >= 7 ? 'text-red-300' : 'text-faint'}>{rel}</span>
+                      <span className={daysAgo >= 7 ? 'text-signal' : 'text-faint'}>{rel}</span>
                     );
                   })()}
                 </td>
@@ -158,6 +177,7 @@ export default function Clients() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

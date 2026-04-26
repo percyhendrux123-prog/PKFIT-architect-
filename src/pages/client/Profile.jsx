@@ -14,6 +14,14 @@ export default function Profile() {
   const { user, profile, refreshProfile } = useAuth();
   const units = profile?.units ?? 'imperial';
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarErr, setAvatarErr] = useState(null);
+  const [baselineBusy, setBaselineBusy] = useState(false);
+  const [baselineErr, setBaselineErr] = useState(null);
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileErr, setProfileErr] = useState(null);
+  const [checkInBusy, setCheckInBusy] = useState(false);
+  const [checkInErr, setCheckInErr] = useState(null);
+  const [photoErr, setPhotoErr] = useState(null);
   const [form, setForm] = useState({ name: '', email: '' });
   const [checkIns, setCheckIns] = useState([]);
   const [weight, setWeight] = useState('');
@@ -21,8 +29,6 @@ export default function Profile() {
   const [notes, setNotes] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(null);
   const [stats, setStats] = useState({ sessions: 0, photos: 0 });
 
   useEffect(() => {
@@ -69,25 +75,32 @@ export default function Profile() {
 
   async function saveProfile(e) {
     e.preventDefault();
-    setBusy(true);
-    await supabase.from('profiles').update({ name: form.name }).eq('id', user.id);
-    await refreshProfile?.();
-    setBusy(false);
+    setProfileBusy(true);
+    setProfileErr(null);
+    try {
+      const { error } = await supabase.from('profiles').update({ name: form.name }).eq('id', user.id);
+      if (error) throw error;
+      await refreshProfile?.();
+    } catch (e) {
+      setProfileErr(e.message);
+    } finally {
+      setProfileBusy(false);
+    }
   }
 
   async function uploadBaseline(e) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (!file.type.startsWith('image/')) {
-      setErr('Baseline photo must be an image.');
+      setBaselineErr('Baseline photo must be an image.');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setErr('Image must be 10 MB or less.');
+      setBaselineErr('Image must be 10 MB or less.');
       return;
     }
-    setBusy(true);
-    setErr(null);
+    setBaselineBusy(true);
+    setBaselineErr(null);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const path = `${user.id}/baseline-${Date.now()}.${ext}`;
@@ -102,9 +115,9 @@ export default function Profile() {
       if (updErr) throw updErr;
       await refreshProfile?.();
     } catch (e) {
-      setErr(`Baseline upload failed: ${e.message}`);
+      setBaselineErr(`Baseline upload failed: ${e.message}`);
     } finally {
-      setBusy(false);
+      setBaselineBusy(false);
     }
   }
 
@@ -112,15 +125,15 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (!file.type.startsWith('image/')) {
-      setErr('Avatar must be an image.');
+      setAvatarErr('Avatar must be an image.');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setErr('Avatar must be 5 MB or less.');
+      setAvatarErr('Avatar must be 5 MB or less.');
       return;
     }
     setAvatarBusy(true);
-    setErr(null);
+    setAvatarErr(null);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const path = `${user.id}/avatar-${Date.now()}.${ext}`;
@@ -135,7 +148,7 @@ export default function Profile() {
       if (updErr) throw updErr;
       await refreshProfile?.();
     } catch (e) {
-      setErr(`Avatar upload failed: ${e.message}`);
+      setAvatarErr(`Avatar upload failed: ${e.message}`);
     } finally {
       setAvatarBusy(false);
     }
@@ -145,22 +158,29 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setErr('File must be an image.');
+      setPhotoErr('File must be an image.');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setErr('Image must be 10 MB or less.');
+      setPhotoErr('Image must be 10 MB or less.');
       return;
     }
-    setErr(null);
+    setPhotoErr(null);
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
   }
 
+  function clearCheckInPhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoErr(null);
+  }
+
   async function logCheckIn(e) {
     e.preventDefault();
-    setBusy(true);
-    setErr(null);
+    setCheckInBusy(true);
+    setCheckInErr(null);
     try {
       let photoPath = null;
       if (photoFile) {
@@ -188,12 +208,11 @@ export default function Profile() {
       setWeight('');
       setBodyFat('');
       setNotes('');
-      setPhotoFile(null);
-      setPhotoPreview(null);
+      clearCheckInPhoto();
     } catch (e) {
-      setErr(e.message);
+      setCheckInErr(e.message);
     } finally {
-      setBusy(false);
+      setCheckInBusy(false);
     }
   }
 
@@ -244,11 +263,12 @@ export default function Profile() {
               No baseline photo
             </div>
           )}
-          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 border border-line bg-black/30 px-4 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold">
-            <Upload size={14} />
-            {profile?.baseline_photo_path ? 'Replace baseline' : 'Upload baseline'}
-            <input type="file" accept="image/*" className="sr-only" onChange={uploadBaseline} disabled={busy} />
+          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 border border-line bg-black/30 px-4 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold focus-within:border-gold">
+            <Upload size={14} aria-hidden="true" />
+            {baselineBusy ? 'Uploading' : profile?.baseline_photo_path ? 'Replace baseline' : 'Upload baseline'}
+            <input type="file" accept="image/*" className="sr-only" onChange={uploadBaseline} disabled={baselineBusy} />
           </label>
+          {baselineErr ? <div role="alert" className="mt-2 text-xs uppercase tracking-widest2 text-signal">{baselineErr}</div> : null}
         </div>
         <div className="text-sm text-mute">
           <p>
@@ -265,40 +285,56 @@ export default function Profile() {
 
       <section>
         <div className="label mb-2">Avatar</div>
-        <label className="inline-flex cursor-pointer items-center gap-2 border border-line bg-black/30 px-4 py-3 text-xs uppercase tracking-widest2 text-mute hover:border-gold">
-          <Upload size={14} />
+        <label className="inline-flex cursor-pointer items-center gap-2 border border-line bg-black/30 px-4 py-3 text-xs uppercase tracking-widest2 text-mute hover:border-gold focus-within:border-gold">
+          <Upload size={14} aria-hidden="true" />
           {avatarBusy ? 'Uploading' : profile?.avatar_path ? 'Replace avatar' : 'Upload avatar'}
           <input type="file" accept="image/*" className="sr-only" onChange={uploadAvatar} disabled={avatarBusy} />
         </label>
+        {avatarErr ? <div role="alert" className="mt-2 text-xs uppercase tracking-widest2 text-signal">{avatarErr}</div> : null}
       </section>
 
       <form onSubmit={saveProfile} className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <Input label="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <Input label="Email" value={form.email} disabled />
-        <div className="md:col-span-2"><Button disabled={busy}>Save</Button></div>
+        <div className="md:col-span-2 flex flex-wrap items-center gap-3">
+          <Button disabled={profileBusy}>{profileBusy ? 'Saving' : 'Save'}</Button>
+          {profileErr ? <span role="alert" className="text-xs uppercase tracking-widest2 text-signal">{profileErr}</span> : null}
+        </div>
       </form>
 
       <section>
         <div className="label mb-2">Weekly check-in</div>
         <form onSubmit={logCheckIn} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <Input label={weightLabel(units)} type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
-            <Input label="Body fat %" type="number" step="0.1" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} />
+            <Input label={weightLabel(units)} type="number" min="0" max="800" step="0.1" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} />
+            <Input label="Body fat %" type="number" min="0" max="60" step="0.1" inputMode="decimal" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} />
             <Input label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Sleep, stress, energy" />
-            <label className="flex cursor-pointer items-center justify-center gap-2 border border-dashed border-line bg-black/30 px-3 text-xs uppercase tracking-widest2 text-mute hover:border-gold">
-              <Upload size={14} />
+            <label className="flex cursor-pointer items-center justify-center gap-2 border border-dashed border-line bg-black/30 px-3 text-xs uppercase tracking-widest2 text-mute hover:border-gold focus-within:border-gold">
+              <Upload size={14} aria-hidden="true" />
               {photoFile ? 'Change photo' : 'Add photo'}
               <input type="file" accept="image/*" onChange={pickPhoto} className="sr-only" />
             </label>
           </div>
           {photoPreview ? (
-            <img src={photoPreview} alt="New check-in preview" className="max-h-60 border border-line object-contain" />
+            <div className="space-y-2">
+              <img src={photoPreview} alt="New check-in preview" className="max-h-60 border border-line object-contain" />
+              <button
+                type="button"
+                onClick={clearCheckInPhoto}
+                className="text-xs uppercase tracking-widest2 text-faint hover:text-signal focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
+              >
+                Remove photo
+              </button>
+            </div>
           ) : null}
-          <Button disabled={busy}>{busy ? 'Logging' : 'Log'}</Button>
+          {photoErr ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{photoErr}</div> : null}
+          <div className="flex flex-wrap items-center gap-3">
+            <Button disabled={checkInBusy}>{checkInBusy ? 'Logging' : 'Log'}</Button>
+            {checkInErr ? <span role="alert" className="text-xs uppercase tracking-widest2 text-signal">{checkInErr}</span> : null}
+          </div>
         </form>
       </section>
 
-      {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
 
       <section>
         <div className="mb-2 flex items-center justify-between">

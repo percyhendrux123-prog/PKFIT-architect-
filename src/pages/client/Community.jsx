@@ -85,7 +85,7 @@ function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
           </button>
         ) : null}
         {post.author_id === me?.id || isCoach ? (
-          <button onClick={() => onDelete(post)} className="ml-auto flex items-center gap-1 hover:text-red-300">
+          <button onClick={() => onDelete(post)} className="ml-auto flex items-center gap-1 hover:text-signal">
             <Trash2 size={12} /> Delete
           </button>
         ) : null}
@@ -111,7 +111,7 @@ function PostItem({ post, me, isCoach, onReact, onPin, onDelete }) {
                           await supabase.from('community_comments').delete().eq('id', c.id);
                           setComments((xs) => xs.filter((x) => x.id !== c.id));
                         }}
-                        className="text-[0.55rem] uppercase tracking-widest2 text-faint hover:text-red-300"
+                        className="text-[0.55rem] uppercase tracking-widest2 text-faint hover:text-signal"
                       >
                         Delete
                       </button>
@@ -288,14 +288,14 @@ export default function Community() {
             <button
               type="button"
               onClick={() => setPhotoFile(null)}
-              className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-mute hover:text-red-300"
+              className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-mute hover:text-signal"
               aria-label="Remove image"
             >
               <X size={14} /> Remove
             </button>
           </div>
         ) : null}
-        {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+        {err ? <div className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
         <div className="flex flex-wrap items-center gap-3">
           <Button disabled={busy || !content.trim()}>{busy ? 'Posting' : 'Post'}</Button>
           <label className="inline-flex cursor-pointer items-center gap-2 border border-line bg-black/30 px-3 py-2 text-xs uppercase tracking-widest2 text-mute hover:border-gold">
