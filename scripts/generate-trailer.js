@@ -8,7 +8,7 @@
 // asset is served directly from /trailer/pkfit-intro.mp4.
 //
 // Usage:
-//   FAL_KEY=fal_xxx node scripts/generate-trailer.js
+//   FAL_API_KEY=fal_xxx node scripts/generate-trailer.js
 //
 // Optional overrides:
 //   FAL_VIDEO_MODEL=fal-ai/veo3        # default
@@ -34,9 +34,9 @@ const DEFAULT_PROMPT = [
 ].join(' ');
 
 async function main() {
-  const apiKey = process.env.FAL_KEY;
+  const apiKey = process.env.FAL_API_KEY ?? process.env.FAL_KEY;
   if (!apiKey) {
-    console.error('FAL_KEY env var is required.');
+    console.error('FAL_API_KEY env var is required.');
     process.exit(1);
   }
   const model = process.env.FAL_VIDEO_MODEL || 'fal-ai/veo3';

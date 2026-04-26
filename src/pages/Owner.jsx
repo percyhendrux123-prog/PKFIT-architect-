@@ -25,10 +25,9 @@ const TILES = [
   },
   {
     label: 'Image Lab',
-    desc: 'fal.ai generation. Drops to /home dock when ready.',
+    desc: 'fal.ai Flux. Prompt, model, aspect — cost tracked per call.',
     to: '/owner/images',
     icon: ImageIcon,
-    disabled: true,
   },
   {
     label: 'Clients',

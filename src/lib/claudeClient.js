@@ -139,3 +139,8 @@ export const profileApi = {
 export const apify = {
   importTrainerize: (sourceUrl) => callFunction('apify-import', { sourceUrl }),
 };
+
+export const images = {
+  generate: ({ prompt, model, aspect_ratio, num_images, style_prompt }) =>
+    callFunction('generate-image', { prompt, model, aspect_ratio, num_images, style_prompt }),
+};

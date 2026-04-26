@@ -6,6 +6,7 @@ import { RequiresActiveSubscription } from './components/RequiresActiveSubscript
 import Landing from './pages/Landing.jsx';
 import HomeScreen from './pages/HomeScreen.jsx';
 import Owner from './pages/Owner.jsx';
+import ImageLab from './pages/owner/ImageLab.jsx';
 import Splash from './pages/Splash.jsx';
 import Terms from './pages/legal/Terms.jsx';
 import CoachingAgreement from './pages/legal/Coaching.jsx';
@@ -80,6 +81,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Owner />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner/images"
+        element={
+          <ProtectedRoute>
+            <ImageLab />
           </ProtectedRoute>
         }
       />
