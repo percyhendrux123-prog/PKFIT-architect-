@@ -102,7 +102,7 @@ export default function WorkoutBuilder() {
                 <Input label="Sets" type="number" value={ex.sets} onChange={(e) => update(i, 'sets', e.target.value)} />
                 <Input label="Reps" value={ex.reps} onChange={(e) => update(i, 'reps', e.target.value)} />
                 <Input label="Load" value={ex.load} onChange={(e) => update(i, 'load', e.target.value)} placeholder="RPE 8 / 70%" />
-                <button className="self-end p-3 text-mute hover:text-red-300" onClick={() => remove(i)} aria-label="Remove">
+                <button className="self-end p-3 text-mute hover:text-signal" onClick={() => remove(i)} aria-label="Remove">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -140,7 +140,7 @@ export default function WorkoutBuilder() {
 
       <Button onClick={add} variant="ghost"><Plus size={14} /> Add exercise</Button>
 
-      {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+      {err ? <div className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
 
       <div className="flex gap-3">
         <Button onClick={save} disabled={busy || !title}>{busy ? 'Saving' : 'Save program'}</Button>

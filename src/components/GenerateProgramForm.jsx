@@ -55,7 +55,7 @@ export function GenerateProgramForm({ clientId, profile, onDone, onCancel }) {
         </Select>
       </div>
       <Textarea label="Constraint" rows={2} value={form.constraint} onChange={set('constraint')} placeholder="Injury, schedule, preference" />
-      {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+      {err ? <div className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
       <div className="flex gap-2">
         <Button type="submit" disabled={busy}>{busy ? 'Generating' : 'Generate program'}</Button>
         <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
@@ -113,7 +113,7 @@ export function GenerateMealForm({ clientId, profile, onDone, onCancel }) {
       </div>
       <Textarea label="Allergies" rows={2} value={form.allergies} onChange={set('allergies')} />
       <Textarea label="Dislikes" rows={2} value={form.dislikes} onChange={set('dislikes')} />
-      {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+      {err ? <div className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
       <div className="flex gap-2">
         <Button type="submit" disabled={busy}>{busy ? 'Generating' : 'Generate meal plan'}</Button>
         <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>

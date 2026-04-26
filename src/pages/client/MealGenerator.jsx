@@ -19,6 +19,7 @@ export default function MealGenerator() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [plan, setPlan] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     if (!profile) return;
@@ -34,12 +35,22 @@ export default function MealGenerator() {
   async function run() {
     setBusy(true);
     setErr(null);
+    setPlan(null);
+    setElapsed(0);
+    const started = Date.now();
+    const tick = setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 1000);
     try {
       const res = await claude.generateMealPlan({ clientId: user.id, profile, ...form });
-      setPlan(res?.plan ?? res);
+      const next = res?.plan ?? res;
+      if (!next || (Array.isArray(next.days) && next.days.length === 0)) {
+        setErr('The plan came back empty. Adjust kcal or protein and run again.');
+        return;
+      }
+      setPlan(next);
     } catch (e) {
       setErr(e.message);
     } finally {
+      clearInterval(tick);
       setBusy(false);
     }
   }
@@ -66,7 +77,7 @@ export default function MealGenerator() {
           <option value="vegetarian">Vegetarian</option>
         </Select>
         <div>
-          <Input label="Kcal target" type="number" value={form.kcal_target} onChange={set('kcal_target')} />
+          <Input label="Kcal target" type="number" min="1200" max="6000" inputMode="numeric" value={form.kcal_target} onChange={set('kcal_target')} />
           {profile?.target_kcal != null ? (
             <div className="mt-1 text-[0.6rem] uppercase tracking-widest2 text-faint">
               Default from your macro floor. Change in Settings.
@@ -74,7 +85,7 @@ export default function MealGenerator() {
           ) : null}
         </div>
         <div>
-          <Input label="Protein floor (g)" type="number" value={form.protein_g} onChange={set('protein_g')} />
+          <Input label="Protein floor (g)" type="number" min="40" max="400" inputMode="numeric" value={form.protein_g} onChange={set('protein_g')} />
           {profile?.target_protein_g != null ? (
             <div className="mt-1 text-[0.6rem] uppercase tracking-widest2 text-faint">
               Default from your macro floor.
@@ -85,12 +96,19 @@ export default function MealGenerator() {
         <Textarea label="Dislikes" rows={2} value={form.dislikes} onChange={set('dislikes')} />
       </section>
 
-      <div className="flex gap-3">
-        <Button onClick={run} disabled={busy}>{busy ? 'Generating' : 'Generate plan'}</Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={run} disabled={busy}>
+          {busy ? `Generating… ${elapsed}s` : 'Generate plan'}
+        </Button>
         <Button variant="ghost" onClick={() => navigate('/meals')}>Back</Button>
+        {busy ? (
+          <span aria-live="polite" className="text-[0.65rem] uppercase tracking-widest2 text-faint">
+            This usually takes 10–25 seconds.
+          </span>
+        ) : null}
       </div>
 
-      {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+      {err ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
 
       {plan ? (
         <section className="border border-line bg-black/30 p-5">

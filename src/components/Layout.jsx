@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -62,6 +62,8 @@ export function Layout() {
   const nav = useNavigate();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+  const mainRef = useRef(null);
+  const moreCloseRef = useRef(null);
   const unreadDMs = useUnreadDMs({ userId: user?.id, role });
   const unreadCommunity = useUnreadCommunity({
     userId: user?.id,
@@ -81,7 +83,29 @@ export function Layout() {
 
   useEffect(() => {
     setMoreOpen(false);
+    // Move keyboard focus to main on route change so SR users get an anchor.
+    if (mainRef.current) {
+      mainRef.current.focus({ preventScroll: false });
+    }
   }, [location.pathname]);
+
+  // Mobile More sheet: focus trap + Escape to close.
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const previouslyFocused = document.activeElement;
+    moreCloseRef.current?.focus();
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMoreOpen(false);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
+    };
+  }, [moreOpen]);
 
   useEffect(() => {
     function onKey(e) {
@@ -156,7 +180,7 @@ export function Layout() {
                     <span className="flex-1">{item.label}</span>
                     {badgeCount > 0 ? (
                       <span
-                        className="rounded-none bg-gold px-1.5 py-0.5 text-[0.55rem] text-bg"
+                        className="min-w-[20px] bg-gold px-1.5 py-0.5 text-center text-[0.55rem] text-bg"
                         aria-label={`${badgeCount} unread`}
                       >
                         {badgeCount > 99 ? '99+' : badgeCount}
@@ -169,7 +193,12 @@ export function Layout() {
           </ul>
         </nav>
 
-        <main id="main" tabIndex={-1} className="min-h-[70vh] px-5 py-8 pb-24 md:pb-8">
+        <main
+          ref={mainRef}
+          id="main"
+          tabIndex={-1}
+          className="min-h-[70vh] px-5 py-8 pb-24 outline-none md:pb-8"
+        >
           <Outlet />
         </main>
       </div>
@@ -235,7 +264,12 @@ export function Layout() {
           >
             <div className="mb-3 flex items-center justify-between">
               <div className="label">More</div>
-              <button onClick={() => setMoreOpen(false)} aria-label="Close more menu" className="text-mute">
+              <button
+                ref={moreCloseRef}
+                onClick={() => setMoreOpen(false)}
+                aria-label="Close more menu"
+                className="p-2 text-mute hover:text-gold focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
+              >
                 <X size={18} />
               </button>
             </div>

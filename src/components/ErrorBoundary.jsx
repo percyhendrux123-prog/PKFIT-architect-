@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component {
   render() {
     if (this.state.error) {
       return (
-        <div className="mx-auto max-w-reading px-5 py-16">
+        <div role="alert" aria-live="assertive" className="mx-auto max-w-reading px-5 py-16">
           <div className="label mb-2">Something broke</div>
           <h1 className="font-display text-4xl tracking-wider2 text-gold">A surface fell over</h1>
           <p className="mt-3 text-sm text-mute">

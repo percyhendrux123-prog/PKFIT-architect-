@@ -153,7 +153,7 @@ export function DMThread({ clientId, viewer, role }) {
         <div ref={endRef} />
       </div>
 
-      {err ? <div className="border-t border-line px-4 py-2 text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+      {err ? <div className="border-t border-line px-4 py-2 text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
 
       <form onSubmit={send} className="flex gap-2 border-t border-line p-3">
         <input

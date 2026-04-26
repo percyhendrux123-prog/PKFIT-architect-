@@ -10,6 +10,8 @@ export default {
         mute: '#BFBFBF',
         faint: '#9A9A9A',
         line: 'rgba(201, 168, 76, 0.18)',
+        signal: '#A03A2C',
+        success: '#7A8C5C',
       },
       fontFamily: {
         display: ['"Bebas Neue"', 'system-ui', 'sans-serif'],

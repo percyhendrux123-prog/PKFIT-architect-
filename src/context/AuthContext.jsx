@@ -11,15 +11,32 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setLoading(false);
-      return;
+      return undefined;
     }
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
+    async function bootstrap() {
+      const { data } = await supabase.auth.getSession();
       if (!mounted) return;
-      setSession(data.session ?? null);
+      const next = data.session ?? null;
+      setSession(next);
+      const userId = next?.user?.id;
+      if (!userId) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      if (!mounted) return;
+      setProfile(prof ?? null);
       setLoading(false);
-    });
+    }
+
+    bootstrap();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
@@ -30,8 +47,8 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const refreshProfile = async (userId) => {
-    if (!isSupabaseConfigured || !userId) return;
+  async function refreshProfile(userId) {
+    if (!isSupabaseConfigured || !userId) return null;
     const { data } = await supabase
       .from('profiles')
       .select('*')
@@ -39,7 +56,7 @@ export function AuthProvider({ children }) {
       .maybeSingle();
     setProfile(data ?? null);
     return data ?? null;
-  };
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -49,6 +66,7 @@ export function AuthProvider({ children }) {
       return;
     }
     refreshProfile(userId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
   const value = useMemo(() => {

@@ -154,8 +154,10 @@ export default function Habits() {
                     </span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => removeHabit(h.id)}
-                    className="text-xs uppercase tracking-widest2 text-faint hover:text-red-300"
+                    aria-label={`Remove habit ${h.name}`}
+                    className="px-2 py-1 text-xs uppercase tracking-widest2 text-faint hover:text-signal focus-visible:outline focus-visible:outline-1 focus-visible:outline-gold"
                   >
                     Remove
                   </button>

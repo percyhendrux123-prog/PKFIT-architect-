@@ -4,7 +4,7 @@ export function Button({ as: Tag = 'button', variant = 'primary', className = ''
   const variants = {
     primary: 'bg-gold text-bg hover:bg-[#d8b658]',
     ghost: 'border border-line text-ink hover:border-gold',
-    danger: 'border border-red-500/40 text-red-300 hover:border-red-400',
+    danger: 'border border-signal/40 text-signal hover:border-signal/80',
     bare: 'text-ink hover:text-gold',
   };
   return (

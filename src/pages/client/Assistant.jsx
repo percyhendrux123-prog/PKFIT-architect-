@@ -153,7 +153,7 @@ export default function Assistant() {
                 </button>
                 <button
                   onClick={() => removeConversation(c.id)}
-                  className="px-3 text-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-300"
+                  className="px-3 text-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-signal"
                   aria-label="Delete conversation"
                 >
                   <Trash2 size={14} />
@@ -208,7 +208,7 @@ export default function Assistant() {
           <div ref={endRef} />
         </div>
 
-        {err ? <div className="mt-2 text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+        {err ? <div className="mt-2 text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
 
         <form onSubmit={send} className="mt-4 flex gap-3">
           <input

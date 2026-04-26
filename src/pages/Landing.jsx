@@ -31,18 +31,20 @@ export default function Landing() {
           Built for the man who is done with hype. Mechanism over motivation. Output over theatre.
         </p>
         <div className="mt-10 flex flex-wrap gap-4">
-          <a
-            href="https://percyhendrux.gumroad.com/l/khcus"
-            className="inline-flex items-center border border-gold bg-gold px-6 py-4 font-display tracking-wider2 text-bg hover:bg-[#d8b658]"
-          >
-            Get the Blueprint · $37
-          </a>
           <Link
             to="/signup"
-            className="inline-flex items-center border border-line px-6 py-4 font-display tracking-wider2 text-ink hover:border-gold"
+            className="inline-flex items-center border border-gold bg-gold px-6 py-4 font-display tracking-wider2 text-bg transition-colors hover:bg-[#d8b658]"
           >
             Enter the App
           </Link>
+          <a
+            href="https://percyhendrux.gumroad.com/l/khcus"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center border border-line px-6 py-4 font-display tracking-wider2 text-ink transition-colors hover:border-gold"
+          >
+            Get the Blueprint · $37
+          </a>
         </div>
       </section>
 
@@ -95,10 +97,13 @@ export default function Landing() {
         <div className="mx-auto max-w-5xl px-5">
           <figure className="grid grid-cols-1 items-center gap-10 md:grid-cols-[260px_1fr]">
             <img
-              src="/testimonial.png"
-              alt="Client transformation"
+              src="/testimonial.jpg"
+              alt="Dele Bakare, PKFIT client transformation"
+              width="720"
+              height="720"
               className="w-full border border-line"
               loading="lazy"
+              decoding="async"
             />
             <blockquote className="max-w-reading">
               <div className="label mb-2">Testimonial</div>
@@ -118,18 +123,20 @@ export default function Landing() {
             Thirty days. One protocol. One version of you on the other side.
           </h2>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <a
-              href="https://percyhendrux.gumroad.com/l/khcus"
-              className="border border-gold bg-gold px-6 py-4 font-display tracking-wider2 text-bg hover:bg-[#d8b658]"
-            >
-              Get the Blueprint
-            </a>
             <Link
               to="/signup"
-              className="border border-line px-6 py-4 font-display tracking-wider2 text-ink hover:border-gold"
+              className="border border-gold bg-gold px-6 py-4 font-display tracking-wider2 text-bg transition-colors hover:bg-[#d8b658]"
             >
               Create an account
             </Link>
+            <a
+              href="https://percyhendrux.gumroad.com/l/khcus"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border border-line px-6 py-4 font-display tracking-wider2 text-ink transition-colors hover:border-gold"
+            >
+              Get the Blueprint
+            </a>
           </div>
         </div>
       </section>

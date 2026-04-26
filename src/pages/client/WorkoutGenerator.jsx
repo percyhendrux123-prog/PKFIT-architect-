@@ -18,6 +18,7 @@ export default function WorkoutGenerator() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [result, setResult] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -25,12 +26,22 @@ export default function WorkoutGenerator() {
     if (!user) return;
     setBusy(true);
     setErr(null);
+    setResult(null);
+    setElapsed(0);
+    const started = Date.now();
+    const tick = setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 1000);
     try {
       const res = await claude.generateWorkout({ clientId: user.id, profile, ...form });
-      setResult(res?.program ?? res);
+      const program = res?.program ?? res;
+      if (!program?.exercises?.length) {
+        setErr('The program came back empty. Adjust constraints and run again.');
+        return;
+      }
+      setResult(program);
     } catch (e) {
       setErr(e.message);
     } finally {
+      clearInterval(tick);
       setBusy(false);
     }
   }
@@ -70,17 +81,27 @@ export default function WorkoutGenerator() {
         </div>
       </section>
 
-      <div className="flex items-center gap-3">
-        <Button onClick={run} disabled={busy}>{busy ? 'Generating' : 'Generate'}</Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={run} disabled={busy}>
+          {busy ? `Generating… ${elapsed}s` : 'Generate'}
+        </Button>
         <Button variant="ghost" onClick={() => navigate('/workouts')}>Back to workouts</Button>
+        {busy ? (
+          <span aria-live="polite" className="text-[0.65rem] uppercase tracking-widest2 text-faint">
+            This usually takes 10–25 seconds.
+          </span>
+        ) : null}
       </div>
 
-      {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+      {err ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
 
       {result ? (
         <section className="border border-line bg-black/30 p-5">
-          <div className="label mb-2">Generated program</div>
-          <h2 className="font-display text-2xl tracking-wider2">{result.title ?? `Week ${result.week_number ?? 1}`}</h2>
+          <div className="flex items-center justify-between">
+            <div className="label">Saved to your programs</div>
+            <span className="text-[0.65rem] uppercase tracking-widest2 text-success">Active</span>
+          </div>
+          <h2 className="mt-1 font-display text-2xl tracking-wider2">{result.title ?? `Week ${result.week_number ?? 1}`}</h2>
           <ul className="mt-3 divide-y divide-line">
             {(result.exercises ?? []).map((e, i) => (
               <li key={i} className="flex items-center justify-between py-2 text-sm">

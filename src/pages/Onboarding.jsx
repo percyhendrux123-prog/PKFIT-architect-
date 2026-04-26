@@ -1,46 +1,53 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
+import { Spinner } from '../components/ui/Empty';
 import { heightLabel, parseHeightToCm, parseWeightToKg, weightLabel } from '../lib/units';
 
 const steps = ['Identity', 'Baseline', 'Goal', 'Baseline photo', 'Commit'];
 
-// First-load units default. en-US → imperial; everyone else → metric.
-// The user can override on step 0; their pick is persisted to profiles.units.
+const FORM_STORAGE_KEY = 'pkfit:onboarding:draft';
+
+const initialForm = {
+  name: '',
+  age: '',
+  sex: 'male',
+  height: '',
+  weight: '',
+  goal: 'recomp',
+  training_days: '4',
+  sleep_avg: '7',
+  constraint: '',
+};
+
 function detectDefaultUnits() {
   if (typeof navigator === 'undefined') return 'imperial';
   const locale = navigator.language || navigator.languages?.[0] || 'en-US';
   return locale.toLowerCase().startsWith('en-us') ? 'imperial' : 'metric';
 }
 
-export default function Onboarding() {
-  const { user, profile, refreshProfile } = useAuth();
-  const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [units, setUnits] = useState(() => detectDefaultUnits());
-  // Sync from profile once it loads — a returning user keeps their pick.
-  useEffect(() => {
-    if (profile?.units && profile.units !== units) setUnits(profile.units);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.units]);
+function loadDraft() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(FORM_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
-  const [form, setForm] = useState({
-    name: '',
-    age: '',
-    sex: 'male',
-    // Display values in the user's chosen units. Converted to canonical
-    // metric (kg, cm) at save time via parseWeightToKg / parseHeightToCm.
-    height: '',
-    weight: '',
-    goal: 'recomp',
-    training_days: '4',
-    sleep_avg: '7',
-    constraint: '',
-  });
+export default function Onboarding() {
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const navigate = useNavigate();
+
+  const draft = useMemo(loadDraft, []);
+  const [step, setStep] = useState(0);
+  const [units, setUnits] = useState(() => draft?.units ?? detectDefaultUnits());
+  const [form, setForm] = useState(() => ({ ...initialForm, ...(draft?.form ?? {}) }));
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoPath, setPhotoPath] = useState(null);
@@ -48,7 +55,47 @@ export default function Onboarding() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  useEffect(() => {
+    if (profile?.units && profile.units !== units) setUnits(profile.units);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.units]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({ form, units }));
+    } catch {
+      /* swallow quota errors */
+    }
+  }, [form, units]);
+
+  if (authLoading) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-5">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/signup" replace state={{ from: '/onboarding' }} />;
+  }
+
+  const set = (k) => (e) => setForm((prev) => ({ ...prev, [k]: e.target.value }));
+
+  function canAdvance() {
+    if (step === 0) {
+      const ageNum = Number(form.age);
+      return form.name.trim().length > 0 && Number.isFinite(ageNum) && ageNum >= 13 && ageNum <= 100;
+    }
+    if (step === 1) {
+      const w = Number(form.weight);
+      const h = Number(form.height);
+      const s = Number(form.sleep_avg);
+      return Number.isFinite(w) && w > 0 && Number.isFinite(h) && h > 0 && Number.isFinite(s) && s > 0;
+    }
+    return true;
+  }
 
   function pickPhoto(e) {
     const file = e.target.files?.[0];
@@ -66,6 +113,13 @@ export default function Onboarding() {
     setPhotoPath(null);
     const url = URL.createObjectURL(file);
     setPhotoPreview(url);
+  }
+
+  function clearPhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoPath(null);
   }
 
   async function uploadPhoto() {
@@ -88,18 +142,9 @@ export default function Onboarding() {
   }
 
   async function finish() {
-    if (!user) {
-      navigate('/signup');
-      return;
-    }
     setBusy(true);
     setErr(null);
     try {
-      // Convert display values to canonical metric (kg, cm) for storage. A
-      // non-numeric or empty entry collapses to null — we never poison the
-      // row with NaN. Display layer converts back via cmToFeetInches/kgToLbs.
-      // Note: `start_date`, `loop_stage`, and `plan` are locked against client
-      // UPDATEs by trigger 0020; that's a pre-existing issue tracked separately.
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -114,6 +159,11 @@ export default function Onboarding() {
         })
         .eq('id', user.id);
       if (error) throw error;
+      try {
+        window.localStorage.removeItem(FORM_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
       await refreshProfile?.();
       navigate('/dashboard', { replace: true });
     } catch (e) {
@@ -127,12 +177,21 @@ export default function Onboarding() {
     <div className="mx-auto max-w-xl px-5 py-16">
       <div className="label mb-3">Onboarding · Step {step + 1} of {steps.length}</div>
       <h1 className="font-display text-4xl tracking-wider2 text-gold">{steps[step]}</h1>
+      <div
+        aria-hidden="true"
+        className="mt-4 flex h-[2px] overflow-hidden border border-line bg-black/40"
+      >
+        <div
+          className="h-full bg-gold transition-[width] duration-300 ease-out"
+          style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+        />
+      </div>
 
       <div className="mt-10 space-y-4">
         {step === 0 && (
           <>
-            <Input label="Name" value={form.name} onChange={set('name')} />
-            <Input label="Age" type="number" value={form.age} onChange={set('age')} />
+            <Input label="Name" required autoComplete="name" value={form.name} onChange={set('name')} />
+            <Input label="Age" type="number" required min="13" max="100" inputMode="numeric" value={form.age} onChange={set('age')} />
             <Select label="Sex" value={form.sex} onChange={set('sex')}>
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -146,9 +205,9 @@ export default function Onboarding() {
         )}
         {step === 1 && (
           <>
-            <Input label={heightLabel(units)} type="number" value={form.height} onChange={set('height')} />
-            <Input label={weightLabel(units)} type="number" value={form.weight} onChange={set('weight')} />
-            <Input label="Average sleep (hours)" type="number" value={form.sleep_avg} onChange={set('sleep_avg')} />
+            <Input label={heightLabel(units)} type="number" required min="1" step="0.1" inputMode="decimal" value={form.height} onChange={set('height')} />
+            <Input label={weightLabel(units)} type="number" required min="1" max="800" step="0.1" inputMode="decimal" value={form.weight} onChange={set('weight')} />
+            <Input label="Average sleep (hours)" type="number" required min="1" max="14" step="0.5" inputMode="decimal" value={form.sleep_avg} onChange={set('sleep_avg')} />
           </>
         )}
         {step === 2 && (
@@ -171,21 +230,26 @@ export default function Onboarding() {
             <p className="max-w-reading text-sm text-mute">
               Optional. One photo, well-lit, relaxed stance. Used only for the Diagnosis review. Private to you and the coach.
             </p>
-            <label className="flex cursor-pointer items-center justify-center gap-3 border border-dashed border-line bg-black/30 p-6 text-sm text-mute hover:border-gold">
-              <Upload size={18} />
+            <label className="flex cursor-pointer items-center justify-center gap-3 border border-dashed border-line bg-black/30 p-6 text-sm text-mute hover:border-gold focus-within:border-gold">
+              <Upload size={18} aria-hidden="true" />
               <span>{photoFile ? 'Change photo' : 'Choose photo'}</span>
               <input type="file" accept="image/*" onChange={pickPhoto} className="sr-only" />
             </label>
             {photoPreview ? (
               <div className="space-y-3">
                 <img src={photoPreview} alt="Baseline preview" className="max-h-80 w-full border border-line object-contain" />
-                {!photoPath ? (
-                  <Button onClick={uploadPhoto} disabled={uploading}>
-                    {uploading ? 'Uploading' : 'Upload photo'}
+                <div className="flex flex-wrap gap-3">
+                  {!photoPath ? (
+                    <Button onClick={uploadPhoto} disabled={uploading}>
+                      {uploading ? 'Uploading' : 'Upload photo'}
+                    </Button>
+                  ) : (
+                    <div className="text-xs uppercase tracking-widest2 text-success">Uploaded.</div>
+                  )}
+                  <Button variant="ghost" type="button" onClick={clearPhoto} disabled={uploading}>
+                    Remove
                   </Button>
-                ) : (
-                  <div className="text-xs uppercase tracking-widest2 text-gold">Uploaded.</div>
-                )}
+                </div>
               </div>
             ) : null}
           </>
@@ -198,13 +262,13 @@ export default function Onboarding() {
             </div>
           </>
         )}
-        {err ? <div className="text-xs uppercase tracking-widest2 text-red-300">{err}</div> : null}
+        {err ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
       </div>
 
       <div className="mt-8 flex justify-between">
         <Button variant="ghost" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</Button>
         {step < steps.length - 1 ? (
-          <Button onClick={() => setStep(step + 1)}>Next</Button>
+          <Button onClick={() => setStep(step + 1)} disabled={!canAdvance()}>Next</Button>
         ) : (
           <Button disabled={busy} onClick={finish}>{busy ? 'Saving' : 'Enter'}</Button>
         )}
