@@ -89,6 +89,8 @@ Server-only (set in the Netlify dashboard, never in client bundle):
 | `STRIPE_PRICE_IDENTITY_MONTHLY` / `_ANNUAL` | Identity Architecture tier price IDs |
 | `STRIPE_PRICE_FULL_MONTHLY` / `_ANNUAL` | Full Integration tier price IDs |
 | `STRIPE_PRICE_PREMIUM_MONTHLY` / `_ANNUAL` | Premium tier price IDs |
+| `BUFFER_ACCESS_TOKEN` | Single-tenant Bearer token for the Buffer GraphQL API. Used by `/api/distribute`. Generated at `https://publish.buffer.com/settings/api`. |
+| `SLACK_WEBHOOK_URL_AXIOM_DISTRIBUTOR` | Incoming webhook for `#axiom-distributor-alerts`. Receives WARN/CRITICAL alerts from the distributor. Optional — when unset, alerts log to console only. |
 
 ## Supabase setup
 
