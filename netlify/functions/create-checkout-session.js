@@ -34,6 +34,7 @@ export const handler = async (event) => {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceIdFor(tier, interval), quantity: 1 }],
+      allow_promotion_codes: true,
       client_reference_id: user.id,
       ...(existingPayment?.stripe_customer_id
         ? { customer: existingPayment.stripe_customer_id }
