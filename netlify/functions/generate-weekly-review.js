@@ -1,6 +1,7 @@
 import { requireUser, jsonResponse, errorResponse } from './_shared/auth.js';
 import { getAdminClient } from './_shared/supabase-admin.js';
-import { getAnthropic, loadPrompt, MODEL } from './_shared/anthropic.js';
+import { getAnthropic, loadPrompt } from './_shared/anthropic.js';
+import { resolveModelAndKey } from './_shared/tier.js';
 import { checkRateLimit } from './_shared/rate-limit.js';
 
 function startOfWeek(d = new Date()) {
@@ -122,9 +123,10 @@ export const handler = async (event) => {
     };
 
     const system = loadPrompt('pkfit-system.md') + '\n\n' + loadPrompt('weekly-review.md');
-    const anthropic = getAnthropic();
+    const { model, apiKeyOverride } = resolveModelAndKey(profile);
+    const anthropic = getAnthropic(apiKeyOverride);
     const resp = await anthropic.messages.create({
-      model: MODEL,
+      model,
       max_tokens: 1200,
       system,
       messages: [{ role: 'user', content: JSON.stringify(input) }],

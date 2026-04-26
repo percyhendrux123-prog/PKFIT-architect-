@@ -1,5 +1,6 @@
 import { getAdminClient, getAnonClient } from './_shared/supabase-admin.js';
-import { getAnthropic, loadPrompt, MODEL, sanitizeVoice, bannedTokensCleanup } from './_shared/anthropic.js';
+import { getAnthropic, loadPrompt, sanitizeVoice, bannedTokensCleanup } from './_shared/anthropic.js';
+import { resolveModelAndKey } from './_shared/tier.js';
 import { checkRateLimit } from './_shared/rate-limit.js';
 
 const MAX_CONTEXT_MESSAGES = 24;
@@ -109,6 +110,13 @@ export default async (req) => {
 
   const admin = getAdminClient();
 
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('plan, byo_anthropic_key_encrypted')
+    .eq('id', user.id)
+    .maybeSingle();
+  const { model, apiKeyOverride } = resolveModelAndKey(profile);
+
   let conversationId = body.conversationId ?? null;
   let conversationContext = [];
   if (conversationId) {
@@ -174,9 +182,9 @@ export default async (req) => {
 
       let fullText = '';
       try {
-        const anthropic = getAnthropic();
+        const anthropic = getAnthropic(apiKeyOverride);
         const anthStream = anthropic.messages.stream({
-          model: MODEL,
+          model,
           max_tokens: 1024,
           system,
           messages,

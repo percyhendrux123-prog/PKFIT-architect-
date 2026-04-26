@@ -1,12 +1,13 @@
 import { requireUser, jsonResponse, errorResponse } from './_shared/auth.js';
 import { getAdminClient } from './_shared/supabase-admin.js';
-import { getAnthropic, loadPrompt, MODEL } from './_shared/anthropic.js';
+import { getAnthropic, loadPrompt } from './_shared/anthropic.js';
+import { resolveModelAndKey } from './_shared/tier.js';
 import { checkRateLimit } from './_shared/rate-limit.js';
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') return jsonResponse(405, { error: 'Method not allowed' });
   try {
-    const { user, role } = await requireUser(event);
+    const { user, profile, role } = await requireUser(event);
     const body = JSON.parse(event.body || '{}');
 
     const targetClientId = body.clientId ?? user.id;
@@ -39,9 +40,10 @@ export const handler = async (event) => {
       profile: body.profile ?? null,
     };
 
-    const anthropic = getAnthropic();
+    const { model, apiKeyOverride } = resolveModelAndKey(profile);
+    const anthropic = getAnthropic(apiKeyOverride);
     const resp = await anthropic.messages.create({
-      model: MODEL,
+      model,
       max_tokens: 2048,
       system,
       messages: [{ role: 'user', content: JSON.stringify(input) }],
