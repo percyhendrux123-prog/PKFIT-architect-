@@ -33,6 +33,12 @@
   # is required, switch the schedule by season or move to a Cowork-loop runner.
   schedule = "0 13 * * *"
 
+[functions."migration-recovery"]
+  # Daily migration drop-off recovery. 14:00 UTC = 09:00 CT during CDT —
+  # offset from axiom-overseer so the two functions don't burst the GitHub
+  # / Resend rate budgets in the same minute.
+  schedule = "0 14 * * *"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

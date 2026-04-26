@@ -66,6 +66,16 @@ export function createSupabaseMock() {
         recordCall(`${table}.eq`, [col, val]);
         return builder;
       }),
+      in: vi.fn(function (col, vals) {
+        args.in = [col, vals];
+        recordCall(`${table}.in`, [col, vals]);
+        return builder;
+      }),
+      not: vi.fn(function (col, op2, val) {
+        args.not = [col, op2, val];
+        recordCall(`${table}.not`, [col, op2, val]);
+        return builder;
+      }),
       gte: vi.fn(function (col, val) {
         args.gte = [col, val];
         recordCall(`${table}.gte`, [col, val]);
