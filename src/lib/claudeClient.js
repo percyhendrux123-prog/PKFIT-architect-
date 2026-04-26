@@ -129,3 +129,13 @@ export const account = {
 export const coach = {
   exportClient: (clientId) => callFunction('coach-export-client', { clientId }),
 };
+
+export const profileApi = {
+  // Update intake / medical / consent / name. Medical is encrypted at rest.
+  update: (input) => callFunction('update-profile', input),
+  getMedical: () => callFunction('get-my-medical', {}),
+};
+
+export const apify = {
+  importTrainerize: (sourceUrl) => callFunction('apify-import', { sourceUrl }),
+};
