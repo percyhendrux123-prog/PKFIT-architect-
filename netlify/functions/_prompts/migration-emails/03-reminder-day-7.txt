@@ -1,0 +1,21 @@
+SUBJECT: Closing early access {{deadline_date}}
+
+---
+
+{{first_name}},
+
+Last note from me on this.
+
+The AI coach early-access window closes {{deadline_date}}. After that, the AI coach is still part of PKFIT — but the early-access cohort is closed, and onboarding to it goes back of the line.
+
+I'd really like you in the first cohort. You've been with me long enough that your data tells the AI coach a lot from day one — it gets useful for you fast, instead of having to learn you from scratch.
+
+Your rate doesn't change. Move takes 90 seconds.
+
+Get me into early access:
+{{cta_url}}
+
+Or, if you'd rather we walk through it together, my calendar:
+{{calendly_url}}
+
+— Percy

@@ -1,0 +1,28 @@
+SUBJECT: You're in. AI coach unlocked.
+
+---
+
+{{first_name}},
+
+Done. You're on PKFIT and your AI coach access is unlocked. For the record:
+
+- AI coach: active. Look for the spark icon inside the app.
+- Your rate: ${{current_rate}}/mo, unchanged.
+- Your next bill: {{next_bill_date}} (same day of the month as before — no double charge for {{current_month}}).
+- Your trainer: still me.
+- Your data: all there. Workouts, check-ins, photos, our DMs.
+
+Three things to do this week:
+
+1. Install the app on your phone. It's a real app, not a website. iPhone: tap share → "Add to Home Screen." Android: it'll prompt you. Push notifications turn on from there — that's how the AI coach (and I) reach you.
+2. Run your first AI coach session. Open the app, tap the spark icon, ask it anything — "check my last set," "show me my squat trend," "tune tomorrow's workout." Get the feel for it.
+3. Send me a quick "yo" in the messages tab so I know you got in. That's the level of formality I'm asking for.
+
+If anything looks off — including the AI coach itself, since you're early — message me in the app or reply here. Same-day fix.
+
+— Percy
+
+---
+
+Receipt + billing details: {{receipt_url}}
+AI coach feedback goes through the in-app feedback button (not the message thread) so it doesn't clutter our coaching channel.

@@ -1,0 +1,17 @@
+SUBJECT: Have you tried the AI coach yet?
+
+---
+
+{{first_name}},
+
+You're in PKFIT but I don't see any activity yet — no workout logs, no AI coach sessions, no check-ins. Two possibilities:
+
+1. You're traveling, sick, or off this week. Tell me, I'll back off.
+2. Something feels weird about the new flow. That's the more useful one. The whole point of moving was that the tools are better — and the AI coach is the headline. If it's not pulling you in, I want to know what's getting in the way.
+
+Easiest entry: open PKFIT, tap the spark icon, ask it "show me my last 4 weeks." That's a 10-second test.
+
+Reply with what's up. Or grab 15 min on my calendar:
+{{calendly_url}}
+
+— Percy

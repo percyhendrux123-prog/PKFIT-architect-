@@ -7,6 +7,7 @@ import Landing from './pages/Landing.jsx';
 import Splash from './pages/Splash.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import NotFound from './pages/NotFound.jsx';
+import Migrate from './pages/Migrate.jsx';
 import Login from './pages/auth/Login.jsx';
 import Signup from './pages/auth/Signup.jsx';
 
@@ -47,6 +48,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/migrate/:token" element={<Migrate />} />
 
       {/* Client-protected */}
       <Route

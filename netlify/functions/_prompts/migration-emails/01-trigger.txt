@@ -1,0 +1,28 @@
+SUBJECT: Your AI coach is ready — early access inside
+
+---
+
+Hey {{first_name}},
+
+Quick one. I've spent the last few months building something I've wanted for years: an AI coach that lives next to your training. Form check on demand. Programming adjustments the moment you log them. A canvas of your progress that actually shows you what's working.
+
+It's live. It's only on PKFIT. And you're getting early access.
+
+Here's what it does for you:
+
+- Form check, 24/7. Film a set, get feedback in seconds — between when you train and when you'd next hear from me.
+- Instant adjustments. Logged a session that crushed you, or one where the weights flew. It tunes next session before you ask.
+- Your own progress canvas. Every metric you care about, in one view. Not a dashboard you have to read — a picture you can see.
+
+I built it to make our coaching better, not replace it. You still get me. You just also get the tool that makes me 3x faster between our touchpoints.
+
+The catch (if you can call it one): early access is for moved clients only. Move before {{deadline_date}} and you're in. Your rate stays the same. Same plan, same coaching, same me — plus the AI coach.
+
+Moving takes 90 seconds. Click below, sign in with your email, confirm one thing, you're done. Your billing transfers automatically — no double charge, no card update, no gap in coverage.
+
+Get early access:
+{{cta_url}}
+
+Anything weird happens, just reply. I see every reply.
+
+— Percy

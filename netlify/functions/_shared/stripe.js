@@ -1,12 +1,34 @@
 import Stripe from 'stripe';
 
+const API_VERSION = '2024-09-30.acacia';
+
 let client = null;
 export function getStripe() {
   if (client) return client;
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error('STRIPE_SECRET_KEY missing');
-  client = new Stripe(key, { apiVersion: '2024-09-30.acacia' });
+  client = new Stripe(key, { apiVersion: API_VERSION });
   return client;
+}
+
+// Account A is the legacy Stripe account that's billing clients today
+// (currently routed through Trainerize Pay / direct Stripe). The migration
+// reads PaymentMethods from there and schedules a cancel-at-period-end on
+// the live sub. A separate API key is required because Stripe's
+// PaymentMethod / Subscription APIs are scoped to one account at a time.
+let accountAClient = null;
+export function getStripeAccountA() {
+  if (accountAClient) return accountAClient;
+  const key = process.env.STRIPE_ACCOUNT_A_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_ACCOUNT_A_SECRET_KEY missing');
+  accountAClient = new Stripe(key, { apiVersion: API_VERSION });
+  return accountAClient;
+}
+
+// Reset cached clients — used by tests when swapping mocks between cases.
+export function __resetStripeClients() {
+  client = null;
+  accountAClient = null;
 }
 
 export const PLAN_AMOUNTS = {

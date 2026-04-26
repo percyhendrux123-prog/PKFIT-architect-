@@ -1,0 +1,14 @@
+SUBJECT: Your PKFIT account (and AI coach) is still waiting
+
+---
+
+{{first_name}},
+
+You're transferred and the AI coach is unlocked, but I haven't seen you sign in yet. Want me to fire a fresh sign-in link.
+
+Send me a new sign-in link:
+{{cta_url}}
+
+Or reply "yes" and I'll do it manually.
+
+— Percy

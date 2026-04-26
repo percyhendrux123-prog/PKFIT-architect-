@@ -1,0 +1,20 @@
+SUBJECT: Re: your AI coach access
+
+---
+
+{{first_name}},
+
+Sent you the early-access link a few days ago for the PKFIT AI coach. Wanted to make sure it didn't bury itself.
+
+If you saw it and you're thinking it through, no rush — but here's the short version:
+
+- Form check on demand. Adjustments without waiting on me. A progress canvas that actually shows the trend.
+- Only on PKFIT. Only for moved clients. Your rate stays exactly where it is.
+- 90 seconds to move.
+
+Get early access:
+{{cta_url}}
+
+Stuck on a question. Reply here. I'll answer it directly.
+
+— Percy
