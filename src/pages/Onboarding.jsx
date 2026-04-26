@@ -165,7 +165,7 @@ export default function Onboarding() {
         /* ignore */
       }
       await refreshProfile?.();
-      navigate('/dashboard', { replace: true });
+      navigate('/home', { replace: true });
     } catch (e) {
       setErr(e.message);
     } finally {

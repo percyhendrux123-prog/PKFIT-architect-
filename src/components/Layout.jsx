@@ -136,7 +136,7 @@ export function Layout() {
       <header className="border-b border-line bg-bg/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <NavLink
-            to={role === 'coach' ? '/coach' : '/dashboard'}
+            to={role === 'coach' ? '/coach' : '/home'}
             className="font-display text-2xl tracking-wider2 text-gold"
           >
             PKFIT

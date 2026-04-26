@@ -16,5 +16,5 @@ export default function Splash() {
   }
 
   if (!user) return <Navigate to="/" replace />;
-  return <Navigate to={profile?.role === 'coach' ? '/coach' : '/dashboard'} replace />;
+  return <Navigate to={profile?.role === 'coach' ? '/coach' : '/home'} replace />;
 }

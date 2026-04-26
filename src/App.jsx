@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequiresActiveSubscription } from './components/RequiresActiveSubscription';
 
 import Landing from './pages/Landing.jsx';
+import HomeScreen from './pages/HomeScreen.jsx';
 import Splash from './pages/Splash.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -50,7 +51,20 @@ export default function App() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/migrate/:token" element={<Migrate />} />
 
-      {/* Client-protected */}
+      {/* iPhone-style home screen — outside the Layout chrome so it occupies
+          the full viewport with its own dock. Still gated by auth + active
+          subscription. */}
+      <Route
+        element={
+          <ProtectedRoute role="client">
+            <RequiresActiveSubscription />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/home" element={<HomeScreen />} />
+      </Route>
+
+      {/* Client-protected (with sidebar/dock chrome) */}
       <Route
         element={
           <ProtectedRoute role="client">
