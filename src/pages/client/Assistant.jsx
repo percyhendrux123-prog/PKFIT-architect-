@@ -1,10 +1,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Mic, Square } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
-import { streamAssistant } from '../../lib/claudeClient';
+import { streamAssistant, gemini } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
 import { ContextPinMenu } from '../../components/ContextPinMenu';
+
+async function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(String(reader.result));
+    reader.readAsDataURL(blob);
+  });
+}
 
 export default function Assistant() {
   const { user } = useAuth();
@@ -15,6 +24,10 @@ export default function Assistant() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef(null);
+  const chunksRef = useRef([]);
   const endRef = useRef(null);
 
   const loadConversations = useCallback(async () => {
@@ -105,6 +118,51 @@ export default function Assistant() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function startRecording() {
+    setErr(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErr('Microphone is not available in this browser.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        chunksRef.current = [];
+        if (blob.size === 0) return;
+        setTranscribing(true);
+        try {
+          const dataUrl = await blobToBase64(blob);
+          const { transcript } = await gemini.voiceTurn({ audio: dataUrl, mimeType });
+          if (transcript) setInput((cur) => (cur ? `${cur} ${transcript}` : transcript));
+        } catch (ex) {
+          setErr(ex.message);
+        } finally {
+          setTranscribing(false);
+        }
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setRecording(true);
+    } catch (ex) {
+      setErr(ex?.message ?? 'Microphone access denied');
+    }
+  }
+
+  function stopRecording() {
+    const recorder = recorderRef.current;
+    if (recorder && recorder.state === 'recording') recorder.stop();
+    recorderRef.current = null;
+    setRecording(false);
   }
 
   function startNew() {
@@ -214,10 +272,27 @@ export default function Assistant() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a specific question"
-            className="flex-1 border border-line bg-black/40 px-4 py-3 font-body text-ink placeholder:text-faint focus:border-gold"
+            placeholder={transcribing ? 'Transcribing…' : 'Ask a specific question'}
+            disabled={transcribing}
+            className="flex-1 border border-line bg-black/40 px-4 py-3 font-body text-ink placeholder:text-faint focus:border-gold disabled:opacity-60"
           />
-          <Button type="submit" disabled={busy || !input.trim()}>{busy ? 'Thinking' : 'Send'}</Button>
+          <button
+            type="button"
+            onClick={recording ? stopRecording : startRecording}
+            disabled={transcribing || busy}
+            aria-label={recording ? 'Stop recording' : 'Record voice'}
+            aria-pressed={recording}
+            className={`flex h-12 w-12 items-center justify-center border ${
+              recording
+                ? 'border-signal bg-signal/20 text-signal'
+                : 'border-line bg-black/40 text-mute hover:border-gold hover:text-gold'
+            } disabled:opacity-60`}
+          >
+            {recording ? <Square size={16} /> : <Mic size={16} />}
+          </button>
+          <Button type="submit" disabled={busy || !input.trim() || recording || transcribing}>
+            {busy ? 'Thinking' : 'Send'}
+          </Button>
         </form>
       </section>
     </div>
