@@ -203,51 +203,89 @@ export function Layout() {
         </main>
       </div>
 
-      {/* Mobile bottom nav: 4 primary + "More" sheet */}
+      {/* Mobile bottom nav — PKFIT redesign visual language. 5 primary tabs + More-sheet button. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 md:hidden"
         aria-label="Mobile primary"
+        style={{ background: 'linear-gradient(180deg, transparent, #080808 30%)' }}
       >
-        <ul className="flex">
-          {primary.map((item) => {
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            padding: '10px 8px max(20px, env(safe-area-inset-bottom)) 8px',
+            background: 'linear-gradient(180deg, transparent, #080808 30%)',
+            borderTop: '1px solid #1C1C20',
+          }}
+        >
+          {primary.slice(0, 4).map((item) => {
             const showDot = (badges[item.to] ?? 0) > 0;
             return (
-              <li key={item.to} className="relative flex-1">
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `flex flex-col items-center gap-1 px-2 py-3 text-[0.6rem] uppercase tracking-widest2 ${
-                      isActive ? 'text-gold' : 'text-faint'
-                    }`
-                  }
-                >
-                  <item.icon size={18} />
-                  {item.label}
-                </NavLink>
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-1 px-2 py-2 ${isActive ? 'text-ink' : 'text-faint'}`
+                }
+                style={{
+                  fontFamily: 'var(--mono, monospace)',
+                  fontSize: 9,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  position: 'relative',
+                }}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+                <span
+                  style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: 999,
+                    background: '#FF5B1F',
+                    marginTop: 2,
+                  }}
+                />
                 {showDot ? (
                   <span
-                    className="absolute right-3 top-2 h-2 w-2 rounded-full bg-gold"
+                    className="absolute right-3 top-1 h-2 w-2 rounded-full"
+                    style={{ background: '#FF5B1F' }}
                     aria-label="Unread"
                   />
                 ) : null}
-              </li>
+              </NavLink>
             );
           })}
-          <li className="relative flex-1">
-            <button
-              onClick={() => setMoreOpen(true)}
-              className="flex w-full flex-col items-center gap-1 px-2 py-3 text-[0.6rem] uppercase tracking-widest2 text-faint"
-              aria-label="Open more menu"
-            >
-              <Menu size={18} />
-              More
-            </button>
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            className="flex flex-col items-center gap-1 px-2 py-2 text-faint"
+            aria-label="Open more menu"
+            style={{
+              background: 'transparent',
+              border: 0,
+              fontFamily: 'var(--mono, monospace)',
+              fontSize: 9,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              position: 'relative',
+            }}
+          >
+            <Menu size={20} />
+            <span>More</span>
+            <span style={{ width: 4, height: 4, borderRadius: 999, background: 'transparent', marginTop: 2 }} />
             {secondary.some((item) => (badges[item.to] ?? 0) > 0) ? (
-              <span className="absolute right-3 top-2 h-2 w-2 rounded-full bg-gold" aria-hidden />
+              <span
+                className="absolute right-3 top-1 h-2 w-2 rounded-full"
+                style={{ background: '#FF5B1F' }}
+                aria-hidden
+              />
             ) : null}
-          </li>
-        </ul>
+          </button>
+        </div>
       </nav>
 
       {moreOpen ? (

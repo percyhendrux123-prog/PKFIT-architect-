@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
+import LoginScreen from '../../components/redesign/screens/LoginScreen';
 
 export default function Login() {
   const { signIn, isSupabaseConfigured } = useAuth();
@@ -19,6 +18,7 @@ export default function Login() {
     setBusy(true);
     try {
       await signIn(email, password);
+      // Preserve d2ac6ce's iPhone-style /home post-login destination.
       const dest = location.state?.from || '/home';
       navigate(dest, { replace: true });
     } catch (e) {
@@ -38,26 +38,15 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
-      <Link to="/" className="label mb-6 inline-block py-1">← Back</Link>
-      <h1 className="font-display text-4xl tracking-wider2 text-gold">Sign in</h1>
-      <p className="mt-2 text-sm text-mute">Return to the system.</p>
-
-      <form onSubmit={onSubmit} className="mt-8 space-y-4">
-        <Input label="Email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Input label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-        {err ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
-        {!isSupabaseConfigured ? (
-          <div className="border border-line p-3 text-xs text-faint">Supabase environment not set. Sign-in is inactive.</div>
-        ) : null}
-        <Button type="submit" disabled={busy || !isSupabaseConfigured} className="w-full">
-          {busy ? 'Signing in' : 'Sign in'}
-        </Button>
-      </form>
-
-      <div className="mt-6 text-xs uppercase tracking-widest2 text-faint">
-        No account? <Link to="/signup" className="text-gold">Create one</Link>
-      </div>
-    </div>
+    <LoginScreen
+      email={email}
+      password={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
+      onSubmit={onSubmit}
+      busy={busy}
+      error={err}
+      isSupabaseConfigured={isSupabaseConfigured}
+    />
   );
 }
