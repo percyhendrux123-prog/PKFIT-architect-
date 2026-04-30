@@ -1,5 +1,5 @@
 // WorkoutScreen — active workout UI in PKFIT redesign visual language.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { photos } from '../../../lib/assets';
 
@@ -17,6 +17,21 @@ export default function WorkoutScreen({
 }) {
   const [resting, setResting] = useState(false);
   const [restTime, setRestTime] = useState(90);
+
+  // Track which sets just transitioned to done so we can play a one-shot
+  // check-pop animation on the green ring without re-animating older sets.
+  const prevDoneRef = useRef(new Set());
+  const justDone = new Set();
+  sets.forEach((s, i) => {
+    if (s.done && !prevDoneRef.current.has(i)) justDone.add(i);
+  });
+  useEffect(() => {
+    const next = new Set();
+    sets.forEach((s, i) => {
+      if (s.done) next.add(i);
+    });
+    prevDoneRef.current = next;
+  }, [sets]);
 
   useEffect(() => {
     if (!resting) return undefined;
@@ -71,7 +86,7 @@ export default function WorkoutScreen({
         </div>
       </div>
 
-      <div style={{ position: 'relative', height: 200, background: `url(${heroImage}) center/cover` }}>
+      <div className="pkfit-rim" style={{ position: 'relative', height: 200, background: `url(${heroImage}) center/cover` }}>
         <div
           style={{
             position: 'absolute',
@@ -148,7 +163,7 @@ export default function WorkoutScreen({
               </span>
               <div>
                 <div className="mono" style={{ color: '#8E8E96', fontSize: 9 }}>WEIGHT</div>
-                <div className="tnum" style={{ fontSize: 18, fontWeight: 600 }}>
+                <div className="tnum pkfit-num-dominant" style={{ fontSize: 22, fontWeight: 700 }}>
                   {s.w}
                   {s.wUnit ? (
                     <span style={{ color: '#8E8E96', fontSize: 11 }}> {s.wUnit}</span>
@@ -157,10 +172,11 @@ export default function WorkoutScreen({
               </div>
               <div>
                 <div className="mono" style={{ color: '#8E8E96', fontSize: 9 }}>REPS</div>
-                <div className="tnum" style={{ fontSize: 18, fontWeight: 600 }}>{s.reps}</div>
+                <div className="tnum pkfit-num-dominant" style={{ fontSize: 22, fontWeight: 700 }}>{s.reps}</div>
               </div>
               {s.done ? (
                 <div
+                  className={justDone.has(i) ? 'pkfit-check-pop' : ''}
                   style={{
                     width: 28,
                     height: 28,
@@ -226,7 +242,7 @@ export default function WorkoutScreen({
           <button
             type="button"
             onClick={handleLog}
-            className="btn btn-primary"
+            className="btn btn-primary pkfit-sheen"
             style={{ width: '100%', justifyContent: 'center', padding: '16px 22px' }}
           >
             Log set &amp; rest <Icon name="arrow" size={14} />

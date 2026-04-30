@@ -108,7 +108,7 @@ export default function OnboardScreen({
         type="button"
         onClick={onContinue}
         disabled={busy}
-        className="btn btn-primary"
+        className="btn btn-primary pkfit-sheen"
         style={{ width: '100%', justifyContent: 'center', padding: '16px', marginTop: 20 }}
       >
         {busy ? 'Saving…' : continueLabel} <Icon name="arrow" size={14} />

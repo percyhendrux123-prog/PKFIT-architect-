@@ -3,6 +3,24 @@ import { MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input, Textarea } from './ui/Input';
 
+// Brief gold pulse on an input when its value lands on an integer.
+// Used by the RPE inputs to give haptic-like feedback on integer snap.
+function tickRpeFeedback(el) {
+  if (!el) return;
+  el.classList.remove('pkfit-rpe-tick');
+  // Force reflow so re-adding restarts the animation.
+  // eslint-disable-next-line no-unused-expressions
+  el.offsetWidth;
+  el.classList.add('pkfit-rpe-tick');
+  setTimeout(() => el.classList.remove('pkfit-rpe-tick'), 230);
+}
+function maybeTickIfInteger(el, raw) {
+  if (raw === '' || raw == null) return;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return;
+  if (Math.abs(n - Math.round(n)) < 1e-9) tickRpeFeedback(el);
+}
+
 // Build an initial draft from the program prescription. One row per prescribed
 // set, weight blank, reps prefilled from prescription, rpe blank.
 function draftFromProgram(program) {
@@ -130,7 +148,10 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
           min="0"
           max="10"
           value={rpe}
-          onChange={(e) => setRpe(e.target.value)}
+          onChange={(e) => {
+            setRpe(e.target.value);
+            maybeTickIfInteger(e.target, e.target.value);
+          }}
           placeholder={inferredRpe != null ? String(inferredRpe) : ''}
         />
       </div>
@@ -167,11 +188,12 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
                   <li key={setIdx} className="space-y-1">
                     <div className="grid grid-cols-[32px_1fr_1fr_1fr_32px_32px] items-center gap-2">
                       <button
+                        key={s.done ? `${exIdx}-${setIdx}-done` : `${exIdx}-${setIdx}-undone`}
                         type="button"
                         onClick={() => updateSet(exIdx, setIdx, { done: !s.done })}
                         aria-pressed={s.done}
                         aria-label={`Mark set ${setIdx + 1} ${s.done ? 'not done' : 'done'}`}
-                        className={`h-6 w-6 border ${s.done ? 'bg-gold border-gold' : 'border-line'}`}
+                        className={`h-6 w-6 border ${s.done ? 'bg-gold border-gold pkfit-check-pop' : 'border-line'}`}
                       />
                       <input
                         type="number"
@@ -196,7 +218,10 @@ export function LogSessionForm({ program, onSubmit, onCancel }) {
                         min="0"
                         max="10"
                         value={s.rpe}
-                        onChange={(e) => updateSet(exIdx, setIdx, { rpe: e.target.value })}
+                        onChange={(e) => {
+                          updateSet(exIdx, setIdx, { rpe: e.target.value });
+                          maybeTickIfInteger(e.target, e.target.value);
+                        }}
                         placeholder="0-10"
                         className="border border-line bg-black/40 px-2 py-2 text-sm text-ink placeholder:text-faint"
                       />

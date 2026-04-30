@@ -1,8 +1,11 @@
 // HomeScreen — Dashboard hero in PKFIT redesign visual language.
 // Receives real bound data via props (streak, weight, today's session, coach note, profile).
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { photos } from '../../../lib/assets';
+import CursorAwareCard from '../../CursorAwareCard';
+import { revealDelay, firePulse } from '../../../lib/motion';
 
 export default function HomeScreen({
   greeting = 'Welcome back',
@@ -15,6 +18,15 @@ export default function HomeScreen({
   coachNote,
   coachAvatar,
 }) {
+  // Streak-counter pulse on log: when streakDays increments (i.e. a session
+  // was just marked complete), fire a 420ms gold pulse on the number.
+  const streakRef = useRef(null);
+  const prevStreak = useRef(streakDays);
+  useEffect(() => {
+    if (streakDays > prevStreak.current) firePulse(streakRef.current);
+    prevStreak.current = streakDays;
+  }, [streakDays]);
+
   return (
     <div className="redesign-screen" style={{ padding: '20px 22px 100px' }}>
       <div
@@ -51,14 +63,21 @@ export default function HomeScreen({
       </div>
 
       {/* Streak */}
-      <div className="card" style={{ background: '#131316', padding: 18, marginBottom: 14 }}>
+      <CursorAwareCard
+        className="card pkfit-reveal"
+        style={{ background: '#131316', padding: 18, marginBottom: 14, ...revealDelay(0) }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div className="mono" style={{ color: '#8E8E96' }}>CURRENT STREAK</div>
-            <div className="display" style={{ fontSize: 56, lineHeight: 1, marginTop: 8 }}>
+            <div
+              ref={streakRef}
+              className="display pkfit-streak-pulse pkfit-num-dominant"
+              style={{ fontSize: 64, lineHeight: 1, marginTop: 8, fontWeight: 600 }}
+            >
               {streakDays}
               <span style={{ color: '#FF5B1F' }}>·</span>
-              <span style={{ fontSize: 22, color: '#8E8E96' }}>DAYS</span>
+              <span style={{ fontSize: 22, color: '#8E8E96', fontWeight: 400 }}>DAYS</span>
             </div>
           </div>
           <Icon name="flame" size={28} color="#FF5B1F" />
@@ -95,7 +114,7 @@ export default function HomeScreen({
           <span>S</span>
           <span>S</span>
         </div>
-      </div>
+      </CursorAwareCard>
 
       {/* Today's session */}
       {todaySession ? (
@@ -105,7 +124,7 @@ export default function HomeScreen({
           </div>
           <Link
             to={todaySession.to || '/workouts'}
-            className="card"
+            className="card pkfit-rim pkfit-reveal"
             style={{
               position: 'relative',
               padding: 0,
@@ -116,6 +135,7 @@ export default function HomeScreen({
               display: 'block',
               textDecoration: 'none',
               color: 'inherit',
+              ...revealDelay(2),
             }}
           >
             <div
@@ -171,14 +191,21 @@ export default function HomeScreen({
       {quickStats.length > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {quickStats.map((s, i) => (
-            <div key={i} className="card" style={{ background: '#131316', padding: 14 }}>
+            <CursorAwareCard
+              key={i}
+              className="card pkfit-reveal"
+              style={{ background: '#131316', padding: 14, ...revealDelay(3 + i) }}
+            >
               <div className="mono" style={{ color: '#8E8E96', fontSize: 9 }}>
                 {String(s.label).toUpperCase()}
               </div>
-              <div className="display" style={{ fontSize: 26, marginTop: 6 }}>
+              <div
+                className="display pkfit-num-dominant"
+                style={{ fontSize: 32, marginTop: 6, fontWeight: 600 }}
+              >
                 {s.value}
                 {s.unit ? (
-                  <span style={{ fontSize: 12, color: '#8E8E96', marginLeft: 4 }}>{s.unit}</span>
+                  <span style={{ fontSize: 12, color: '#8E8E96', marginLeft: 4, fontWeight: 400 }}>{s.unit}</span>
                 ) : null}
               </div>
               {s.delta ? (
@@ -193,7 +220,7 @@ export default function HomeScreen({
                   {s.delta}
                 </div>
               ) : null}
-            </div>
+            </CursorAwareCard>
           ))}
         </div>
       ) : null}
@@ -204,11 +231,12 @@ export default function HomeScreen({
           <div className="mono" style={{ color: '#8E8E96', marginTop: 22, marginBottom: 10 }}>
             FROM PERCY
           </div>
-          <div
+          <CursorAwareCard
             className="card"
             style={{ background: '#131316', padding: 16, display: 'flex', gap: 12 }}
           >
             <div
+              className="pkfit-rim"
               style={{
                 width: 48,
                 height: 48,
@@ -220,7 +248,7 @@ export default function HomeScreen({
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, lineHeight: 1.5 }}>{coachNote}</div>
               <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                <Link to="/inbox" className="btn btn-primary" style={{ padding: '8px 14px', fontSize: 11 }}>
+                <Link to="/inbox" className="btn btn-primary pkfit-sheen" style={{ padding: '8px 14px', fontSize: 11 }}>
                   Reply
                 </Link>
                 <Link to="/inbox" className="btn btn-ghost" style={{ padding: '8px 14px', fontSize: 11 }}>
@@ -228,7 +256,7 @@ export default function HomeScreen({
                 </Link>
               </div>
             </div>
-          </div>
+          </CursorAwareCard>
         </>
       ) : null}
     </div>

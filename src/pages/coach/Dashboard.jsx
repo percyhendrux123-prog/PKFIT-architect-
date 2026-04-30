@@ -5,6 +5,8 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { claude } from '../../lib/claudeClient';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import CursorAwareCard from '../../components/CursorAwareCard';
+import { revealDelay } from '../../lib/motion';
 import { downloadCSV } from '../../lib/csv';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 
@@ -206,8 +208,13 @@ export default function CoachDashboard() {
     <div className="space-y-6">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <div className="label mb-2">Coach</div>
-          <h1 className="font-display text-4xl tracking-wider2">Overview</h1>
+          <div className="label mb-2 pkfit-reveal" style={revealDelay(0)}>Coach</div>
+          <h1
+            className="font-display text-4xl tracking-wider2 pkfit-reveal pkfit-num-dominant"
+            style={revealDelay(1)}
+          >
+            Overview
+          </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="ghost" onClick={exportTriage} disabled={triageBusy}>
@@ -223,30 +230,30 @@ export default function CoachDashboard() {
       ) : null}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card>
+        <CursorAwareCard className="border border-line bg-black/30 p-5 pkfit-reveal" style={revealDelay(2)}>
           <CardHeader label="Clients" title={String(stats.clients)} />
           <Link to="/coach/clients" className="text-xs uppercase tracking-widest2 text-gold">Open roster →</Link>
-        </Card>
-        <Card>
+        </CursorAwareCard>
+        <CursorAwareCard className="border border-line bg-black/30 p-5 pkfit-reveal" style={revealDelay(3)}>
           <CardHeader label="MRR (active)" title={`$${stats.mrr}`} />
           <Link to="/coach/revenue" className="text-xs uppercase tracking-widest2 text-gold">Revenue →</Link>
-        </Card>
-        <Card>
+        </CursorAwareCard>
+        <CursorAwareCard className="border border-line bg-black/30 p-5 pkfit-reveal" style={revealDelay(4)}>
           <CardHeader label="Flagged" title={String(stats.flagged.length)} meta="No check-in 7d+" />
-        </Card>
+        </CursorAwareCard>
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card>
+        <CursorAwareCard className="border border-line bg-black/30 p-5">
           <CardHeader label="This week" title={`${stats.weekCheckIns} check-ins`} meta="Last 7 days" />
-        </Card>
-        <Card>
+        </CursorAwareCard>
+        <CursorAwareCard className="border border-line bg-black/30 p-5">
           <CardHeader label="This week" title={`${stats.weekPrograms} programs`} meta="Created in last 7 days" />
-        </Card>
+        </CursorAwareCard>
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card>
+        <CursorAwareCard className="border border-line bg-black/30 p-5">
           <CardHeader label="Recent check-ins" title="Last 10" />
           {stats.recent.length === 0 ? (
             <div className="text-sm text-mute">None yet.</div>
@@ -260,8 +267,8 @@ export default function CoachDashboard() {
               ))}
             </ul>
           )}
-        </Card>
-        <Card>
+        </CursorAwareCard>
+        <CursorAwareCard className="border border-line bg-black/30 p-5">
           <CardHeader label="Flagged" title="Needs attention" />
           {stats.flagged.length === 0 ? (
             <div className="text-sm text-mute">No stale clients.</div>
@@ -275,7 +282,7 @@ export default function CoachDashboard() {
               ))}
             </ul>
           )}
-        </Card>
+        </CursorAwareCard>
       </section>
     </div>
   );

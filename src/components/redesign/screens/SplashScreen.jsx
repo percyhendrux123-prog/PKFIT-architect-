@@ -63,7 +63,7 @@ export default function SplashScreen({
           <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Link
               to={primary.to}
-              className="btn btn-primary"
+              className="btn btn-primary pkfit-sheen"
               style={{ width: '100%', justifyContent: 'center', padding: '16px' }}
             >
               {primary.label}

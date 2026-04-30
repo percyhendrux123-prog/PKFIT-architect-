@@ -398,3 +398,187 @@ body {
     border-radius: 24px;
   }
 }
+
+/* ========================================================
+   PKFIT polish elevation pass — kinetic typography, cursor
+   glow, sheen sweeps, micro-interactions. All CSS-first; no
+   backdrop-filter (that's ATLAS canon). Accent gold stays
+   #C9A84C, edge-and-contrast.
+   ======================================================== */
+
+/* 1. Hero number reveal — opacity + blur fade-in. The .pkfit-reveal
+      element starts hidden; an animationDelay (set per node via the
+      revealDelay helper in lib/motion.js) staggers the entrance. */
+@keyframes pkfit-blur-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0.5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.pkfit-reveal {
+  opacity: 0;
+  animation: pkfit-blur-reveal 0.42s cubic-bezier(.2,.7,.2,1) forwards;
+  will-change: transform, opacity, filter;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pkfit-reveal {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+/* 2. Diagonal sheen sweep on primary CTAs — gold gradient that flies
+      left→right under a button on hover. ::before mask only; no layout
+      impact. Apply with `.pkfit-sheen` on the CTA element. */
+.pkfit-sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.pkfit-sheen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(201, 168, 76, 0.0) 42%,
+    rgba(201, 168, 76, 0.55) 50%,
+    rgba(201, 168, 76, 0.0) 58%,
+    transparent 70%
+  );
+  transform: translateX(-110%);
+  transition: transform 0.7s cubic-bezier(.2,.7,.2,1);
+  z-index: 1;
+}
+.pkfit-sheen:hover::before,
+.pkfit-sheen:focus-visible::before {
+  transform: translateX(110%);
+}
+.pkfit-sheen > * {
+  position: relative;
+  z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pkfit-sheen::before { display: none; }
+}
+
+/* 3. Cursor-aware accent glow on cards — radial gold gradient that
+      tracks the mouse via --cursor-x / --cursor-y CSS vars. The vars
+      are set imperatively by lib/motion.js trackCursor(). */
+.pkfit-cursor-card {
+  position: relative;
+  isolation: isolate;
+  --cursor-x: 50%;
+  --cursor-y: 50%;
+}
+.pkfit-cursor-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    260px circle at var(--cursor-x) var(--cursor-y),
+    rgba(201, 168, 76, 0.18),
+    rgba(201, 168, 76, 0.04) 35%,
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 0;
+}
+.pkfit-cursor-card:hover::before,
+.pkfit-cursor-card:focus-within::before {
+  opacity: 1;
+}
+.pkfit-cursor-card > * {
+  position: relative;
+  z-index: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pkfit-cursor-card::before { display: none; }
+}
+
+/* 4. Streak-counter pulse on log — scale 1 → 1.05 → 1 over 400ms with
+      a brief blur-blink on the number. Added imperatively via
+      firePulse() in lib/motion.js when a workout is marked complete. */
+@keyframes pkfit-streak-pulse {
+  0%   { transform: scale(1);    text-shadow: 0 0 0 rgba(201,168,76,0); }
+  35%  { transform: scale(1.05); text-shadow: 0 0 24px rgba(201,168,76,0.55); filter: blur(0.6px); }
+  70%  { filter: blur(0); }
+  100% { transform: scale(1);    text-shadow: 0 0 0 rgba(201,168,76,0); }
+}
+.pkfit-streak-pulse {
+  display: inline-block;
+  transform-origin: center;
+}
+.pkfit-streak-pulse--fire {
+  animation: pkfit-streak-pulse 0.42s cubic-bezier(.2,.7,.2,1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pkfit-streak-pulse--fire { animation: none; }
+}
+
+/* 5. Specular rim on photo cards — thin chrome-gold rim that catches
+      "light" from a virtual source above on hover. Inset box-shadow
+      means no layout shift. */
+.pkfit-rim {
+  transition: box-shadow 0.32s ease, transform 0.32s ease;
+}
+.pkfit-rim:hover,
+.pkfit-rim:focus-visible {
+  box-shadow:
+    inset 0 1px 0 rgba(201, 168, 76, 0.55),
+    inset 1px 0 0 rgba(201, 168, 76, 0.32),
+    inset -1px 0 0 rgba(201, 168, 76, 0.32),
+    0 0 0 1px rgba(201, 168, 76, 0.18);
+}
+
+/* 6. Bebas hierarchy tightening — utility classes for when the rendered
+      number isn't visually 2-3x heavier than its label. Use sparingly
+      where layout already constrains font-size via inline style. */
+.pkfit-num-dominant {
+  font-family: 'Bebas Neue', 'Anton', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 0.86;
+}
+
+/* 7. Toggle / checkbox micro-interaction — scale-in pop with a brief
+      gold ring on activation. Apply `.pkfit-check-pop` to the element
+      that becomes "checked"; the class on first paint plays the anim. */
+@keyframes pkfit-check-pop {
+  0%   { transform: scale(0.6); box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.55); }
+  60%  { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(201, 168, 76, 0); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); }
+}
+.pkfit-check-pop {
+  animation: pkfit-check-pop 0.32s cubic-bezier(.2,.9,.3,1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pkfit-check-pop { animation: none; }
+}
+
+/* RPE slider integer-snap visual feedback — used by the workout RPE
+   input. Fires a brief gold pulse on the thumb whenever the value
+   ticks across an integer boundary. */
+@keyframes pkfit-rpe-tick {
+  0%   { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.0); }
+  40%  { box-shadow: 0 0 0 5px rgba(201, 168, 76, 0.40); }
+  100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.0); }
+}
+.pkfit-rpe-tick { animation: pkfit-rpe-tick 0.22s ease-out; }

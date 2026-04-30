@@ -155,7 +155,7 @@ export default function AICoachScreen({
         <button
           type="submit"
           disabled={busy}
-          className="btn btn-primary"
+          className="btn btn-primary pkfit-sheen"
           style={{ padding: '0 16px' }}
           aria-label="Send message"
         >

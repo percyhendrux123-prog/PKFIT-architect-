@@ -107,7 +107,7 @@ export default function LoginScreen({
         <button
           type="submit"
           disabled={busy || !isSupabaseConfigured}
-          className="btn btn-primary"
+          className="btn btn-primary pkfit-sheen"
           style={{ width: '100%', justifyContent: 'center', padding: '16px' }}
         >
           {busy ? 'Signing in…' : 'Sign in'} <Icon name="arrow" size={14} />
