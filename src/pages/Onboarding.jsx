@@ -145,6 +145,16 @@ export default function Onboarding() {
     setBusy(true);
     setErr(null);
     try {
+      // Privileged columns (`plan`, `loop_stage`, `start_date`, `role`) are
+      // locked by `prevent_profile_privilege_change` (migration 0020) and
+      // can only be written by a coach session or the service role. They are
+      // owned server-side:
+      //   - `plan`        ← Stripe webhook (`checkout.session.completed`)
+      //   - `loop_stage`  ← derived from `start_date` in src/lib/loop.js
+      //                    (defaults to 'diagnosis' when null)
+      //   - `start_date`  ← set server-side once a plan is provisioned
+      // Including any of them in this update produced
+      // "plan is set by the billing webhook" and trapped the user on Step 5.
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -152,9 +162,6 @@ export default function Onboarding() {
           units,
           height_cm: parseHeightToCm(form.height, units),
           weight_kg: parseWeightToKg(form.weight, units),
-          start_date: new Date().toISOString().slice(0, 10),
-          loop_stage: 'diagnosis',
-          plan: 'trial',
           baseline_photo_path: photoPath,
         })
         .eq('id', user.id);
@@ -175,8 +182,12 @@ export default function Onboarding() {
           // Non-fatal: user can re-accept under Settings if this fails.
         }
       }
-      await refreshProfile?.();
-      navigate('/home', { replace: true });
+      const next = await refreshProfile?.();
+      // Coaches don't subscribe — route them to the coach surface. Clients
+      // land on /home; if no active plan, RequiresActiveSubscription bounces
+      // to /billing → Stripe checkout → webhook sets `plan` → access opens.
+      const effectiveRole = next?.role ?? profile?.role ?? null;
+      navigate(effectiveRole === 'coach' ? '/coach' : '/home', { replace: true });
     } catch (e) {
       setErr(e.message);
     } finally {
