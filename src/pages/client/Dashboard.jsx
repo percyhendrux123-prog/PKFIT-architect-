@@ -14,14 +14,15 @@ function initialsFor(profile) {
   return parts[0]?.slice(0, 2).toUpperCase() || 'PK';
 }
 
+// polish 2026-05-01: bucket by local day, not UTC — late Sunday no longer rolls into Monday
 function weekChecksFromSessions(sessions) {
   // Returns Mon..Sun [bool] for the current week.
   const today = new Date();
-  const day = today.getUTCDay();
+  const day = today.getDay();
   const diff = (day + 6) % 7;
   const monday = new Date(today);
-  monday.setUTCDate(today.getUTCDate() - diff);
-  monday.setUTCHours(0, 0, 0, 0);
+  monday.setDate(today.getDate() - diff);
+  monday.setHours(0, 0, 0, 0);
 
   const checks = [false, false, false, false, false, false, false];
   sessions.forEach((s) => {
@@ -229,9 +230,10 @@ export default function Dashboard() {
                 Diagnose the week. Install the next adjustment. Takes under a minute.
               </p>
             </div>
+            {/* polish 2026-05-01: ghost-style CTA inside the gold-bordered card to calm the gold-on-gold edge */}
             <Link
               to="/reviews"
-              className="border border-gold bg-gold px-4 py-2 font-display text-xs tracking-wider2 text-bg hover:bg-[#d8b658]"
+              className="border border-gold px-4 py-2 font-display text-xs tracking-wider2 text-gold transition-colors hover:bg-gold hover:text-bg"
             >
               Open reviews
             </Link>

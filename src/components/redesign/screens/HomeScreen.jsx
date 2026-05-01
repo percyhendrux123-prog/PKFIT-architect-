@@ -70,12 +70,13 @@ export default function HomeScreen({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div className="mono" style={{ color: '#8E8E96' }}>CURRENT STREAK</div>
+            {/* polish 2026-05-01: flex+baseline alignment so DAYS sits cleanly against the 64px digit */}
             <div
               ref={streakRef}
               className="display pkfit-streak-pulse pkfit-num-dominant"
-              style={{ fontSize: 64, lineHeight: 1, marginTop: 8, fontWeight: 600 }}
+              style={{ fontSize: 64, lineHeight: 1, marginTop: 8, fontWeight: 600, display: 'flex', alignItems: 'baseline', gap: 8 }}
             >
-              {streakDays}
+              <span>{streakDays}</span>
               <span style={{ color: '#FF5B1F' }}>·</span>
               <span style={{ fontSize: 22, color: '#8E8E96', fontWeight: 400 }}>DAYS</span>
             </div>
@@ -247,12 +248,10 @@ export default function HomeScreen({
             />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, lineHeight: 1.5 }}>{coachNote}</div>
+              {/* polish 2026-05-01: removed Voice note CTA (no capture flow wired; it routed to /inbox same as Reply) */}
               <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
                 <Link to="/inbox" className="btn btn-primary pkfit-sheen" style={{ padding: '8px 14px', fontSize: 11 }}>
                   Reply
-                </Link>
-                <Link to="/inbox" className="btn btn-ghost" style={{ padding: '8px 14px', fontSize: 11 }}>
-                  Voice note
                 </Link>
               </div>
             </div>

@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import LoginScreen from '../../components/redesign/screens/LoginScreen';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 
+// polish 2026-05-01: reverted Login from redesign LoginScreen to legacy gold treatment matching Signup; removed broken Forgot password link
 export default function Login() {
   const { signIn, isSupabaseConfigured } = useAuth();
   const navigate = useNavigate();
@@ -38,15 +40,41 @@ export default function Login() {
   }
 
   return (
-    <LoginScreen
-      email={email}
-      password={password}
-      onEmailChange={setEmail}
-      onPasswordChange={setPassword}
-      onSubmit={onSubmit}
-      busy={busy}
-      error={err}
-      isSupabaseConfigured={isSupabaseConfigured}
-    />
+    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
+      <Link to="/" className="label mb-6 inline-block py-1">← Back</Link>
+      <h1 className="font-display text-4xl tracking-wider2 text-gold">Welcome back</h1>
+      <p className="mt-2 text-sm text-mute">Sign in to the system.</p>
+
+      <form onSubmit={onSubmit} className="mt-8 space-y-4">
+        <Input
+          label="Email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Input
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        {err ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
+        {!isSupabaseConfigured ? (
+          <div className="border border-line p-3 text-xs text-faint">Supabase environment not set. Sign-in is inactive.</div>
+        ) : null}
+        <Button type="submit" disabled={busy || !isSupabaseConfigured} className="w-full">
+          {busy ? 'Signing in' : 'Sign in'}
+        </Button>
+      </form>
+
+      <div className="mt-6 text-xs uppercase tracking-widest2 text-faint">
+        No account? <Link to="/signup" className="text-gold">Create one</Link>
+      </div>
+    </div>
   );
 }

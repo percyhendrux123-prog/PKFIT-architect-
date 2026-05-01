@@ -204,10 +204,10 @@ export function Layout() {
       </div>
 
       {/* Mobile bottom nav — PKFIT redesign visual language. 5 primary tabs + More-sheet button. */}
+      {/* polish 2026-05-01: removed duplicate gradient (was set on both <nav> and inner <div>) */}
       <nav
         className="fixed inset-x-0 bottom-0 z-20 md:hidden"
         aria-label="Mobile primary"
-        style={{ background: 'linear-gradient(180deg, transparent, #080808 30%)' }}
       >
         <div
           style={{
@@ -237,24 +237,29 @@ export function Layout() {
                   position: 'relative',
                 }}
               >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-                <span
-                  style={{
-                    width: 4,
-                    height: 4,
-                    borderRadius: 999,
-                    background: '#FF5B1F',
-                    marginTop: 2,
-                  }}
-                />
-                {showDot ? (
-                  <span
-                    className="absolute right-3 top-1 h-2 w-2 rounded-full"
-                    style={{ background: '#FF5B1F' }}
-                    aria-label="Unread"
-                  />
-                ) : null}
+                {({ isActive }) => (
+                  <>
+                    <item.icon size={20} />
+                    <span>{item.label}</span>
+                    {/* polish 2026-05-01: dot only shows on the active tab (was unconditional) */}
+                    <span
+                      style={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: 999,
+                        background: isActive ? '#FF5B1F' : 'transparent',
+                        marginTop: 2,
+                      }}
+                    />
+                    {showDot ? (
+                      <span
+                        className="absolute right-3 top-1 h-2 w-2 rounded-full"
+                        style={{ background: '#FF5B1F' }}
+                        aria-label="Unread"
+                      />
+                    ) : null}
+                  </>
+                )}
               </NavLink>
             );
           })}
@@ -296,8 +301,9 @@ export function Layout() {
           aria-label="More navigation"
           onClick={() => setMoreOpen(false)}
         >
+          {/* polish 2026-05-01: rounded top edge so the bottom-sheet has a soft chrome */}
           <div
-            className="rounded-t-none border-t border-line bg-bg p-5 pb-10"
+            className="rounded-t-2xl border-t border-line bg-bg p-5 pb-10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">

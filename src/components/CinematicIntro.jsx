@@ -1,44 +1,31 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 // Cinematic intro shown on first visit to Landing (or when manually replayed).
 //
 // Behavior:
-//   - If /trailer/pkfit-intro.mp4 is present, plays it muted/inline. Otherwise
-//     falls back to a CSS/Framer typography reveal so the page never blocks
-//     waiting for an asset that hasn't been generated yet.
-//   - Skippable (button + tap-to-skip). Auto-dismisses on `ended` or after the
-//     8s fallback completes.
+//   - Renders the FallbackReveal typography animation directly. Trailer assets
+//     have not been generated yet, so we don't render a <video> that fails.
+//   - Skippable (button). Auto-dismisses after the fallback animation completes.
 //   - Sets `localStorage.pkfit_intro_seen = "1"` so subsequent visits skip.
-//
-// Generate the real video via `node scripts/generate-trailer.js` (one-shot,
-// fal.ai veo). Output goes to public/trailer/pkfit-intro.mp4 + poster.jpg and
-// is committed as a static asset — runtime never calls fal.ai.
 
 const SEEN_KEY = 'pkfit_intro_seen';
 
+// polish 2026-05-01: removed <video> branch (no /trailer/* assets exist) — render fallback directly
 export function CinematicIntro({ onDone, force = false }) {
   const [visible, setVisible] = useState(() => {
     if (force) return true;
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(SEEN_KEY) !== '1';
   });
-  const [videoFailed, setVideoFailed] = useState(false);
-  const videoRef = useRef(null);
 
   useEffect(() => {
     if (!visible) return undefined;
-    if (videoFailed) {
-      const t = setTimeout(() => dismiss(), 6500);
-      return () => clearTimeout(t);
-    }
-    const v = videoRef.current;
-    if (!v) return undefined;
-    const onErr = () => setVideoFailed(true);
-    v.addEventListener('error', onErr);
-    return () => v.removeEventListener('error', onErr);
+    // polish 2026-05-01: timer matches FallbackReveal animation duration (~4s)
+    const t = setTimeout(() => dismiss(), 4200);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, videoFailed]);
+  }, [visible]);
 
   function dismiss() {
     if (typeof window !== 'undefined') {
@@ -62,22 +49,7 @@ export function CinematicIntro({ onDone, force = false }) {
         role="dialog"
         aria-label="PKFIT intro"
       >
-        {!videoFailed ? (
-          <video
-            ref={videoRef}
-            className="h-full w-full object-cover"
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            poster="/trailer/poster.jpg"
-            onEnded={dismiss}
-          >
-            <source src="/trailer/pkfit-intro.mp4" type="video/mp4" />
-          </video>
-        ) : (
-          <FallbackReveal />
-        )}
+        <FallbackReveal />
 
         <button
           type="button"
