@@ -71,7 +71,7 @@ export function Modal({ open, title, body, confirmLabel = 'Confirm', cancelLabel
             className={`inline-flex items-center justify-center gap-2 px-5 py-3 font-display tracking-wider2 text-sm uppercase transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               tone === 'danger'
                 ? 'border border-signal/60 text-signal hover:border-signal'
-                : 'bg-gold text-bg hover:bg-[#d8b658]'
+                : 'bg-gold text-bg hover:bg-[#E5DDC9]'
             }`}
           >
             {busy ? 'Working' : confirmLabel}

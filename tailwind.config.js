@@ -5,11 +5,15 @@ export default {
     extend: {
       colors: {
         bg: '#080808',
-        gold: '#C9A84C',
+        // minimalist 2026-05-01: redefined gold -> cream/bone. yellow stripped
+        // entirely across the app via this single token. legacy `gold` class
+        // names retained intentionally so the rest of the app compiles unchanged.
+        gold: '#F5F1E8',
         ink: '#F5F5F5',
         mute: '#BFBFBF',
         faint: '#9A9A9A',
-        line: 'rgba(201, 168, 76, 0.18)',
+        // minimalist 2026-05-01: line tint moved off yellow rgba onto neutral cream.
+        line: 'rgba(245, 241, 232, 0.12)',
         signal: '#A03A2C',
         success: '#7A8C5C',
       },

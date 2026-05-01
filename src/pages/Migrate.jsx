@@ -113,7 +113,7 @@ function HeroPanel({ data, onContinue }) {
       <button
         type="button"
         onClick={onContinue}
-        className="mt-10 inline-flex w-full items-center justify-center border border-gold bg-gold px-6 py-4 font-display tracking-wider2 text-bg transition-colors hover:bg-[#d8b658]"
+        className="mt-10 inline-flex w-full items-center justify-center border border-gold bg-gold px-6 py-4 font-display tracking-wider2 text-bg transition-colors hover:bg-[#E5DDC9]"
       >
         Get early access →
       </button>
@@ -201,7 +201,7 @@ function ConfirmPanel({ data, onConfirm, busy, error }) {
         type="button"
         disabled={!agreed || busy}
         onClick={() => onConfirm(data.consent_text)}
-        className="mt-6 inline-flex w-full items-center justify-center border border-gold bg-gold px-6 py-4 font-display tracking-wider2 text-bg transition-colors hover:bg-[#d8b658] disabled:cursor-not-allowed disabled:opacity-40"
+        className="mt-6 inline-flex w-full items-center justify-center border border-gold bg-gold px-6 py-4 font-display tracking-wider2 text-bg transition-colors hover:bg-[#E5DDC9] disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? 'Unlocking your AI coach…' : 'Unlock my AI coach →'}
       </button>
@@ -228,7 +228,7 @@ function WelcomePanel({ data }) {
       <div className="mt-8 space-y-3">
         <Link
           to="/assistant"
-          className="block w-full border border-gold bg-gold px-6 py-4 text-center font-display tracking-wider2 text-bg transition-colors hover:bg-[#d8b658]"
+          className="block w-full border border-gold bg-gold px-6 py-4 text-center font-display tracking-wider2 text-bg transition-colors hover:bg-[#E5DDC9]"
         >
           Try your AI coach now
         </Link>

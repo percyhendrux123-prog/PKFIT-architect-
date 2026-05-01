@@ -32,8 +32,8 @@ export function Sparkline({ values, width = 160, height = 40, className = '' }) 
       aria-label="Trend"
       className={className}
     >
-      <polyline points={points} fill="none" stroke="#C9A84C" strokeWidth="1.5" />
-      <circle cx={lastX} cy={lastY} r="2.5" fill="#C9A84C" />
+      <polyline points={points} fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+      <circle cx={lastX} cy={lastY} r="2.5" fill="#F5F1E8" />
     </svg>
   );
 }

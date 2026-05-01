@@ -18,7 +18,7 @@ export default function NotFound() {
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           to={homePath}
-          className="border border-gold bg-gold px-5 py-3 font-display tracking-wider2 text-bg transition-colors hover:bg-[#d8b658]"
+          className="border border-gold bg-gold px-5 py-3 font-display tracking-wider2 text-bg transition-colors hover:bg-[#E5DDC9]"
         >
           {homeLabel}
         </Link>

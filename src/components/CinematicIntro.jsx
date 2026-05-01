@@ -54,7 +54,8 @@ export function CinematicIntro({ onDone, force = false }) {
         <button
           type="button"
           onClick={dismiss}
-          className="absolute bottom-8 right-8 border border-line/40 bg-black/40 px-4 py-2 text-[0.7rem] uppercase tracking-widest2 text-mute backdrop-blur transition-colors hover:border-gold hover:text-gold"
+          // minimalist 2026-05-01: outline border stripped; hover swaps tone instead.
+          className="absolute bottom-8 right-8 bg-black/40 px-4 py-2 text-[0.7rem] uppercase tracking-widest2 text-mute backdrop-blur transition-colors hover:text-ink"
         >
           Skip
         </button>
@@ -67,7 +68,8 @@ function FallbackReveal() {
   return (
     <div className="pointer-events-none flex flex-col items-center">
       <motion.div
-        className="font-display text-[clamp(4rem,14vw,11rem)] leading-none tracking-wider2 text-gold"
+        // minimalist 2026-05-01: cream wordmark (legacy `text-gold` token now resolves to cream)
+        className="font-display text-[clamp(4rem,14vw,11rem)] leading-none tracking-wider2 text-ink"
         initial={{ opacity: 0, letterSpacing: '0.4em' }}
         animate={{ opacity: 1, letterSpacing: '0.08em' }}
         transition={{ duration: 1.6, ease: [0.2, 0.6, 0.2, 1] }}
@@ -75,7 +77,8 @@ function FallbackReveal() {
         PKFIT
       </motion.div>
       <motion.div
-        className="mt-3 h-px w-32 bg-gold"
+        // minimalist 2026-05-01: cream hairline (was bg-gold)
+        className="mt-3 h-px w-32 bg-ink/60"
         initial={{ scaleX: 0 }}
         animate={{ scaleX: [0, 1, 1, 0] }}
         transition={{ duration: 4, ease: 'easeInOut', times: [0, 0.4, 0.7, 1] }}

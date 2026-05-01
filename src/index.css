@@ -402,8 +402,9 @@ body {
 /* ========================================================
    PKFIT polish elevation pass — kinetic typography, cursor
    glow, sheen sweeps, micro-interactions. All CSS-first; no
-   backdrop-filter (that's ATLAS canon). Accent gold stays
-   #C9A84C, edge-and-contrast.
+   backdrop-filter (that's ATLAS canon).
+   minimalist 2026-05-01: accent token redefined to cream #F5F1E8;
+   the legacy "gold" name in this file is historical only.
    ======================================================== */
 
 /* 1. Hero number reveal — opacity + blur fade-in. The .pkfit-reveal
@@ -455,9 +456,9 @@ body {
   background: linear-gradient(
     115deg,
     transparent 30%,
-    rgba(201, 168, 76, 0.0) 42%,
-    rgba(201, 168, 76, 0.55) 50%,
-    rgba(201, 168, 76, 0.0) 58%,
+    rgba(245, 241, 232, 0.0) 42%,
+    rgba(245, 241, 232, 0.55) 50%,
+    rgba(245, 241, 232, 0.0) 58%,
     transparent 70%
   );
   transform: translateX(-110%);
@@ -493,8 +494,8 @@ body {
   border-radius: inherit;
   background: radial-gradient(
     260px circle at var(--cursor-x) var(--cursor-y),
-    rgba(201, 168, 76, 0.18),
-    rgba(201, 168, 76, 0.04) 35%,
+    rgba(245, 241, 232, 0.18),
+    rgba(245, 241, 232, 0.04) 35%,
     transparent 65%
   );
   opacity: 0;
@@ -517,10 +518,10 @@ body {
       a brief blur-blink on the number. Added imperatively via
       firePulse() in lib/motion.js when a workout is marked complete. */
 @keyframes pkfit-streak-pulse {
-  0%   { transform: scale(1);    text-shadow: 0 0 0 rgba(201,168,76,0); }
-  35%  { transform: scale(1.05); text-shadow: 0 0 24px rgba(201,168,76,0.55); filter: blur(0.6px); }
+  0%   { transform: scale(1);    text-shadow: 0 0 0 rgba(245,241,232,0); }
+  35%  { transform: scale(1.05); text-shadow: 0 0 24px rgba(245,241,232,0.55); filter: blur(0.6px); }
   70%  { filter: blur(0); }
-  100% { transform: scale(1);    text-shadow: 0 0 0 rgba(201,168,76,0); }
+  100% { transform: scale(1);    text-shadow: 0 0 0 rgba(245,241,232,0); }
 }
 .pkfit-streak-pulse {
   display: inline-block;
@@ -542,10 +543,10 @@ body {
 .pkfit-rim:hover,
 .pkfit-rim:focus-visible {
   box-shadow:
-    inset 0 1px 0 rgba(201, 168, 76, 0.55),
-    inset 1px 0 0 rgba(201, 168, 76, 0.32),
-    inset -1px 0 0 rgba(201, 168, 76, 0.32),
-    0 0 0 1px rgba(201, 168, 76, 0.18);
+    inset 0 1px 0 rgba(245, 241, 232, 0.55),
+    inset 1px 0 0 rgba(245, 241, 232, 0.32),
+    inset -1px 0 0 rgba(245, 241, 232, 0.32),
+    0 0 0 1px rgba(245, 241, 232, 0.18);
 }
 
 /* 6. Bebas hierarchy tightening — utility classes for when the rendered
@@ -562,9 +563,9 @@ body {
       gold ring on activation. Apply `.pkfit-check-pop` to the element
       that becomes "checked"; the class on first paint plays the anim. */
 @keyframes pkfit-check-pop {
-  0%   { transform: scale(0.6); box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.55); }
-  60%  { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(201, 168, 76, 0); }
-  100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); }
+  0%   { transform: scale(0.6); box-shadow: 0 0 0 0 rgba(245, 241, 232, 0.55); }
+  60%  { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(245, 241, 232, 0); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(245, 241, 232, 0); }
 }
 .pkfit-check-pop {
   animation: pkfit-check-pop 0.32s cubic-bezier(.2,.9,.3,1);
@@ -577,8 +578,8 @@ body {
    input. Fires a brief gold pulse on the thumb whenever the value
    ticks across an integer boundary. */
 @keyframes pkfit-rpe-tick {
-  0%   { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.0); }
-  40%  { box-shadow: 0 0 0 5px rgba(201, 168, 76, 0.40); }
-  100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.0); }
+  0%   { box-shadow: 0 0 0 0 rgba(245, 241, 232, 0.0); }
+  40%  { box-shadow: 0 0 0 5px rgba(245, 241, 232, 0.40); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 241, 232, 0.0); }
 }
 .pkfit-rpe-tick { animation: pkfit-rpe-tick 0.22s ease-out; }

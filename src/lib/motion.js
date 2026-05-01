@@ -3,10 +3,12 @@
 // already a dep (used elsewhere in HomeScreen tile launcher) so we don't add
 // another runtime here.
 //
-// Canon: edge-and-contrast, accent gold #C9A84C, NO backdrop-filter / no
-// glassmorphism (that lives in ATLAS, the Performance app).
+// Canon: edge-and-contrast, NO backdrop-filter / no glassmorphism
+// (that lives in ATLAS, the Performance app).
+// minimalist 2026-05-01: accent token is now cream #F5F1E8; the legacy
+// `GOLD` export name is retained so existing call sites stay green.
 
-const GOLD = '#C9A84C';
+const GOLD = '#F5F1E8';
 
 /**
  * Stagger reveal helper. Returns a style object with `animationDelay` for
