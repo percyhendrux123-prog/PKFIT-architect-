@@ -3,7 +3,7 @@ import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequiresActiveSubscription } from './components/RequiresActiveSubscription';
 
-import Landing from './pages/Landing.jsx';
+import EnterIntro from './pages/EnterIntro.jsx';
 import HomeScreen from './pages/HomeScreen.jsx';
 import Owner from './pages/Owner.jsx';
 import ImageLab from './pages/owner/ImageLab.jsx';
@@ -29,7 +29,6 @@ import MealGenerator from './pages/client/MealGenerator.jsx';
 import Habits from './pages/client/Habits.jsx';
 import CalendarPage from './pages/client/Calendar.jsx';
 import Profile from './pages/client/Profile.jsx';
-import Community from './pages/client/Community.jsx';
 import Assistant from './pages/client/Assistant.jsx';
 import Billing from './pages/client/Billing.jsx';
 import Settings from './pages/client/Settings.jsx';
@@ -50,7 +49,7 @@ export default function App() {
   return (
     <Routes>
       {/* Public */}
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<EnterIntro />} />
       <Route path="/splash" element={<Splash />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
@@ -113,7 +112,6 @@ export default function App() {
         <Route path="/meals/generator" element={<MealGenerator />} />
         <Route path="/habits" element={<Habits />} />
         <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/community" element={<Community />} />
         <Route path="/assistant" element={<Assistant />} />
         <Route path="/reviews" element={<Reviews />} />
         <Route path="/reviews/:id" element={<ReviewDetail />} />

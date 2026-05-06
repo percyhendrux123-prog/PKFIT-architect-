@@ -4,9 +4,16 @@ import { supabase } from '../../lib/supabaseClient';
 import { Button } from '../../components/ui/Button';
 import { Select, Textarea } from '../../components/ui/Input';
 
-const TARGET_OPTIONS = [
-  { value: '', label: 'Everyone (all authenticated)' },
-  { value: 'trial', label: 'Trial only' },
+// block 0 2026-05-05: re-pointed from `community_posts` to `announcements`.
+// New table is created in supabase/migrations/0031_announcements.sql and is
+// applied as part of the Block 1 schema pass — until that lands, this form
+// will return a 4xx at runtime. UI shape is preserved; only the destination
+// shape and CTA wording have changed.
+
+const AUDIENCE_OPTIONS = [
+  { value: 'all', label: 'All clients' },
+  { value: 'active', label: 'Active subscribers only' },
+  { value: 'trial', label: 'Trial' },
   { value: 'performance', label: 'Performance Standard' },
   { value: 'identity', label: 'Identity Architecture' },
   { value: 'full', label: 'Full Integration' },
@@ -16,29 +23,28 @@ const TARGET_OPTIONS = [
 export default function Announcements() {
   const { user } = useAuth();
   const [content, setContent] = useState('');
-  const [targetPlan, setTargetPlan] = useState('');
+  const [audience, setAudience] = useState('all');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
 
-  async function post(e) {
+  async function publish(e) {
     e.preventDefault();
     if (!content.trim()) return;
     setBusy(true);
     setErr(null);
     setMsg(null);
     try {
-      const { error } = await supabase.from('community_posts').insert({
-        author_id: user.id,
-        content: content.trim(),
-        is_pinned: true,
-        tag: 'announcement',
-        target_plan: targetPlan || null,
+      const { error } = await supabase.from('announcements').insert({
+        coach_id: user.id,
+        body: content.trim(),
+        audience: audience || 'all',
+        published_at: new Date().toISOString(),
       });
       if (error) throw error;
       setContent('');
-      setTargetPlan('');
-      setMsg('Announcement pinned to the feed.');
+      setAudience('all');
+      setMsg('Announcement published.');
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -50,20 +56,20 @@ export default function Announcements() {
     <div className="space-y-6">
       <header>
         <div className="label mb-2">Announcements</div>
-        <h1 className="font-display text-4xl tracking-wider2">Pin to feed</h1>
+        <h1 className="font-display text-4xl tracking-wider2">Publish to roster</h1>
         <p className="mt-2 max-w-reading text-sm text-mute">
-          Post as a pinned note. Keep it tight. One idea. No filler. Target a tier if the message does not apply to the whole roster.
+          One idea. Tight body. No filler. Narrow the audience when the message does not apply to the whole roster.
         </p>
       </header>
 
-      <form onSubmit={post} className="space-y-4">
+      <form onSubmit={publish} className="space-y-4">
         <Textarea label="Announcement" rows={5} value={content} onChange={(e) => setContent(e.target.value)} />
-        <Select label="Target" value={targetPlan} onChange={(e) => setTargetPlan(e.target.value)}>
-          {TARGET_OPTIONS.map((o) => (
+        <Select label="Audience" value={audience} onChange={(e) => setAudience(e.target.value)}>
+          {AUDIENCE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </Select>
-        <Button disabled={busy || !content.trim()}>{busy ? 'Pinning' : 'Pin to feed'}</Button>
+        <Button disabled={busy || !content.trim()}>{busy ? 'Publishing' : 'Publish'}</Button>
       </form>
 
       {msg ? <div className="text-xs uppercase tracking-widest2 text-gold">{msg}</div> : null}
