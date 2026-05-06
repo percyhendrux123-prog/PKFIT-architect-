@@ -1,11 +1,16 @@
--- 0042_drop_legacy_tables.sql
+-- 0042_drop_community_tables.sql
 -- PK•FIT v1 — Block 1 schema additions.
--- Drop legacy tables that v1 does not use:
---   community_*       → community feed RIPed per locked decision #9
---                       (engineering scope §0.locked-decisions).
---   conversations,
---   conversation_messages → AI-assistant conversation log; out of v1.
---   fal_usage         → fal.ai image-gen usage log; out of v1.
+-- Community surface drop only. AI chatbot tables (conversations,
+-- conversation_messages) and fal_usage preserved per PK directive 2026-05-06.
+--
+-- Drops the community feed surface (locked decision #9, scope §0):
+--   community_posts
+--   community_comments
+--   community_reactions
+--
+-- INTENTIONALLY PRESERVED (do not drop here):
+--   conversations, conversation_messages → AI assistant chatbot. Kept in v1.
+--   fal_usage                            → fal.ai image-gen usage log. Kept.
 --
 -- pe_* tables are intentionally LEFT IN PLACE per scope §2.1 recommendation
 -- (separate lead-intake product, not referenced by pkfit-app routes). If a
@@ -21,8 +26,6 @@
 --   stragglers attempting to reference these tables fail loudly before
 --   the drop.
 -- Followed by:  0043_drop_legacy_columns.sql.
---
--- DO NOT APPLY in this block. File-write only.
 
 begin;
 
@@ -31,14 +34,6 @@ begin;
 drop table if exists public.community_reactions cascade;
 drop table if exists public.community_comments  cascade;
 drop table if exists public.community_posts     cascade;
-
--- ─── conversation_* (AI assistant — out of v1) ───────────────────────────
--- Drop messages first; references conversations.
-drop table if exists public.conversation_messages cascade;
-drop table if exists public.conversations         cascade;
-
--- ─── fal_usage (image-gen log — out of v1) ───────────────────────────────
-drop table if exists public.fal_usage cascade;
 
 -- Note: `cascade` is belt-and-braces. In a clean Block 0 where the app
 -- code that references these tables is already deleted, no objects should
@@ -53,9 +48,6 @@ commit;
 --   community_posts     → 0001_init.sql, modified by 0009_announcement_targeting.sql
 --   community_comments  → 0001_init.sql
 --   community_reactions → 0001_init.sql
---   conversations       → 0004_conversations.sql, modified by 0018_conversation_context.sql
---   conversation_messages → 0004_conversations.sql
---   fal_usage           → 0022_fal_usage.sql
 --
 -- To roll back, re-run those original migrations. Data is not preserved —
 -- this is a destructive operation.
