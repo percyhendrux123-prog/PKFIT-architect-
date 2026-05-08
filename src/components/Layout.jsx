@@ -6,7 +6,6 @@ import {
   UtensilsCrossed,
   Target,
   CalendarDays,
-  MessageSquare,
   Sparkles,
   Users,
   CreditCard,
@@ -23,7 +22,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadDMs } from '../hooks/useUnreadDMs';
-import { useUnreadCommunity } from '../hooks/useUnreadCommunity';
 import { Avatar } from './ui/Avatar';
 import { NotificationBell } from './NotificationBell';
 
@@ -39,7 +37,6 @@ const clientSecondary = [
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/reviews', label: 'Reviews', icon: ClipboardCheck },
   { to: '/inbox', label: 'Inbox', icon: Inbox },
-  { to: '/community', label: 'Community', icon: MessageSquare },
   { to: '/billing', label: 'Billing', icon: CreditCard },
   { to: '/profile', label: 'Profile', icon: UserCircle2 },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
@@ -65,10 +62,6 @@ export function Layout() {
   const mainRef = useRef(null);
   const moreCloseRef = useRef(null);
   const unreadDMs = useUnreadDMs({ userId: user?.id, role });
-  const unreadCommunity = useUnreadCommunity({
-    userId: user?.id,
-    lastSeenAt: profile?.community_last_seen_at,
-  });
 
   const primary = role === 'coach' ? coachPrimary : clientPrimary;
   const secondary = role === 'coach' ? coachSecondary : clientSecondary;
@@ -78,7 +71,6 @@ export function Layout() {
   // Map route → unread count so the sidebar renders badges generically.
   const badges = {
     [inboxPath]: unreadDMs,
-    '/community': role === 'coach' ? 0 : unreadCommunity,
   };
 
   useEffect(() => {
@@ -137,9 +129,13 @@ export function Layout() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <NavLink
             to={role === 'coach' ? '/coach' : '/home'}
-            className="font-display text-2xl tracking-wider2 text-gold"
+            className="text-2xl tracking-wider2 text-gold"
+            style={{
+              fontFamily: "'DRUK Wide', 'Druk Wide', 'Bowlby One', sans-serif",
+              fontWeight: 900,
+            }}
           >
-            PKFIT
+            PK&bull;FIT
           </NavLink>
           <div className="flex items-center gap-3">
             <NotificationBell user={user} role={role} profile={profile} />
@@ -203,8 +199,8 @@ export function Layout() {
         </main>
       </div>
 
-      {/* Mobile bottom nav — PKFIT redesign visual language. 5 primary tabs + More-sheet button. */}
-      {/* polish 2026-05-01: removed duplicate gradient (was set on both <nav> and inner <div>) */}
+      {/* Mobile bottom nav — PK•FIT shell. 5 primary tabs + More-sheet button. */}
+      {/* block 0 2026-05-05: orange accent retired; restraint pass uses cream-gold. */}
       <nav
         className="fixed inset-x-0 bottom-0 z-20 md:hidden"
         aria-label="Mobile primary"
@@ -247,14 +243,14 @@ export function Layout() {
                         width: 4,
                         height: 4,
                         borderRadius: 999,
-                        background: isActive ? '#FF5B1F' : 'transparent',
+                        background: isActive ? '#F5F1E8' : 'transparent',
                         marginTop: 2,
                       }}
                     />
                     {showDot ? (
                       <span
                         className="absolute right-3 top-1 h-2 w-2 rounded-full"
-                        style={{ background: '#FF5B1F' }}
+                        style={{ background: '#F5F1E8' }}
                         aria-label="Unread"
                       />
                     ) : null}
@@ -285,7 +281,7 @@ export function Layout() {
             {secondary.some((item) => (badges[item.to] ?? 0) > 0) ? (
               <span
                 className="absolute right-3 top-1 h-2 w-2 rounded-full"
-                style={{ background: '#FF5B1F' }}
+                style={{ background: '#F5F1E8' }}
                 aria-hidden
               />
             ) : null}

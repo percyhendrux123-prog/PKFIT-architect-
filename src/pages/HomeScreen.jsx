@@ -6,7 +6,6 @@ import {
   Target,
   CalendarDays,
   Sparkles,
-  Users,
   CreditCard,
   UserCircle2,
   ClipboardCheck,
@@ -19,7 +18,6 @@ import {
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadDMs } from '../hooks/useUnreadDMs';
-import { useUnreadCommunity } from '../hooks/useUnreadCommunity';
 import { AppIcon } from '../components/ui/AppIcon';
 import { Avatar } from '../components/ui/Avatar';
 
@@ -27,6 +25,7 @@ import { Avatar } from '../components/ui/Avatar';
 // default landing surface. The dashboard remains accessible as the "Today"
 // tile so the existing widget content (loop stage, macro floors) is one tap
 // away. Bottom dock holds the four highest-frequency actions.
+// block 0 2026-05-05: community tile + unread hook RIPed per scope §0 #9.
 
 const APPS = [
   { to: '/dashboard', label: 'Today', icon: LayoutDashboard },
@@ -34,7 +33,6 @@ const APPS = [
   { to: '/meals', label: 'Meals', icon: UtensilsCrossed },
   { to: '/habits', label: 'Habits', icon: Target },
   { to: '/reviews', label: 'Reviews', icon: ClipboardCheck },
-  { to: '/community', label: 'Community', icon: Users, badgeKey: 'community' },
   { to: '/inbox', label: 'Inbox', icon: Inbox, badgeKey: 'dms' },
   { to: '/billing', label: 'Billing', icon: CreditCard },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
@@ -58,12 +56,8 @@ export default function HomeScreen() {
   const { user, profile, role, signOut } = useAuth();
   const nav = useNavigate();
   const unreadDMs = useUnreadDMs({ userId: user?.id, role });
-  const unreadCommunity = useUnreadCommunity({
-    userId: user?.id,
-    lastSeenAt: profile?.community_last_seen_at,
-  });
 
-  const badges = { dms: unreadDMs, community: role === 'coach' ? 0 : unreadCommunity };
+  const badges = { dms: unreadDMs };
   // Owner gets an extra tile that links to /owner. Hidden for everyone else.
   const apps = role === 'owner'
     ? [...APPS, { to: '/owner', label: 'Owner', icon: ShieldCheck }]

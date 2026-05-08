@@ -18,7 +18,10 @@ export default {
         success: '#7A8C5C',
       },
       fontFamily: {
-        display: ['"Bebas Neue"', 'system-ui', 'sans-serif'],
+        // block 0 2026-05-05: PK•FIT brand cascade. DRUK Wide is the target;
+        // Druk Wide and Bowlby One are restrained fallbacks for when the
+        // licensed face is not yet bundled. system-ui closes the chain.
+        display: ['"DRUK Wide"', '"Druk Wide"', '"Bowlby One"', 'system-ui', 'sans-serif'],
         body: ['"DM Mono"', 'ui-monospace', 'monospace'],
       },
       letterSpacing: {

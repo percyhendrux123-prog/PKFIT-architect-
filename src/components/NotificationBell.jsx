@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, MessageSquare, Sparkles, Users } from 'lucide-react';
+import { Bell, MessageSquare, Sparkles } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { useRealtime } from '../hooks/useRealtime';
+
+// block 0 2026-05-05: community surface RIPed. Bell now serves DMs only.
+// `profile` prop retained on the component signature for API stability — the
+// existing call sites pass it; removing it would force an unrelated edit pass.
 
 function relative(iso) {
   if (!iso) return '';
@@ -13,19 +17,17 @@ function relative(iso) {
   return `${Math.floor(diff / 86400)}d`;
 }
 
+// eslint-disable-next-line no-unused-vars
 export function NotificationBell({ user, role, profile }) {
   const [open, setOpen] = useState(false);
   const [dmCount, setDmCount] = useState(0);
   const [dmPreview, setDmPreview] = useState(null);
-  const [communityCount, setCommunityCount] = useState(0);
-  const [communityPreview, setCommunityPreview] = useState(null);
   const wrapperRef = useRef(null);
   const nav = useNavigate();
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
 
-    // DMs
     const readColumn = role === 'coach' ? 'read_by_coach' : 'read_by_client';
     const { count: dmN } = await supabase
       .from('dm_messages')
@@ -47,39 +49,10 @@ export function NotificationBell({ user, role, profile }) {
     } else {
       setDmPreview(null);
     }
-
-    // Community (clients only)
-    if (role !== 'coach') {
-      let q = supabase
-        .from('community_posts')
-        .select('*', { count: 'exact', head: true })
-        .neq('author_id', user.id);
-      if (profile?.community_last_seen_at) q = q.gt('created_at', profile.community_last_seen_at);
-      const { count: cN } = await q;
-      setCommunityCount(cN ?? 0);
-
-      if ((cN ?? 0) > 0) {
-        let q2 = supabase
-          .from('community_posts')
-          .select('id,content,created_at,is_pinned')
-          .neq('author_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        if (profile?.community_last_seen_at) q2 = q2.gt('created_at', profile.community_last_seen_at);
-        const { data: latest } = await q2;
-        setCommunityPreview(latest?.[0] ?? null);
-      } else {
-        setCommunityPreview(null);
-      }
-    } else {
-      setCommunityCount(0);
-      setCommunityPreview(null);
-    }
-  }, [user?.id, role, profile?.community_last_seen_at]);
+  }, [user?.id, role]);
 
   useEffect(() => { load(); }, [load]);
   useRealtime('dm_messages', load);
-  useRealtime('community_posts', load);
 
   useEffect(() => {
     function onDoc(e) {
@@ -89,7 +62,7 @@ export function NotificationBell({ user, role, profile }) {
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
-  const total = dmCount + communityCount;
+  const total = dmCount;
   const inboxPath = role === 'coach' ? '/coach/inbox' : '/inbox';
 
   return (
@@ -149,42 +122,10 @@ export function NotificationBell({ user, role, profile }) {
               </li>
             ) : null}
 
-            {communityCount > 0 ? (
-              <li>
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    nav('/community');
-                  }}
-                  className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-black/30"
-                >
-                  <Users size={16} className="mt-1 text-gold" />
-                  <span className="flex-1">
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="font-display tracking-wider2">
-                        {communityCount} new post{communityCount === 1 ? '' : 's'}
-                      </span>
-                      {communityPreview ? (
-                        <span className="text-[0.6rem] uppercase tracking-widest2 text-faint">
-                          {relative(communityPreview.created_at)}
-                        </span>
-                      ) : null}
-                    </span>
-                    {communityPreview ? (
-                      <span className="mt-1 block truncate text-xs text-mute">
-                        {communityPreview.is_pinned ? 'Pinned · ' : ''}
-                        {communityPreview.content}
-                      </span>
-                    ) : null}
-                  </span>
-                </button>
-              </li>
-            ) : null}
-
             {total === 0 ? (
               <li className="flex items-center gap-3 px-4 py-6 text-sm text-mute">
                 <Sparkles size={14} className="text-gold" />
-                Nothing new. Go do the work.
+                Nothing new.
               </li>
             ) : null}
           </ul>

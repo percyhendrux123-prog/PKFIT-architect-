@@ -1,26 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
-import { useRealtime } from './useRealtime';
+// block 0 2026-05-05: community surface RIPed. This hook is no longer
+// imported anywhere in the app. Retained as an inert stub because the host
+// filesystem mount restricts unlink in this run. Returns 0 so any
+// late-discovered import (none expected) renders harmlessly.
 
-// Count of community posts the viewer has not yet caught up on. Posts authored
-// by the viewer never count as unread. Plan-targeted posts are filtered by
-// RLS, so simply querying as the user reflects what they can actually see.
-export function useUnreadCommunity({ userId, lastSeenAt }) {
-  const [count, setCount] = useState(0);
-
-  const load = useCallback(async () => {
-    if (!isSupabaseConfigured || !userId) return;
-    let query = supabase
-      .from('community_posts')
-      .select('*', { count: 'exact', head: true })
-      .neq('author_id', userId);
-    if (lastSeenAt) query = query.gt('created_at', lastSeenAt);
-    const { count: n } = await query;
-    setCount(n ?? 0);
-  }, [userId, lastSeenAt]);
-
-  useEffect(() => { load(); }, [load]);
-  useRealtime('community_posts', load);
-
-  return count;
+// eslint-disable-next-line no-unused-vars
+export function useUnreadCommunity(_args) {
+  return 0;
 }
