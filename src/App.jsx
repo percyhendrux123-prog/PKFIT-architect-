@@ -44,6 +44,7 @@ import ClientDetail from './pages/coach/ClientDetail.jsx';
 import Programs from './pages/coach/Programs.jsx';
 import Revenue from './pages/coach/Revenue.jsx';
 import Announcements from './pages/coach/Announcements.jsx';
+import AssistantLog from './pages/coach/AssistantLog.jsx';
 
 export default function App() {
   return (
@@ -138,6 +139,7 @@ export default function App() {
         <Route path="/coach/programs" element={<Programs />} />
         <Route path="/coach/revenue" element={<Revenue />} />
         <Route path="/coach/announcements" element={<Announcements />} />
+        <Route path="/coach/assistant-log" element={<AssistantLog />} />
       </Route>
 
       {/* Fallback */}

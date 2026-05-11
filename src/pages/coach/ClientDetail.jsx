@@ -247,6 +247,7 @@ export default function ClientDetail() {
         {[
           { key: 'overview', label: 'Overview' },
           { key: 'messages', label: 'Messages' },
+          { key: 'assistant', label: 'Assistant' },
         ].map((t) => (
           <button
             key={t.key}
@@ -478,9 +479,171 @@ export default function ClientDetail() {
             </section>
           ) : null}
         </>
-      ) : (
+      ) : tab === 'messages' ? (
         <DMThread clientId={id} viewer={{ id: user?.id }} role={role} />
+      ) : (
+        <AssistantHistory clientId={id} />
       )}
+    </div>
+  );
+}
+
+// Per-client Operator Assistant history. Lists every Claude conversation
+// this client has had inside the app. Click one to expand the transcript.
+function AssistantHistory({ clientId }) {
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedMessages, setExpandedMessages] = useState({});
+  const [actionLog, setActionLog] = useState([]);
+  const [err, setErr] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setErr(null);
+      try {
+        const [{ data: convs, error: convErr }, { data: notes, error: notesErr }] = await Promise.all([
+          supabase
+            .from('conversations')
+            .select('id, title, created_at, updated_at')
+            .eq('client_id', clientId)
+            .order('updated_at', { ascending: false })
+            .limit(100),
+          supabase
+            .from('client_notes')
+            .select('id, type, title, body, created_at')
+            .eq('client_id', clientId)
+            .in('type', ['ai_action_log', 'ai_flag', 'ai_swap'])
+            .order('created_at', { ascending: false })
+            .limit(50),
+        ]);
+        if (cancelled) return;
+        if (convErr) throw convErr;
+        if (notesErr) throw notesErr;
+        setConversations(convs ?? []);
+        setActionLog(notes ?? []);
+      } catch (e) {
+        if (!cancelled) setErr(e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId]);
+
+  async function loadTranscript(conversationId) {
+    if (expandedMessages[conversationId]) return; // cached
+    const { data, error } = await supabase
+      .from('conversation_messages')
+      .select('role, content, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    if (error) {
+      setErr(error.message);
+      return;
+    }
+    setExpandedMessages((m) => ({ ...m, [conversationId]: data ?? [] }));
+  }
+
+  function toggle(conversationId) {
+    if (expandedId === conversationId) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(conversationId);
+      loadTranscript(conversationId);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <section>
+        <div className="label mb-2">AI activity log</div>
+        <h2 className="font-display text-2xl tracking-wider2 mb-3">Actions Claude has taken</h2>
+        {actionLog.length === 0 ? (
+          <div className="text-sm text-faint">No AI-side actions on file.</div>
+        ) : (
+          <ul className="divide-y divide-line border border-line">
+            {actionLog.map((n) => (
+              <li key={n.id} className="grid grid-cols-[150px_1fr] gap-3 p-3 text-sm">
+                <div className="label">{new Date(n.created_at).toLocaleString()}</div>
+                <div>
+                  <div className="font-display tracking-wider2 text-ink">{n.title}</div>
+                  <div className="mt-1 whitespace-pre-wrap text-xs text-mute">
+                    {(n.body ?? '').slice(0, 600)}
+                    {(n.body ?? '').length > 600 ? '…' : ''}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <div className="label mb-2">Conversations</div>
+        <h2 className="font-display text-2xl tracking-wider2 mb-3">Every chat this client has had with the assistant</h2>
+        {loading ? (
+          <div className="text-sm text-faint">Loading…</div>
+        ) : err ? (
+          <div className="text-xs uppercase tracking-widest2 text-signal">{err}</div>
+        ) : conversations.length === 0 ? (
+          <div className="text-sm text-faint">This client has not used the assistant yet.</div>
+        ) : (
+          <ul className="divide-y divide-line border border-line">
+            {conversations.map((c) => {
+              const open = expandedId === c.id;
+              return (
+                <li key={c.id} className="text-sm">
+                  <button
+                    type="button"
+                    onClick={() => toggle(c.id)}
+                    className="grid w-full grid-cols-[160px_1fr_auto] gap-3 p-3 text-left hover:bg-black/20"
+                  >
+                    <div className="label">{new Date(c.updated_at).toLocaleString()}</div>
+                    <div className="truncate font-display tracking-wider2 text-ink">
+                      {c.title || 'Untitled'}
+                    </div>
+                    <div className="text-[0.65rem] uppercase tracking-widest2 text-faint">
+                      {open ? 'Hide' : 'Open'}
+                    </div>
+                  </button>
+                  {open ? (
+                    <div className="border-t border-line bg-black/20 p-4">
+                      {expandedMessages[c.id] ? (
+                        <ul className="space-y-3">
+                          {expandedMessages[c.id].map((m, i) => (
+                            <li key={i} className={m.role === 'user' ? 'text-right' : ''}>
+                              <div
+                                className={`inline-block max-w-[80%] border p-2 text-xs ${
+                                  m.role === 'user'
+                                    ? 'border-gold/40 text-ink'
+                                    : 'border-line bg-black/30 text-ink/90'
+                                }`}
+                              >
+                                <div className="label mb-1">
+                                  {m.role === 'user' ? 'Client' : 'Assistant'}
+                                </div>
+                                <div className="whitespace-pre-wrap">{m.content}</div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-faint">Loading transcript…</div>
+                      )}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
