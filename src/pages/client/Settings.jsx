@@ -324,7 +324,7 @@ export default function Settings() {
         <CardHeader label="Data" title="Export your data" />
         <p className="max-w-reading text-sm text-mute">
           Downloads every row you own across profile, programs, meals, habits, check-ins, reviews, payments, sessions,
-          community activity, assistant conversations, and direct messages. JSON format.
+          assistant conversations, and direct messages. JSON format.
         </p>
         {exportErr ? <div className="mt-3 text-xs uppercase tracking-widest2 text-signal">{exportErr}</div> : null}
         <div className="mt-4">
