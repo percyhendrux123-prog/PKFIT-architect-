@@ -1,8 +1,21 @@
 import { getAdminClient, getAnonClient } from './_shared/supabase-admin.js';
 import { getAnthropic, loadPrompt, sanitizeVoice, bannedTokensCleanup } from './_shared/anthropic.js';
-import { resolveModelAndKey } from './_shared/tier.js';
+import { resolveModelAndKey, tierFromProfile } from './_shared/tier.js';
 import { isOwnerEmail } from './_shared/owner.js';
 import { checkRateLimit } from './_shared/rate-limit.js';
+
+// Operator Assistant tier policy (2026-05-11):
+//   - tier3 (Premium $750):    full access (chat + actions when wired)
+//   - tier2 (Full $475):       chat only — read/advise, no mutating actions
+//   - tier1 / trial / no plan: NO ACCESS — polite upgrade nudge
+//   - owner:                   full access, always (Quiet Assassin path)
+const TIER_ACCESS_LEVEL = {
+  owner: 'full',
+  tier3: 'full',
+  tier2: 'chat-only',
+  tier1: 'none',
+  trial: 'none',
+};
 
 const MAX_CONTEXT_MESSAGES = 24;
 const ASSISTANT_RPM = 20;
@@ -121,6 +134,22 @@ export default async (req) => {
   const role = isOwner ? 'owner' : profile?.role ?? 'client';
   const { model, apiKeyOverride } = resolveModelAndKey(profile, role);
 
+  // Tier gate. Block tier1 / trial / unplanned profiles with a polite nudge.
+  // Owner and tier2+ proceed to the assistant. Action capability (when wired)
+  // will check access === 'full' before executing any mutation.
+  const tier = role === 'owner' ? 'owner' : tierFromProfile(profile);
+  const access = TIER_ACCESS_LEVEL[tier] ?? 'none';
+  if (access === 'none') {
+    return new Response(
+      JSON.stringify({
+        error: 'tier_required',
+        message:
+          'The in-app assistant is available on Full Integration and Premium plans. Reach out to Percy to upgrade.',
+      }),
+      { status: 403, headers: JSON_HEADERS },
+    );
+  }
+
   let conversationId = body.conversationId ?? null;
   let conversationContext = [];
   if (conversationId) {
@@ -169,15 +198,20 @@ export default async (req) => {
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
 
-  // Owner gets a separate, unrestricted Quiet Assassin system prompt — no
-  // client-coaching scope refusals (medical / legal / financial / off-topic).
-  // The pkfit-system.md voice rules still apply: no emoji, no exclamation
-  // points, mechanism-first.
+  // Owner path stays Quiet Assassin: pkfit-system.md base (voice rules,
+  // mechanism-first, no emoji/exclamations) + owner-assistant.md scope.
+  // Client path is intentionally lighter — only client-assistant.md, no
+  // pkfit-system.md base — so the assistant reads closer to default Claude
+  // for first-time-AI clients. PKFIT methodology is referenced inside
+  // client-assistant.md when relevant, not forced as personality.
   const system =
-    loadPrompt('pkfit-system.md') +
-    '\n\n' +
-    loadPrompt(role === 'owner' ? 'owner-assistant.md' : 'client-assistant.md') +
-    renderPinnedContext(conversationContext);
+    role === 'owner'
+      ? loadPrompt('pkfit-system.md') +
+        '\n\n' +
+        loadPrompt('owner-assistant.md') +
+        renderPinnedContext(conversationContext)
+      : loadPrompt('client-assistant.md') +
+        renderPinnedContext(conversationContext);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -204,7 +238,10 @@ export default async (req) => {
             evt.delta?.type === 'text_delta' &&
             typeof evt.delta.text === 'string'
           ) {
-            const delta = sanitizeVoice(evt.delta.text);
+            // Owner path applies sanitizeVoice (strips emoji + exclamations
+            // for Quiet Assassin discipline). Client path streams text
+            // unmodified to allow natural default-Claude voice.
+            const delta = role === 'owner' ? sanitizeVoice(evt.delta.text) : evt.delta.text;
             if (delta) {
               fullText += delta;
               send('delta', { text: delta });
@@ -212,7 +249,7 @@ export default async (req) => {
           }
         }
 
-        const clean = bannedTokensCleanup(fullText);
+        const clean = role === 'owner' ? bannedTokensCleanup(fullText) : fullText.trim();
         await admin.from('conversation_messages').insert({
           conversation_id: conversationId,
           role: 'assistant',

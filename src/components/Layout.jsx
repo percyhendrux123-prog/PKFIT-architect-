@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { useUnreadDMs } from '../hooks/useUnreadDMs';
 import { Avatar } from './ui/Avatar';
 import { NotificationBell } from './NotificationBell';
+import { AssistantFab } from './AssistantFab';
 
 const clientPrimary = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -52,6 +53,7 @@ const coachPrimary = [
 const coachSecondary = [
   { to: '/coach/revenue', label: 'Revenue', icon: BarChart3 },
   { to: '/coach/announcements', label: 'Announce', icon: Megaphone },
+  { to: '/coach/assistant-log', label: 'Assistant Log', icon: Sparkles },
 ];
 
 export function Layout() {
@@ -198,6 +200,9 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Operator Assistant — tier-gated FAB visible on client routes only. */}
+      <AssistantFab />
 
       {/* Mobile bottom nav — PK•FIT shell. 5 primary tabs + More-sheet button. */}
       {/* block 0 2026-05-05: orange accent retired; restraint pass uses cream-gold. */}

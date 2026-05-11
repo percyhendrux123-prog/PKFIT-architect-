@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2, Mic, Square } from 'lucide-react';
+import { Plus, Trash2, Mic, Square, Check, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { streamAssistant, gemini } from '../../lib/claudeClient';
@@ -15,6 +15,56 @@ async function blobToBase64(blob) {
   });
 }
 
+// Parse an [ACTION:action_type|key=val|key=val] tag out of an assistant
+// message. Returns null if no tag present. Used to detect when Claude is
+// proposing a mutating action and render the confirm/cancel UI.
+const ACTION_TAG_RE = /\[ACTION:([a-z_]+)\|([^\]]+)\]/i;
+function parseAction(content) {
+  if (!content) return null;
+  const match = content.match(ACTION_TAG_RE);
+  if (!match) return null;
+  const [tag, actionType, paramsBlob] = match;
+  const params = {};
+  for (const pair of paramsBlob.split('|')) {
+    const eq = pair.indexOf('=');
+    if (eq < 0) continue;
+    params[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+  }
+  return { actionType, params, tag };
+}
+
+// Human-readable summaries of each action for the confirm card.
+const ACTION_LABELS = {
+  swap_exercise: (p) =>
+    `Swap "${p.original_exercise_name || p.original || '?'}" for "${
+      p.substitute_exercise_name || p.substitute || '?'
+    }" in your current workout`,
+  log_meal: (p) =>
+    `Log ${p.meal_type || 'meal'}${p.items ? ` — ${String(p.items).slice(0, 80)}` : ''}`,
+  log_check_in: (p) =>
+    `Log a check-in for ${p.date || 'today'}${p.weight ? ` (weight ${p.weight})` : ''}`,
+  message_coach: (p) =>
+    `Send a message to Percy${p.urgency && p.urgency !== 'LOW' ? ` (urgency: ${p.urgency})` : ''}`,
+  flag_for_review: (p) =>
+    `Flag this for Percy's next review${p.note ? `: ${String(p.note).slice(0, 80)}` : ''}`,
+};
+
+async function executeAction({ conversationId, action, params }) {
+  const session = (await supabase.auth.getSession()).data.session;
+  if (!session?.access_token) throw new Error('Not authenticated');
+  const res = await fetch('/.netlify/functions/client-assistant-action', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ conversation_id: conversationId, action, params }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.message || data?.error || `Action failed (${res.status})`);
+  return data;
+}
+
 export default function Assistant() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
@@ -26,6 +76,11 @@ export default function Assistant() {
   const [err, setErr] = useState(null);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  // Tracks which assistant-message-index has had its proposed action either
+  // confirmed or cancelled — so we don't show the confirm UI again after the
+  // client has already responded to it.
+  const [resolvedActions, setResolvedActions] = useState({});
+  const [actionBusy, setActionBusy] = useState(false);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const endRef = useRef(null);
@@ -179,6 +234,58 @@ export default function Assistant() {
     await loadConversations();
   }
 
+  // Handle client confirming Claude's proposed action. Calls the server-side
+  // action handler, then appends a system-style note to the conversation so
+  // the client (and Claude on next turn) can see what happened.
+  async function confirmAction(messageIndex, action) {
+    if (!currentId || actionBusy) return;
+    setActionBusy(true);
+    setErr(null);
+    try {
+      const result = await executeAction({
+        conversationId: currentId,
+        action: action.actionType,
+        params: action.params,
+      });
+      const summary = result?.summary || 'Action completed.';
+      setResolvedActions((r) => ({ ...r, [messageIndex]: 'confirmed' }));
+      setMessages((m) => [...m, { role: 'assistant', content: `✓ ${summary}`, _system: true }]);
+      // Send confirmation echo to Claude so it can acknowledge in next turn.
+      // Fire-and-forget; user can ignore the streamed "got it" if they want.
+      streamAssistant({
+        conversationId: currentId,
+        message: `[ACTION_CONFIRMED:${action.actionType}] ${summary}`,
+        onEvent: ({ event, data }) => {
+          if (event === 'delta' && typeof data?.text === 'string') {
+            setMessages((m) => {
+              const next = [...m];
+              const last = next[next.length - 1];
+              if (last?.role === 'assistant' && !last._system) {
+                next[next.length - 1] = { ...last, content: last.content + data.text };
+              } else {
+                next.push({ role: 'assistant', content: data.text });
+              }
+              return next;
+            });
+          }
+        },
+      }).catch(() => {});
+    } catch (e) {
+      setErr(e.message);
+      setResolvedActions((r) => ({ ...r, [messageIndex]: 'error' }));
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  function cancelAction(messageIndex) {
+    setResolvedActions((r) => ({ ...r, [messageIndex]: 'cancelled' }));
+    setMessages((m) => [
+      ...m,
+      { role: 'assistant', content: '✗ Action cancelled.', _system: true },
+    ]);
+  }
+
   return (
     <div className="grid min-h-[calc(100vh-160px)] grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
       <aside className="border border-line bg-black/20">
@@ -249,18 +356,72 @@ export default function Assistant() {
             </div>
           ) : (
             <ul className="space-y-4">
-              {messages.map((m, i) => (
-                <li key={i} className={m.role === 'user' ? 'text-right' : ''}>
-                  <div
-                    className={`inline-block max-w-[80%] border p-3 text-sm ${
-                      m.role === 'user' ? 'border-gold text-ink' : 'border-line bg-black/30 text-ink/90'
-                    }`}
-                  >
-                    <div className="label mb-1">{m.role === 'user' ? 'You' : 'Architect'}</div>
-                    <div className="whitespace-pre-wrap">{m.content}</div>
-                  </div>
-                </li>
-              ))}
+              {messages.map((m, i) => {
+                const action = m.role === 'assistant' && !m._system ? parseAction(m.content) : null;
+                const isLastAssistant =
+                  i === messages.length - 1 && m.role === 'assistant' && !m._system;
+                const showActionUI = action && isLastAssistant && !resolvedActions[i];
+                const visibleContent = action
+                  ? m.content.replace(ACTION_TAG_RE, '').trim()
+                  : m.content;
+                return (
+                  <li key={i} className={m.role === 'user' ? 'text-right' : ''}>
+                    <div
+                      className={`inline-block max-w-[80%] border p-3 text-sm ${
+                        m.role === 'user'
+                          ? 'border-gold text-ink'
+                          : m._system
+                          ? 'border-faint bg-black/10 text-faint italic'
+                          : 'border-line bg-black/30 text-ink/90'
+                      }`}
+                    >
+                      <div className="label mb-1">
+                        {m.role === 'user' ? 'You' : m._system ? 'System' : 'Architect'}
+                      </div>
+                      <div className="whitespace-pre-wrap">{visibleContent}</div>
+                      {showActionUI ? (
+                        <div className="mt-3 border-t border-line pt-3">
+                          <div className="text-[0.65rem] uppercase tracking-widest2 text-faint mb-2">
+                            Action proposed
+                          </div>
+                          <div className="text-sm text-ink mb-3">
+                            {ACTION_LABELS[action.actionType]
+                              ? ACTION_LABELS[action.actionType](action.params)
+                              : `Confirm action: ${action.actionType}`}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => confirmAction(i, action)}
+                              disabled={actionBusy}
+                              className="flex items-center gap-1 border border-gold bg-gold/20 px-3 py-1 text-xs uppercase tracking-widest2 text-gold hover:bg-gold/30 disabled:opacity-50"
+                            >
+                              <Check size={12} /> {actionBusy ? 'Working' : 'Confirm'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => cancelAction(i)}
+                              disabled={actionBusy}
+                              className="flex items-center gap-1 border border-line bg-black/40 px-3 py-1 text-xs uppercase tracking-widest2 text-mute hover:text-ink disabled:opacity-50"
+                            >
+                              <X size={12} /> Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                      {action && resolvedActions[i] === 'confirmed' ? (
+                        <div className="mt-2 text-[0.65rem] uppercase tracking-widest2 text-gold">
+                          ✓ Confirmed
+                        </div>
+                      ) : action && resolvedActions[i] === 'cancelled' ? (
+                        <div className="mt-2 text-[0.65rem] uppercase tracking-widest2 text-faint">
+                          ✗ Cancelled
+                        </div>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
           <div ref={endRef} />
