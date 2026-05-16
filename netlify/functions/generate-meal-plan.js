@@ -1,6 +1,6 @@
 import { requireUser, jsonResponse, errorResponse } from './_shared/auth.js';
 import { getAdminClient } from './_shared/supabase-admin.js';
-import { getAnthropic, loadPrompt } from './_shared/anthropic.js';
+import { getAnthropic, loadPrompt, MODEL_BY_TIER } from './_shared/anthropic.js';
 import { resolveModelAndKey } from './_shared/tier.js';
 import { checkRateLimit } from './_shared/rate-limit.js';
 
@@ -40,11 +40,16 @@ export const handler = async (event) => {
       profile: body.profile ?? null,
     };
 
-    const { model, apiKeyOverride } = resolveModelAndKey(profile, role);
+    // Meal plans are structured JSON and consistently exceed Sonnet/Opus
+    // wall-time budgets inside Netlify v1's 26 s ceiling. Haiku 4.5 produces
+    // a valid 7-day plan in ~17 s at max_tokens=8000. Pin the model here
+    // regardless of tier; we still pass the tier-resolved BYO key.
+    const { apiKeyOverride } = resolveModelAndKey(profile, role);
+    const model = MODEL_BY_TIER.tier1;  // claude-haiku-4-5-20251001
     const anthropic = getAnthropic(apiKeyOverride);
     const resp = await anthropic.messages.create({
       model,
-      max_tokens: 3000,
+      max_tokens: 8000,
       system,
       messages: [{ role: 'user', content: JSON.stringify(input) }],
     });

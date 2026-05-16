@@ -19,6 +19,7 @@
 
 [functions."generate-meal-plan"]
   included_files = ["netlify/functions/_prompts/**"]
+  timeout = 26
 
 [functions."generate-weekly-review"]
   included_files = ["netlify/functions/_prompts/**"]
