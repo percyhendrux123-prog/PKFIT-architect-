@@ -96,7 +96,9 @@ export async function streamAssistant({ conversationId, message, onEvent, signal
     const text = await res.text().catch(() => '');
     let payload;
     try { payload = JSON.parse(text); } catch { payload = { error: text || `HTTP ${res.status}` }; }
-    throw new Error(payload?.error || `Stream failed (${res.status})`);
+    // Prefer the human-readable `message` when the server sent one (e.g. the
+    // tier_required nudge). Fall back to `error` token, then to status code.
+    throw new Error(payload?.message || payload?.error || `Stream failed (${res.status})`);
   }
 
   const reader = res.body.getReader();
