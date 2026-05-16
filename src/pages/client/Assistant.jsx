@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2, Mic, Square, Check, X } from 'lucide-react';
+import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { streamAssistant, gemini } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
 import { ContextPinMenu } from '../../components/ContextPinMenu';
+
+const TEXTAREA_MAX_HEIGHT = 240;
 
 async function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -81,9 +83,22 @@ export default function Assistant() {
   // client has already responded to it.
   const [resolvedActions, setResolvedActions] = useState({});
   const [actionBusy, setActionBusy] = useState(false);
+  const [pinsOpen, setPinsOpen] = useState(false);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const endRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Auto-resize the textarea on every input change. Reset to `auto` so the
+  // browser recalculates `scrollHeight` from the actual content rather than
+  // the previous (possibly larger) height, then clamp to a sensible max so
+  // the textarea scrolls internally instead of pushing the form off-screen.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
+  }, [input]);
 
   const loadConversations = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
@@ -125,6 +140,17 @@ export default function Assistant() {
   useEffect(() => { loadConversations(); }, [loadConversations]);
   useEffect(() => { loadMessages(currentId); }, [currentId, loadMessages]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  function handleInputKeyDown(e) {
+    // Standard chat pattern: Enter submits, Shift+Enter inserts a newline.
+    // Cmd/Ctrl+Enter also submits as an explicit alternative for users used
+    // to that pattern (Linear, GitHub PRs, etc).
+    if (e.key !== 'Enter') return;
+    if (e.shiftKey) return;
+    if (transcribing) return;
+    e.preventDefault();
+    if (input.trim() && !busy && !recording) send(e);
+  }
 
   async function send(e) {
     e.preventDefault();
@@ -287,7 +313,7 @@ export default function Assistant() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-160px)] grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
+    <div className="grid min-h-[calc(100vh-160px)] grid-cols-1 gap-6 md:grid-cols-[240px_1fr] md:gap-8">
       <aside className="border border-line bg-black/20">
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div className="label">Conversations</div>
@@ -330,32 +356,21 @@ export default function Assistant() {
       </aside>
 
       <section className="flex flex-col">
-        <header className="mb-4 space-y-3">
-          <div>
-            <div className="label mb-2">Assistant</div>
-            <h1 className="font-display text-4xl tracking-wider2">The Architect</h1>
-            <p className="mt-1 max-w-reading text-sm text-mute">
-              Mechanism over motivation. No hype. Ask the question you would ask the coach.
-            </p>
-            <p className="mt-1 text-[0.6rem] uppercase tracking-widest2 text-faint">
-              Tip · Cmd/Ctrl + K from anywhere jumps here.
-            </p>
-          </div>
-          <ContextPinMenu
-            userId={user?.id}
-            conversationId={currentId}
-            pins={pins}
-            onChange={setPins}
-          />
+        <header className="mb-8">
+          <div className="label mb-3">Assistant</div>
+          <h1 className="font-display text-4xl tracking-wider2">The Architect</h1>
+          <p className="mt-3 max-w-reading text-sm leading-relaxed text-mute">
+            Mechanism over motivation. No hype. Ask the question you would ask the coach.
+          </p>
         </header>
 
-        <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-4">
+        <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-6">
           {messages.length === 0 ? (
-            <div className="text-sm text-faint">
+            <div className="text-sm leading-relaxed text-faint">
               Start with a single, specific question. Example: why did my bench stall at 85 kg for three weeks.
             </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="space-y-6">
               {messages.map((m, i) => {
                 const action = m.role === 'assistant' && !m._system ? parseAction(m.content) : null;
                 const isLastAssistant =
@@ -367,7 +382,7 @@ export default function Assistant() {
                 return (
                   <li key={i} className={m.role === 'user' ? 'text-right' : ''}>
                     <div
-                      className={`inline-block max-w-[80%] border p-3 text-sm ${
+                      className={`inline-block max-w-[80%] border p-4 text-sm ${
                         m.role === 'user'
                           ? 'border-gold text-ink'
                           : m._system
@@ -375,10 +390,10 @@ export default function Assistant() {
                           : 'border-line bg-black/30 text-ink/90'
                       }`}
                     >
-                      <div className="label mb-1">
+                      <div className="label mb-2">
                         {m.role === 'user' ? 'You' : m._system ? 'System' : 'Architect'}
                       </div>
-                      <div className="whitespace-pre-wrap">{visibleContent}</div>
+                      <div className="whitespace-pre-wrap leading-relaxed">{visibleContent}</div>
                       {showActionUI ? (
                         <div className="mt-3 border-t border-line pt-3">
                           <div className="text-[0.65rem] uppercase tracking-widest2 text-faint mb-2">
@@ -427,15 +442,46 @@ export default function Assistant() {
           <div ref={endRef} />
         </div>
 
-        {err ? <div className="mt-2 text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
+        {err ? <div className="mt-3 text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
 
-        <form onSubmit={send} className="mt-4 flex gap-3">
-          <input
+        <div className="mt-6 border-t border-line pt-3">
+          <button
+            type="button"
+            onClick={() => setPinsOpen((o) => !o)}
+            disabled={!currentId}
+            aria-expanded={pinsOpen}
+            className="flex items-center gap-2 text-[0.6rem] uppercase tracking-widest2 text-faint hover:text-mute disabled:opacity-40"
+          >
+            <Pin size={11} />
+            <span>Context{pins.length > 0 ? ` · ${pins.length} pinned` : ''}</span>
+            <ChevronDown
+              size={12}
+              className={`transition-transform duration-150 ${pinsOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {pinsOpen ? (
+            <div className="mt-3">
+              <ContextPinMenu
+                userId={user?.id}
+                conversationId={currentId}
+                pins={pins}
+                onChange={setPins}
+              />
+            </div>
+          ) : null}
+        </div>
+
+        <form onSubmit={send} className="mt-4 flex items-end gap-3">
+          <textarea
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleInputKeyDown}
             placeholder={transcribing ? 'Transcribing…' : 'Ask a specific question'}
             disabled={transcribing}
-            className="flex-1 border border-line bg-black/40 px-4 py-3 font-body text-ink placeholder:text-faint focus:border-gold disabled:opacity-60"
+            rows={1}
+            className="flex-1 resize-none overflow-y-auto border border-line bg-black/40 px-4 py-3 font-body leading-relaxed text-ink placeholder:text-faint transition-[height] duration-150 focus:border-gold disabled:opacity-60"
+            style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px` }}
           />
           <button
             type="button"
@@ -443,7 +489,7 @@ export default function Assistant() {
             disabled={transcribing || busy}
             aria-label={recording ? 'Stop recording' : 'Record voice'}
             aria-pressed={recording}
-            className={`flex h-12 w-12 items-center justify-center border ${
+            className={`flex h-12 w-12 shrink-0 items-center justify-center border ${
               recording
                 ? 'border-signal bg-signal/20 text-signal'
                 : 'border-line bg-black/40 text-mute hover:border-gold hover:text-gold'
@@ -455,6 +501,9 @@ export default function Assistant() {
             {busy ? 'Thinking' : 'Send'}
           </Button>
         </form>
+        <p className="mt-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
+          Enter to send · Shift+Enter for newline · Cmd/Ctrl+K jumps here
+        </p>
       </section>
     </div>
   );
