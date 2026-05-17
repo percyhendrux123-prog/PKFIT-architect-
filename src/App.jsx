@@ -7,6 +7,7 @@ import EnterIntro from './pages/EnterIntro.jsx';
 import HomeScreen from './pages/HomeScreen.jsx';
 import Owner from './pages/Owner.jsx';
 import ImageLab from './pages/owner/ImageLab.jsx';
+import AgentLog from './pages/owner/AgentLog.jsx';
 import Splash from './pages/Splash.jsx';
 import Terms from './pages/legal/Terms.jsx';
 import CoachingAgreement from './pages/legal/Coaching.jsx';
@@ -89,6 +90,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ImageLab />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner/agent-log"
+        element={
+          <ProtectedRoute>
+            <AgentLog />
           </ProtectedRoute>
         }
       />

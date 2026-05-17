@@ -42,11 +42,10 @@ const TILES = [
     icon: CalendarDays,
   },
   {
-    label: 'Cost Log',
-    desc: 'Anthropic + fal.ai usage. Per-tier, per-day rollup.',
-    to: '/owner/costs',
+    label: 'Agent Log',
+    desc: 'Every agentic tool call. Redacted inputs, risk-tagged, paginated.',
+    to: '/owner/agent-log',
     icon: Activity,
-    disabled: true,
   },
   {
     label: 'Raw Data',

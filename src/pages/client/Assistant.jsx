@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
-import { streamAssistant, gemini } from '../../lib/claudeClient';
+import { streamAssistant, streamAgentAssistant, gemini } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
 import { ContextPinMenu } from '../../components/ContextPinMenu';
 
@@ -68,7 +68,7 @@ async function executeAction({ conversationId, action, params }) {
 }
 
 export default function Assistant() {
-  const { user } = useAuth();
+  const { user, isOwner } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [currentId, setCurrentId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -84,6 +84,12 @@ export default function Assistant() {
   const [resolvedActions, setResolvedActions] = useState({});
   const [actionBusy, setActionBusy] = useState(false);
   const [pinsOpen, setPinsOpen] = useState(false);
+  // Owner-agentic mode (Phase 1). When the signed-in user is an owner, the
+  // Assistant routes to /agent-assistant instead of /client-assistant. The
+  // owner can toggle this off if they want the simpler chat-only experience.
+  const [agenticMode, setAgenticMode] = useState(isOwner);
+  const [agentEvents, setAgentEvents] = useState([]);  // tool calls + approvals
+  const [convUsd, setConvUsd] = useState(0);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const endRef = useRef(null);
@@ -160,15 +166,18 @@ export default function Assistant() {
     setInput('');
     setBusy(true);
     setErr(null);
+    setAgentEvents([]);
     let resolvedConversationId = currentId;
+    const streamer = agenticMode ? streamAgentAssistant : streamAssistant;
     try {
-      await streamAssistant({
+      await streamer({
         conversationId: currentId,
         message: text,
         onEvent: ({ event, data }) => {
           if (event === 'meta' && data?.conversationId) {
             resolvedConversationId = data.conversationId;
             if (!currentId) setCurrentId(data.conversationId);
+            if (typeof data.conv_usd === 'number') setConvUsd(data.conv_usd);
           } else if (event === 'delta' && typeof data?.text === 'string') {
             setMessages((m) => {
               const next = [...m];
@@ -178,6 +187,18 @@ export default function Assistant() {
               }
               return next;
             });
+          } else if (event === 'tool_call') {
+            setAgentEvents((evts) => [...evts, { kind: 'tool_call', ...data }]);
+          } else if (event === 'tool_result') {
+            setAgentEvents((evts) => [...evts, { kind: 'tool_result', ...data }]);
+          } else if (event === 'approval_request') {
+            setAgentEvents((evts) => [...evts, { kind: 'approval_request', ...data }]);
+          } else if (event === 'soft_prompt') {
+            setAgentEvents((evts) => [...evts, { kind: 'soft_prompt', ...data }]);
+          } else if (event === 'usage') {
+            // Live usage updates — quiet; conv_usd is updated by done.
+          } else if (event === 'done') {
+            if (typeof data?.conv_usd === 'number') setConvUsd(data.conv_usd);
           } else if (event === 'error') {
             setErr(data?.message ?? 'Stream failed');
           }
@@ -362,7 +383,64 @@ export default function Assistant() {
           <p className="mt-3 max-w-reading text-sm leading-relaxed text-mute">
             Mechanism over motivation. No hype. Ask the question you would ask the coach.
           </p>
+          {isOwner ? (
+            <div className="mt-3 flex flex-wrap items-center gap-3 border border-line bg-black/20 px-3 py-2 text-[0.65rem] uppercase tracking-widest2 text-mute">
+              <Zap size={12} className={agenticMode ? 'text-gold' : 'text-faint'} />
+              <button
+                type="button"
+                onClick={() => setAgenticMode((v) => !v)}
+                className={`underline-offset-4 hover:underline ${agenticMode ? 'text-gold' : 'text-faint'}`}
+              >
+                Agentic mode: {agenticMode ? 'on' : 'off'}
+              </button>
+              <span className="text-faint">·</span>
+              <span>Conv cost: ${convUsd.toFixed(4)}</span>
+              {agenticMode ? (
+                <>
+                  <span className="text-faint">·</span>
+                  <a href="/owner/agent-log" className="hover:text-gold">Audit log →</a>
+                </>
+              ) : null}
+            </div>
+          ) : null}
         </header>
+
+        {agentEvents.length > 0 ? (
+          <div className="mb-3 max-h-44 overflow-y-auto border border-line bg-black/30 p-3 text-[0.7rem]">
+            <div className="label mb-2">Agent activity</div>
+            <ul className="space-y-1 text-mute">
+              {agentEvents.slice(-12).map((e, idx) => {
+                if (e.kind === 'tool_call') {
+                  return (
+                    <li key={idx} className="text-faint">
+                      → <span className="text-ink">{e.name}</span>
+                    </li>
+                  );
+                }
+                if (e.kind === 'tool_result') {
+                  return (
+                    <li key={idx} className={e.error ? 'text-signal' : 'text-mute'}>
+                      ← <span className="text-gold">{e.name}</span> {e.error ? `error: ${e.error}` : (e.summary ?? 'ok')}
+                      {e.risk_level ? <span className="ml-2 text-faint">[{e.risk_level}/{e.approval_status}]</span> : null}
+                    </li>
+                  );
+                }
+                if (e.kind === 'approval_request') {
+                  return (
+                    <li key={idx} className="text-signal">
+                      ⚠ approval required for <span className="text-gold">{e.name}</span> ({e.risk}) — reply &quot;yes&quot; to proceed
+                      {e.required_token ? <span> · type <code>{e.required_token}</code></span> : null}
+                    </li>
+                  );
+                }
+                if (e.kind === 'soft_prompt') {
+                  return <li key={idx} className="text-gold">${e.message ?? ''}</li>;
+                }
+                return null;
+              })}
+            </ul>
+          </div>
+        ) : null}
 
         <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-6">
           {messages.length === 0 ? (
