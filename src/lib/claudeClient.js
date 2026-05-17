@@ -77,15 +77,13 @@ function parseSseFrame(raw) {
   return { event, data: payload };
 }
 
-// Stream the assistant reply token by token. `onEvent` is called with
-// { event: 'meta'|'delta'|'done'|'error', data: ... } as frames arrive.
-export async function streamAssistant({ conversationId, message, onEvent, signal }) {
+async function streamFromEndpoint(endpoint, { conversationId, message, onEvent, signal }) {
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'text/event-stream',
     ...(await authHeader()),
   };
-  const res = await fetch('/.netlify/functions/client-assistant', {
+  const res = await fetch(`/.netlify/functions/${endpoint}`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ conversationId, message }),
@@ -96,8 +94,6 @@ export async function streamAssistant({ conversationId, message, onEvent, signal
     const text = await res.text().catch(() => '');
     let payload;
     try { payload = JSON.parse(text); } catch { payload = { error: text || `HTTP ${res.status}` }; }
-    // Prefer the human-readable `message` when the server sent one (e.g. the
-    // tier_required nudge). Fall back to `error` token, then to status code.
     throw new Error(payload?.message || payload?.error || `Stream failed (${res.status})`);
   }
 
@@ -116,6 +112,18 @@ export async function streamAssistant({ conversationId, message, onEvent, signal
       if (frame) onEvent(frame);
     }
   }
+}
+
+// Stream the assistant reply token by token. `onEvent` is called with
+// { event: 'meta'|'delta'|'done'|'error', data: ... } as frames arrive.
+export async function streamAssistant(args) {
+  return streamFromEndpoint('client-assistant', args);
+}
+
+// Owner-agentic stream. Emits the same base events plus tool_call, tool_result,
+// approval_request, soft_prompt, usage. Owner-only on the server (OWNER_EMAILS).
+export async function streamAgentAssistant(args) {
+  return streamFromEndpoint('agent-assistant', args);
 }
 
 export const billing = {
