@@ -12,8 +12,10 @@ export default {
         ink: '#F5F5F5',
         mute: '#BFBFBF',
         faint: '#9A9A9A',
-        // minimalist 2026-05-01: line tint moved off yellow rgba onto neutral cream.
-        line: 'rgba(245, 241, 232, 0.12)',
+        // WCAG 1.4.11 fix: alpha 0.12 resolved to ~1.3:1 over the #080808
+        // page — borders read as voids. Bumped to 0.40 → ~3.45:1, clearing
+        // the 3:1 minimum for non-text UI boundaries with a small margin.
+        line: 'rgba(245, 241, 232, 0.40)',
         signal: '#A03A2C',
         success: '#7A8C5C',
       },
