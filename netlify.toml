@@ -27,6 +27,14 @@
 [functions."client-assistant"]
   included_files = ["netlify/functions/_prompts/**"]
 
+[functions."agent-assistant"]
+  # Owner-agentic surface. Opus 4.7 + tool-use loop can exceed Netlify's 10s
+  # default per iteration. Raise to the Pro-plan max (26s) and stream model
+  # output as it generates so the user sees text before any subsequent
+  # iteration risks running out of budget.
+  included_files = ["netlify/functions/_prompts/**"]
+  timeout = 26
+
 
 [functions."axiom-overseer"]
   # Daily editor's morning brief. 13:00 UTC = 08:00 CT during CDT.

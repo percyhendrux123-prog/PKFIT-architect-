@@ -30,7 +30,12 @@ import {
 const MODEL = 'claude-opus-4-7';
 const MAX_TOOL_ITER = 8;
 const MAX_CONTEXT_MESSAGES = 30;
-const MAX_TOKENS_PER_TURN = 4096;
+// Per-iteration token budget. Netlify Functions cap synchronous execution at
+// 26s on Pro. Opus 4.7 at 4096 max_tokens can take 30–40s for a single
+// iteration, which guarantees a mid-stream kill. 2048 keeps a single
+// iteration under ~20s and lets the tool loop make at least one follow-up
+// call before the function's wall-clock budget runs out.
+const MAX_TOKENS_PER_TURN = 2048;
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
@@ -205,13 +210,36 @@ export default async (req) => {
             // Already sent in pre — skip duplicate.
           }
 
-          const response = await anthropic.messages.create({
+          // Stream the model call so text reaches the user as it generates.
+          // Non-streaming `messages.create` waits for the full response (15–40s
+          // for Opus 4.7 with sizable max_tokens), which blew past Netlify's
+          // function timeout and killed the SSE stream mid-iteration.
+          const anthStream = anthropic.messages.stream({
             model: MODEL,
             max_tokens: MAX_TOKENS_PER_TURN,
             system,
             tools,
             messages,
           });
+
+          let turnText = '';
+          for await (const evt of anthStream) {
+            if (
+              evt.type === 'content_block_delta' &&
+              evt.delta?.type === 'text_delta' &&
+              typeof evt.delta.text === 'string'
+            ) {
+              const delta = evt.delta.text;
+              if (delta) {
+                turnText += delta;
+                send('delta', { text: delta });
+              }
+            }
+          }
+          const response = await anthStream.finalMessage();
+          if (turnText) {
+            finalText += (finalText ? '\n\n' : '') + turnText;
+          }
 
           // Track usage.
           if (response.usage) {
@@ -224,22 +252,11 @@ export default async (req) => {
             send('usage', { input_tokens: response.usage.input_tokens, output_tokens: response.usage.output_tokens });
           }
 
-          // Extract text + tool_use blocks.
-          const textBlocks = [];
+          // Extract tool_use blocks for the orchestration loop. Text already
+          // streamed to the user above.
           const toolUseBlocks = [];
           for (const block of response.content ?? []) {
-            if (block.type === 'text') textBlocks.push(block.text);
-            else if (block.type === 'tool_use') toolUseBlocks.push(block);
-          }
-
-          // Stream the text content to the user.
-          const turnText = textBlocks.join('\n').trim();
-          if (turnText) {
-            // Send as a single delta — we don't have true streaming inside the
-            // tool loop with the non-streaming messages.create call. The UI
-            // renders deltas additively, so this works.
-            send('delta', { text: turnText });
-            finalText += (finalText ? '\n\n' : '') + turnText;
+            if (block.type === 'tool_use') toolUseBlocks.push(block);
           }
 
           // If no tool use, we're done.
