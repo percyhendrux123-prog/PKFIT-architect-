@@ -475,7 +475,7 @@ export const aggregate_clients = {
   async execute({ filter = {} }) {
     const admin = getAdminClient();
     // Start broad, then narrow client-side.
-    let q = admin.from('profiles').select('id, name, email, plan, role, created_at, status, last_seen_at');
+    let q = admin.from('profiles').select('id, name, email, plan, role, created_at, status, last_sign_in_at');
 
     if (filter.tier) q = q.eq('plan', filter.tier);
     if (filter.status) q = q.eq('status', filter.status);
