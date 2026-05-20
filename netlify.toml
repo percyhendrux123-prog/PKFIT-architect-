@@ -49,6 +49,14 @@
   schedule = "0 14 * * *"
 
 [[redirects]]
+  # Phase 2A: clean alias for The Standard Audit webhook so audit.pkfit.com
+  # and downstream Stripe configuration can point at /api/webhooks/stripe-audit.
+  from = "/api/webhooks/stripe-audit"
+  to = "/.netlify/functions/stripe-audit-webhook"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
