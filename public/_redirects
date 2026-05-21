@@ -1,1 +1,5 @@
+# Stripe webhook alias for The Standard Audit. Must precede the SPA fallback —
+# _redirects takes precedence over netlify.toml, and first-match wins.
+/api/webhooks/stripe-audit  /.netlify/functions/stripe-audit-webhook  200!
+
 /*  /index.html  200
