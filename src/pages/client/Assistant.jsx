@@ -1,10 +1,45 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap } from 'lucide-react';
+import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
-import { streamAssistant, streamAgentAssistant, gemini } from '../../lib/claudeClient';
+import { streamAssistant, streamAgentAssistant, gemini, uploadArchitectImage } from '../../lib/claudeClient';
 import { Button } from '../../components/ui/Button';
 import { ContextPinMenu } from '../../components/ContextPinMenu';
+
+const MAX_IMAGE_LONG_EDGE = 2048;
+const IMAGE_QUALITY = 0.85;
+
+// Client-side resize: long edge clamped to 2048px, re-encode as JPEG q85.
+// Returns a File so the FormData append carries the original name.
+async function resizeImageFile(file) {
+  if (!file?.type?.startsWith('image/')) throw new Error('Not an image');
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(String(reader.result));
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise((resolve, reject) => {
+    const i = new Image();
+    i.onerror = () => reject(new Error('Image decode failed'));
+    i.onload = () => resolve(i);
+    i.src = dataUrl;
+  });
+  const longEdge = Math.max(img.naturalWidth, img.naturalHeight);
+  const scale = longEdge > MAX_IMAGE_LONG_EDGE ? MAX_IMAGE_LONG_EDGE / longEdge : 1;
+  const w = Math.round(img.naturalWidth * scale);
+  const h = Math.round(img.naturalHeight * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Canvas encode failed'))), 'image/jpeg', IMAGE_QUALITY);
+  });
+  const baseName = (file.name || 'upload').replace(/\.[^.]+$/, '');
+  return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
+}
 
 const TEXTAREA_MAX_HEIGHT = 240;
 
@@ -90,10 +125,14 @@ export default function Assistant() {
   const [agenticMode, setAgenticMode] = useState(isOwner);
   const [agentEvents, setAgentEvents] = useState([]);  // tool calls + approvals
   const [convUsd, setConvUsd] = useState(0);
+  // Pending image attachment for the next outgoing message. Cleared after send.
+  const [pendingUpload, setPendingUpload] = useState(null); // { upload_id, mime, bytes, filename, preview_url }
+  const [uploading, setUploading] = useState(false);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const endRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Auto-resize the textarea on every input change. Reset to `auto` so the
   // browser recalculates `scrollHeight` from the actual content rather than
@@ -161,9 +200,20 @@ export default function Assistant() {
   async function send(e) {
     e.preventDefault();
     const text = input.trim();
-    if (!text) return;
-    setMessages((m) => [...m, { role: 'user', content: text }, { role: 'assistant', content: '' }]);
+    if (!text && !pendingUpload) return;
+    // Prefix the outgoing message with an [image attached: …] marker so the
+    // Architect's tool-use loop knows to call analyze_image(upload_id, …).
+    // The marker is intentionally machine-readable; the user sees it in the
+    // transcript as a small annotation above their typed text.
+    const attachmentMarker = pendingUpload
+      ? `[image attached: upload_id=${pendingUpload.upload_id}, mime=${pendingUpload.mime}, bytes=${pendingUpload.bytes}]`
+      : '';
+    const outgoing = attachmentMarker
+      ? (text ? `${attachmentMarker}\n${text}` : attachmentMarker)
+      : text;
+    setMessages((m) => [...m, { role: 'user', content: outgoing }, { role: 'assistant', content: '' }]);
     setInput('');
+    setPendingUpload(null);
     setBusy(true);
     setErr(null);
     setAgentEvents([]);
@@ -172,7 +222,7 @@ export default function Assistant() {
     try {
       await streamer({
         conversationId: currentId,
-        message: text,
+        message: outgoing,
         onEvent: ({ event, data }) => {
           if (event === 'meta' && data?.conversationId) {
             resolvedConversationId = data.conversationId;
@@ -265,6 +315,44 @@ export default function Assistant() {
     if (recorder && recorder.state === 'recording') recorder.stop();
     recorderRef.current = null;
     setRecording(false);
+  }
+
+  // Architect image upload (paperclip). Resize client-side, POST to the
+  // upload endpoint, stash the upload_id so the next send prefixes the
+  // [image attached: …] marker.
+  async function handleFileChosen(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErr('Only images are supported.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setErr('Image is larger than 20MB.');
+      return;
+    }
+    setErr(null);
+    setUploading(true);
+    try {
+      const resized = await resizeImageFile(file);
+      const result = await uploadArchitectImage({ file: resized });
+      setPendingUpload({
+        upload_id: result.upload_id,
+        mime: result.mime,
+        bytes: result.bytes,
+        filename: file.name,
+        preview_url: result.signed_url,
+      });
+    } catch (ex) {
+      setErr(ex?.message ?? 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function clearPendingUpload() {
+    setPendingUpload(null);
   }
 
   function startNew() {
@@ -549,6 +637,32 @@ export default function Assistant() {
           ) : null}
         </div>
 
+        {pendingUpload ? (
+          <div className="mt-4 flex items-center gap-3 border border-gold/40 bg-gold/5 px-3 py-2 text-xs text-mute">
+            {pendingUpload.preview_url ? (
+              <img
+                src={pendingUpload.preview_url}
+                alt="attachment preview"
+                className="h-10 w-10 object-cover border border-line"
+              />
+            ) : null}
+            <div className="flex-1 truncate">
+              <div className="text-ink">{pendingUpload.filename}</div>
+              <div className="text-[0.6rem] uppercase tracking-widest2 text-faint">
+                {pendingUpload.mime} · {Math.round(pendingUpload.bytes / 1024)} KB · attached
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearPendingUpload}
+              className="text-faint hover:text-signal"
+              aria-label="Remove attachment"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ) : null}
+
         <form onSubmit={send} className="mt-4 flex items-end gap-3">
           <textarea
             ref={inputRef}
@@ -561,6 +675,26 @@ export default function Assistant() {
             className="flex-1 resize-none overflow-y-auto border border-line bg-black/40 px-4 py-3 font-body leading-relaxed text-ink placeholder:text-faint transition-[height] duration-150 focus:border-gold disabled:opacity-60"
             style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px` }}
           />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChosen}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || busy || transcribing}
+            aria-label="Attach image"
+            className={`flex h-12 w-12 shrink-0 items-center justify-center border ${
+              pendingUpload
+                ? 'border-gold bg-gold/20 text-gold'
+                : 'border-line bg-black/40 text-mute hover:border-gold hover:text-gold'
+            } disabled:opacity-60`}
+          >
+            <Paperclip size={16} className={uploading ? 'animate-pulse' : ''} />
+          </button>
           <button
             type="button"
             onClick={recording ? stopRecording : startRecording}
@@ -575,7 +709,7 @@ export default function Assistant() {
           >
             {recording ? <Square size={16} /> : <Mic size={16} />}
           </button>
-          <Button type="submit" disabled={busy || !input.trim() || recording || transcribing}>
+          <Button type="submit" disabled={busy || (!input.trim() && !pendingUpload) || recording || transcribing}>
             {busy ? 'Thinking' : 'Send'}
           </Button>
         </form>
