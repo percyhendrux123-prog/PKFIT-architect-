@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
-import { Download } from 'lucide-react';
+import { Download, Mail } from 'lucide-react';
 import { Input, Select } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -9,6 +9,76 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Empty, Spinner } from '../../components/ui/Empty';
 import { deriveLoopStage, loopStageMeta } from '../../lib/loop';
 import { downloadCSV } from '../../lib/csv';
+
+async function callInviteClient({ email, name }) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch('/.netlify/functions/invite-client', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session?.access_token ?? ''}`,
+    },
+    body: JSON.stringify({ email, name }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
+  return json;
+}
+
+function InviteClientForm({ onInvited }) {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [err, setErr] = useState(null);
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setBusy(true); setErr(null); setMsg(null);
+    try {
+      const result = await callInviteClient({ email: email.trim(), name: name.trim() });
+      setMsg(`Sent to ${result.email}. They have 24h to click the link.`);
+      setEmail(''); setName('');
+      onInvited?.();
+    } catch (e) {
+      setErr(e?.message ?? 'Invite failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="border border-line bg-black/30 p-4 space-y-3">
+      <div className="flex items-center gap-2 label">
+        <Mail size={14} /> Invite a client
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+        <Input
+          label="Email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="darryl@example.com"
+        />
+        <Input
+          label="Name (optional)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Darryl Garner"
+        />
+        <Button type="submit" disabled={busy || !email}>
+          {busy ? 'Sending' : 'Send magic link'}
+        </Button>
+      </div>
+      {msg ? <div className="text-xs uppercase tracking-widest2 text-gold">{msg}</div> : null}
+      {err ? <div role="alert" className="text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
+      <p className="text-[0.65rem] uppercase tracking-widest2 text-faint">
+        Sends from coach@operatefitness.app. Reply-to is your Gmail.
+      </p>
+    </form>
+  );
+}
 
 function relativeDays(iso) {
   if (!iso) return null;
@@ -26,6 +96,7 @@ export default function Clients() {
   const [q, setQ] = useState('');
   const [plan, setPlan] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -66,7 +137,7 @@ export default function Clients() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadTick]);
 
   const filtered = useMemo(() => {
     return clients.filter((c) => {
@@ -113,6 +184,8 @@ export default function Clients() {
           <Download size={14} /> Export CSV
         </Button>
       </header>
+
+      <InviteClientForm onInvited={() => setReloadTick((n) => n + 1)} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_180px]">
         <Input label="Search" placeholder="Name or email" value={q} onChange={(e) => setQ(e.target.value)} />
