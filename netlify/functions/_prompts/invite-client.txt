@@ -1,0 +1,15 @@
+SUBJECT: Your PKFIT app is ready
+
+---
+
+{{first_name}},
+
+I built you an account on the PKFIT coaching app. Programming, check-ins, the AI assistant — all in one place.
+
+Sign in with the link below. It opens straight to your home screen. No password to remember.
+
+{{magic_url}}
+
+The link is good for 24 hours. If it expires, reply and I'll send a fresh one.
+
+— Percy
