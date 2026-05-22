@@ -48,6 +48,12 @@
   # / Resend rate budgets in the same minute.
   schedule = "0 14 * * *"
 
+[functions."architect-upload-purge"]
+  # Daily purge of expired architect uploads (storage objects + rows).
+  # 02:00 UTC keeps it well away from the morning crons so a long-running
+  # purge can't compete with axiom-overseer / migration-recovery.
+  schedule = "0 2 * * *"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

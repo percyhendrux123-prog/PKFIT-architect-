@@ -154,3 +154,27 @@ export const images = {
   generate: ({ prompt, model, aspect_ratio, num_images, style_prompt }) =>
     callFunction('generate-image', { prompt, model, aspect_ratio, num_images, style_prompt }),
 };
+
+// Operator → Architect image upload. POST multipart to /architect-upload.
+// Returns { upload_id, signed_url, expires_at, mime, bytes, ... }. Frontend
+// prefixes the next user message with a [image attached: …] marker so the
+// Architect's tool-use loop knows to call analyze_image.
+export async function uploadArchitectImage({ file, contextTag } = {}) {
+  if (!file) throw new Error('file required');
+  const form = new FormData();
+  form.append('file', file, file.name || 'upload.jpg');
+  if (contextTag) form.append('context_tag', contextTag);
+  const headers = await authHeader();
+  const res = await fetch('/.netlify/functions/architect-upload', {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+  const text = await res.text();
+  let payload;
+  try { payload = text ? JSON.parse(text) : null; } catch { payload = { raw: text }; }
+  if (!res.ok) {
+    throw new Error(payload?.message || payload?.error || `Upload failed (${res.status})`);
+  }
+  return payload;
+}
