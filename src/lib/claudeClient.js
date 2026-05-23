@@ -7,6 +7,10 @@ async function authHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export async function getAuthHeaders() {
+  return authHeader();
+}
+
 async function callFunction(name, body) {
   const headers = {
     'Content-Type': 'application/json',
@@ -155,11 +159,12 @@ export const images = {
     callFunction('generate-image', { prompt, model, aspect_ratio, num_images, style_prompt }),
 };
 
-// Operator → Architect image upload. POST multipart to /architect-upload.
-// Returns { upload_id, signed_url, expires_at, mime, bytes, ... }. Frontend
-// prefixes the next user message with a [image attached: …] marker so the
-// Architect's tool-use loop knows to call analyze_image.
-export async function uploadArchitectImage({ file, contextTag } = {}) {
+// Operator → Architect upload. POST multipart to /architect-upload.
+// Returns { upload_id, signed_url, expires_at, mime, bytes, kind, ... }.
+// Frontend prefixes the next user message with [image attached: …] or
+// [file attached: …] so the agent's tool-use loop knows which analyzer to
+// call (analyze_image / analyze_document).
+export async function uploadArchitectFile({ file, contextTag } = {}) {
   if (!file) throw new Error('file required');
   const form = new FormData();
   form.append('file', file, file.name || 'upload.jpg');
@@ -178,3 +183,5 @@ export async function uploadArchitectImage({ file, contextTag } = {}) {
   }
   return payload;
 }
+
+export const uploadArchitectImage = uploadArchitectFile;

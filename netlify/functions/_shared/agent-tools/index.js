@@ -29,7 +29,7 @@ import {
   compare_periods,
   aggregate_clients,
 } from './tools/client-data.js';
-import { read_operator_upload, analyze_image } from './tools/architect-uploads.js';
+import { read_operator_upload, analyze_image, analyze_document } from './tools/architect-uploads.js';
 import { RISK, hasHighApproval, hasCriticalApproval, parseBatchApproval } from './risk.js';
 import { startAudit, finishAudit } from './audit.js';
 import { redactInputs } from './redact.js';
@@ -54,6 +54,7 @@ const TOOLS = [
   aggregate_clients,
   read_operator_upload,
   analyze_image,
+  analyze_document,
 ];
 
 export const TOOL_REGISTRY = Object.freeze(

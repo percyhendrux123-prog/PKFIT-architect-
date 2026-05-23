@@ -1,18 +1,19 @@
-// architect-upload — Operator → Architect image upload endpoint.
+// architect-upload — Operator → Architect file upload endpoint.
 //
-// POST multipart/form-data with a single `file` field (image/*, ≤20MB).
-// Optional `context_tag` form field for routing hints ("form-check", etc).
+// POST multipart/form-data with a single `file` field. Accepts images
+// (image/*) and documents (PDF, DOCX, XLSX, MD, TXT). Optional
+// `context_tag` form field for routing hints ("form-check", etc).
 //
 // Auth: operator session (Bearer token, same as agent-assistant.js).
 // Storage: writes to private `architect-uploads` bucket via service role.
 // Metadata: row in public.architect_upload with 30d expiry.
 //
 // Returns:
-//   { upload_id, signed_url, expires_at, storage_path, bytes, mime }
+//   { upload_id, signed_url, expires_at, storage_path, bytes, mime, kind }
 //
 // The signed URL is valid for 1 hour. The Architect's tools call
-// read_operator_upload / analyze_image with the upload_id to fetch fresh
-// signed URLs as needed.
+// read_operator_upload / analyze_image / analyze_document with the
+// upload_id to fetch fresh signed URLs and inspect content.
 
 import { randomUUID } from 'node:crypto';
 import { getAdminClient, getAnonClient } from './_shared/supabase-admin.js';
@@ -20,10 +21,11 @@ import { isOwnerEmail } from './_shared/owner.js';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const BUCKET = 'architect-uploads';
-const MAX_BYTES = 20 * 1024 * 1024; // 20MB
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20MB
+const MAX_DOC_BYTES = 32 * 1024 * 1024;   // 32MB — PDF/DOCX/XLSX can be heavier
 const SIGNED_URL_TTL_SEC = 60 * 60;  // 1 hour
 
-const MIME_TO_EXT = {
+const IMAGE_MIME_TO_EXT = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
   'image/png': 'png',
@@ -32,6 +34,37 @@ const MIME_TO_EXT = {
   'image/heic': 'heic',
   'image/heif': 'heif',
 };
+
+const DOC_MIME_TO_EXT = {
+  'application/pdf': 'pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-excel': 'xls',
+  'text/markdown': 'md',
+  'text/x-markdown': 'md',
+  'text/plain': 'txt',
+  'text/csv': 'csv',
+};
+
+function classifyMime(mime, filename = '') {
+  if (!mime) {
+    // Some browsers send '' for txt/md — fall back to extension sniff.
+    const ext = filename.toLowerCase().split('.').pop();
+    if (ext === 'md') return { kind: 'document', ext: 'md', normalizedMime: 'text/markdown' };
+    if (ext === 'txt') return { kind: 'document', ext: 'txt', normalizedMime: 'text/plain' };
+    if (ext === 'csv') return { kind: 'document', ext: 'csv', normalizedMime: 'text/csv' };
+    return null;
+  }
+  if (mime.startsWith('image/')) {
+    const ext = IMAGE_MIME_TO_EXT[mime];
+    if (!ext) return null;
+    return { kind: 'image', ext, normalizedMime: mime };
+  }
+  const docExt = DOC_MIME_TO_EXT[mime];
+  if (docExt) return { kind: 'document', ext: docExt, normalizedMime: mime };
+  return null;
+}
 
 function jsonResponse(status, body, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -106,18 +139,23 @@ export default async (req) => {
     return jsonResponse(400, { error: 'file required' });
   }
 
-  const mime = file.type || '';
-  if (!mime.startsWith('image/')) {
-    return jsonResponse(415, { error: 'unsupported_mime', message: `Only image/* allowed (got ${mime || 'none'})` });
+  const rawMime = file.type || '';
+  const filename = (typeof file.name === 'string' && file.name) || 'upload';
+  const classification = classifyMime(rawMime, filename);
+  if (!classification) {
+    return jsonResponse(415, {
+      error: 'unsupported_mime',
+      message: `Unsupported file type ${rawMime || 'unknown'}. Accepted: images (jpg/png/webp/gif/heic), PDF, DOCX, XLSX, MD, TXT, CSV.`,
+    });
   }
-
-  const ext = MIME_TO_EXT[mime] ?? 'bin';
+  const { kind, ext, normalizedMime: mime } = classification;
+  const sizeCap = kind === 'image' ? MAX_IMAGE_BYTES : MAX_DOC_BYTES;
   const bytes = file.size ?? 0;
   if (!bytes) {
     return jsonResponse(400, { error: 'empty_file' });
   }
-  if (bytes > MAX_BYTES) {
-    return jsonResponse(413, { error: 'too_large', message: `Max ${MAX_BYTES} bytes (got ${bytes}).` });
+  if (bytes > sizeCap) {
+    return jsonResponse(413, { error: 'too_large', message: `Max ${sizeCap} bytes for ${kind} (got ${bytes}).` });
   }
 
   const contextTag = (() => {
@@ -177,6 +215,7 @@ export default async (req) => {
     storage_path: row.storage_path,
     mime: row.mime,
     bytes: row.bytes,
+    kind,
     context_tag: row.context_tag,
     created_at: row.created_at,
     expires_at: row.expires_at,
