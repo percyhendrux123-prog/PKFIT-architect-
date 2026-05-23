@@ -11,6 +11,7 @@ import {
 import { VoiceMode, VOICE_STATES } from '../../lib/voiceMode';
 import { Button } from '../../components/ui/Button';
 import { ContextPinMenu } from '../../components/ContextPinMenu';
+import MarkdownContent from '../../components/MarkdownContent';
 
 const MAX_IMAGE_LONG_EDGE = 2048;
 const IMAGE_QUALITY = 0.85;
@@ -703,13 +704,13 @@ export default function Assistant() {
       </aside>
 
       <section className="flex flex-col">
-        <header className="mb-8">
-          <div className="label mb-3">Assistant</div>
-          <h1 className="font-display text-4xl tracking-wider2">The Architect</h1>
-          <p className="mt-3 max-w-reading text-sm leading-relaxed text-mute">
+        <header className="mb-10">
+          <div className="label mb-4">Assistant</div>
+          <h1 className="font-display text-[2.5rem] leading-[1] tracking-wider2 md:text-5xl">The Architect</h1>
+          <p className="mt-4 max-w-reading text-sm leading-7 text-mute">
             Mechanism over motivation. No hype. Ask the question you would ask the coach.
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3 border border-line bg-black/20 px-3 py-2 text-[0.65rem] uppercase tracking-widest2 text-mute">
+          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 border border-line bg-black/20 px-4 py-2.5 text-[0.65rem] uppercase tracking-widest2 text-mute">
             {isOwner ? (
               <>
                 <Zap size={12} className={agenticMode ? 'text-gold' : 'text-faint'} />
@@ -809,13 +810,22 @@ export default function Assistant() {
           </div>
         ) : null}
 
-        <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-6">
+        <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-6 md:p-8">
           {messages.length === 0 ? (
-            <div className="text-sm leading-relaxed text-faint">
-              Start with a single, specific question. Example: why did my bench stall at 85 kg for three weeks.
+            <div className="flex h-full min-h-[280px] flex-col items-start justify-end">
+              <div className="label mb-4 text-faint">Open a thread</div>
+              <p className="font-display text-2xl leading-tight tracking-wider2 text-ink md:text-3xl">
+                One specific question.
+              </p>
+              <p className="mt-3 max-w-reading text-sm leading-7 text-mute">
+                Why did my bench stall at 85 kg for three weeks. What is the right deload window after a competition prep. How do I read my last review.
+              </p>
+              <p className="mt-6 max-w-reading text-[0.7rem] uppercase tracking-widest2 text-faint">
+                Attach a photo, PDF, or spreadsheet · Toggle voice mode for a hands-free conversation
+              </p>
             </div>
           ) : (
-            <ul className="space-y-6">
+            <ul className="space-y-7 md:space-y-8">
               {messages.map((m, i) => {
                 const action = m.role === 'assistant' && !m._system ? parseAction(m.content) : null;
                 const isLastAssistant =
@@ -827,15 +837,19 @@ export default function Assistant() {
                 const tools = m.role === 'assistant' && !m._system ? messageTools[i] : null;
                 const memoryEvents = tools ? tools.filter((t) => t.memory) : [];
                 const otherEvents = tools ? tools.filter((t) => !t.memory) : [];
+                const isEmptyAssistant = m.role === 'assistant' && !m._system && !visibleContent;
                 return (
-                  <li key={i} className={m.role === 'user' ? 'text-right' : ''}>
+                  <li key={i} className={`pkfit-msg-in ${m.role === 'user' ? 'text-right' : ''}`}>
                     {memoryEvents.length > 0 ? (
-                      <div className="mb-1 inline-block max-w-[80%] text-left text-[0.65rem] uppercase tracking-widest2 text-gold/70">
+                      <div className="mb-2 inline-flex max-w-[88%] flex-col gap-1 text-left">
                         {memoryEvents.map((t, ti) => (
-                          <div key={`mem-${i}-${ti}`} className="flex items-center gap-1">
+                          <div
+                            key={`mem-${i}-${ti}`}
+                            className="inline-flex items-center gap-2 border border-gold/30 bg-gold/[0.06] px-2.5 py-1 text-[0.62rem] uppercase tracking-widest2 text-gold/80"
+                          >
                             <Brain size={11} />
                             {/client_memory_write|memory_save|memory_write/i.test(t.name) ? (
-                              <span>Wants to save: {t.summary || '…'} — approve in Coach panel</span>
+                              <span>Wants to save{t.summary ? `: ${t.summary}` : ''} — approve in Coach panel</span>
                             ) : (
                               <span>Recalled from history{t.summary ? `: ${t.summary}` : ''}</span>
                             )}
@@ -844,24 +858,32 @@ export default function Assistant() {
                       </div>
                     ) : null}
                     {otherEvents.length > 0 ? (
-                      <div className="mb-2 flex max-w-[80%] flex-wrap gap-1 text-left">
+                      <div className="mb-2 flex max-w-[88%] flex-wrap gap-1.5 text-left">
                         {otherEvents.map((t, ti) => (
                           <span
                             key={`chip-${i}-${ti}`}
-                            className={`inline-flex items-center gap-1 border px-2 py-[2px] text-[0.6rem] uppercase tracking-widest2 ${
+                            className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.6rem] uppercase tracking-widest2 transition-colors duration-200 ${
                               t.status === 'in_progress'
-                                ? 'border-gold/40 bg-gold/10 text-gold animate-pulse'
+                                ? 'border-gold/40 bg-gold/[0.08] text-gold/90'
                                 : t.status === 'error'
-                                ? 'border-signal/60 bg-signal/10 text-signal'
-                                : 'border-line bg-black/30 text-faint'
+                                ? 'border-signal/60 bg-signal/[0.08] text-signal'
+                                : 'border-line bg-black/40 text-mute'
                             }`}
                             title={t.summary || t.error || ''}
                           >
-                            {t.status === 'in_progress' ? '·' : t.status === 'error' ? '!' : '✓'}
+                            <span
+                              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                                t.status === 'in_progress'
+                                  ? 'bg-gold pkfit-typing-dot'
+                                  : t.status === 'error'
+                                  ? 'bg-signal'
+                                  : 'bg-gold/60'
+                              }`}
+                            />
                             <span>{toolLabel(t.name)}</span>
                             {t.status === 'done' && t.summary ? (
-                              <span className="ml-1 normal-case tracking-normal text-mute/80">
-                                {String(t.summary).slice(0, 40)}{String(t.summary).length > 40 ? '…' : ''}
+                              <span className="ml-1 normal-case tracking-normal text-mute/70">
+                                — {String(t.summary).slice(0, 48)}{String(t.summary).length > 48 ? '…' : ''}
                               </span>
                             ) : null}
                           </span>
@@ -869,18 +891,28 @@ export default function Assistant() {
                       </div>
                     ) : null}
                     <div
-                      className={`group relative inline-block max-w-[80%] border p-4 text-sm ${
+                      className={`group relative inline-block max-w-[88%] border p-5 text-sm transition-colors duration-200 ${
                         m.role === 'user'
-                          ? 'border-gold text-ink'
+                          ? 'border-gold/80 text-ink'
                           : m._system
                           ? 'border-faint bg-black/10 text-faint italic'
                           : 'border-line bg-black/30 text-ink/90'
                       }`}
                     >
-                      <div className="label mb-2">
+                      <div className="label mb-3">
                         {m.role === 'user' ? 'You' : m._system ? 'System' : 'Architect'}
                       </div>
-                      <div className="whitespace-pre-wrap leading-relaxed">{visibleContent}</div>
+                      {isEmptyAssistant && busy ? (
+                        <div className="flex items-center gap-1.5 py-1" aria-label="Thinking">
+                          <span className="pkfit-typing-dot inline-block h-1.5 w-1.5 rounded-full bg-gold/80" style={{ animationDelay: '0ms' }} />
+                          <span className="pkfit-typing-dot inline-block h-1.5 w-1.5 rounded-full bg-gold/80" style={{ animationDelay: '180ms' }} />
+                          <span className="pkfit-typing-dot inline-block h-1.5 w-1.5 rounded-full bg-gold/80" style={{ animationDelay: '360ms' }} />
+                        </div>
+                      ) : m.role === 'assistant' && !m._system ? (
+                        <MarkdownContent text={visibleContent} />
+                      ) : (
+                        <div className="whitespace-pre-wrap font-body leading-7">{visibleContent}</div>
+                      )}
                       {m.role === 'assistant' && !m._system && visibleContent ? (
                         <div className="absolute right-1 top-1 hidden gap-1 group-hover:flex group-focus-within:flex">
                           <button

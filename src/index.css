@@ -583,3 +583,101 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(245, 241, 232, 0.0); }
 }
 .pkfit-rpe-tick { animation: pkfit-rpe-tick 0.22s ease-out; }
+
+/* Architect chat — message append animation. Subtle opacity + lift on
+   each new message bubble. Cubic-bezier ease-out for the cinematic feel
+   Percy wants on screen-recorded UIs. */
+@keyframes pkfit-msg-in {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0)   scale(1); }
+}
+.pkfit-msg-in { animation: pkfit-msg-in 0.26s cubic-bezier(.2,.9,.3,1); }
+
+/* Architect chat — soft pulsing indicator while waiting for first token. */
+@keyframes pkfit-typing-dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40%           { opacity: 1;    transform: translateY(-2px); }
+}
+.pkfit-typing-dot { animation: pkfit-typing-dot 1.2s infinite ease-in-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pkfit-msg-in,
+  .pkfit-typing-dot { animation: none; }
+}
+
+/* Architect chat — markdown rendering for assistant messages. Tuned to
+   sit comfortably inside a bubble at the existing whitespace cadence. */
+.markdown-body > * { margin: 0; }
+.markdown-body > * + * { margin-top: 0.85em; }
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  font-family: 'DRUK Wide', 'Druk Wide', 'Bowlby One', system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  color: #F5F5F5;
+  line-height: 1.2;
+}
+.markdown-body h1 { font-size: 1.25rem; }
+.markdown-body h2 { font-size: 1.10rem; }
+.markdown-body h3 { font-size: 0.98rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.markdown-body h4 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; color: #BFBFBF; }
+.markdown-body p { line-height: 1.7; }
+.markdown-body strong { color: #F5F1E8; font-weight: 500; }
+.markdown-body em { color: #F5F5F5; font-style: italic; }
+.markdown-body ul,
+.markdown-body ol { padding-left: 1.25rem; }
+.markdown-body ul { list-style: disc; }
+.markdown-body ol { list-style: decimal; }
+.markdown-body li + li { margin-top: 0.25em; }
+.markdown-body li { padding-left: 0.25em; }
+.markdown-body li::marker { color: rgba(245, 241, 232, 0.5); }
+.markdown-body a {
+  color: #F5F1E8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: opacity 0.18s ease-out;
+}
+.markdown-body a:hover { opacity: 0.75; }
+.markdown-body blockquote {
+  border-left: 2px solid rgba(245, 241, 232, 0.35);
+  padding: 0.1rem 0.9rem;
+  color: #BFBFBF;
+  font-style: italic;
+}
+.markdown-body code:not(pre code) {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  background: rgba(245, 241, 232, 0.08);
+  border: 1px solid rgba(245, 241, 232, 0.12);
+  padding: 1px 6px;
+  font-size: 0.86em;
+  border-radius: 2px;
+}
+.markdown-body hr {
+  border: 0;
+  border-top: 1px solid rgba(245, 241, 232, 0.12);
+  margin: 1.2em 0;
+}
+.markdown-body table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.markdown-body th,
+.markdown-body td {
+  padding: 0.5em 0.75em;
+  border: 1px solid rgba(245, 241, 232, 0.12);
+  text-align: left;
+  white-space: nowrap;
+}
+.markdown-body th {
+  background: rgba(245, 241, 232, 0.04);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  color: #BFBFBF;
+}
