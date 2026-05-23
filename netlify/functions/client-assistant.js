@@ -225,12 +225,21 @@ export default async (req) => {
       let fullText = '';
       try {
         const anthropic = getAnthropic(apiKeyOverride);
-        const anthStream = anthropic.messages.stream({
+        const streamParams = {
           model,
           max_tokens: 1024,
           system,
           messages,
-        });
+        };
+        // Architect (owner) gets Anthropic's native web_search server tool —
+        // search runs at Anthropic, results fold into the model's text output.
+        // max_uses caps per-turn searches to keep cost bounded ($10/1k).
+        if (role === 'owner') {
+          streamParams.tools = [
+            { type: 'web_search_20250305', name: 'web_search', max_uses: 3 },
+          ];
+        }
+        const anthStream = anthropic.messages.stream(streamParams);
 
         for await (const evt of anthStream) {
           if (
