@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { OwnerRedirect } from './components/OwnerRedirect';
 import { RequiresActiveSubscription } from './components/RequiresActiveSubscription';
 
 import EnterIntro from './pages/EnterIntro.jsx';
@@ -127,8 +128,8 @@ export default function App() {
         <Route path="/reviews/:id" element={<ReviewDetail />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/billing" element={<Billing />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/profile" element={<OwnerRedirect><Profile /></OwnerRedirect>} />
+        <Route path="/settings" element={<OwnerRedirect><Settings /></OwnerRedirect>} />
         <Route path="/import" element={<Import />} />
       </Route>
 

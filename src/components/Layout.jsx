@@ -19,6 +19,7 @@ import {
   Menu,
   X,
   Settings as SettingsIcon,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadDMs } from '../hooks/useUnreadDMs';
@@ -43,6 +44,17 @@ const clientSecondary = [
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
+// Owner sidebar: same client-facing primary tabs (owner demos as a client),
+// but secondary drops Profile/Settings/Billing (which render client-only UI
+// and don't apply to the owner) and surfaces the owner panel entries.
+const ownerSecondary = [
+  { to: '/habits', label: 'Habits', icon: Target },
+  { to: '/calendar', label: 'Calendar', icon: CalendarDays },
+  { to: '/reviews', label: 'Reviews', icon: ClipboardCheck },
+  { to: '/inbox', label: 'Inbox', icon: Inbox },
+  { to: '/owner', label: 'Owner', icon: Shield, end: true },
+];
+
 const coachPrimary = [
   { to: '/coach', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/coach/inbox', label: 'Inbox', icon: Inbox },
@@ -57,7 +69,7 @@ const coachSecondary = [
 ];
 
 export function Layout() {
-  const { user, role, profile, signOut } = useAuth();
+  const { user, role, profile, isOwner, signOut } = useAuth();
   const nav = useNavigate();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -66,7 +78,8 @@ export function Layout() {
   const unreadDMs = useUnreadDMs({ userId: user?.id, role });
 
   const primary = role === 'coach' ? coachPrimary : clientPrimary;
-  const secondary = role === 'coach' ? coachSecondary : clientSecondary;
+  const secondary =
+    role === 'coach' ? coachSecondary : isOwner ? ownerSecondary : clientSecondary;
   const sidebar = [...primary, ...secondary];
   const inboxPath = role === 'coach' ? '/coach/inbox' : '/inbox';
 
