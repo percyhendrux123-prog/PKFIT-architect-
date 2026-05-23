@@ -663,13 +663,27 @@ export default function Assistant() {
           </div>
         ) : null}
 
+        {recording || transcribing ? (
+          <div
+            className="mt-4 inline-flex items-center gap-2 border border-gold/40 bg-gold/10 px-3 py-1 text-[0.65rem] uppercase tracking-widest2 text-gold"
+            role="status"
+            aria-live="polite"
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full bg-gold ${transcribing ? 'animate-pulse' : ''}`}
+              aria-hidden
+            />
+            {recording ? 'Listening' : 'Transcribing'}
+          </div>
+        ) : null}
+
         <form onSubmit={send} className="mt-4 flex items-end gap-3">
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleInputKeyDown}
-            placeholder={transcribing ? 'Transcribing…' : 'Ask a specific question'}
+            placeholder="Ask a specific question"
             disabled={transcribing}
             rows={1}
             className="flex-1 resize-none overflow-y-auto border border-line bg-black/40 px-4 py-3 font-body leading-relaxed text-ink placeholder:text-faint transition-[height] duration-150 focus:border-gold disabled:opacity-60"
