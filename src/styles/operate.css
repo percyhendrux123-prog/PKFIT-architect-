@@ -12,8 +12,10 @@
   position: relative;
 }
 
-/* On desktop, show an iPhone preview frame.
-   On phones, render full-bleed so the real iOS chrome takes over. */
+/* On desktop-with-mouse, show an iPhone preview frame.
+   On phones AND tablets (any touch device, plus anything < 1280px),
+   render full-bleed so the real iOS chrome takes over and the touch
+   surface is the whole screen. */
 .op-frame {
   width: 100%;
   min-height: 100vh;
@@ -21,9 +23,10 @@
   position: relative;
   overflow: hidden;
   background: #080808;
+  pointer-events: auto;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1280px) and (pointer: fine) and (hover: hover) {
   .op-root { display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px; }
   .op-frame {
     width: 393px;
@@ -32,7 +35,10 @@
     border-radius: 56px;
     border: 1px solid #1a1a1a;
     box-shadow: 0 30px 100px rgba(0,0,0,0.7);
+    /* Defensive — the frame is a presentational wrapper, never a tap target. */
+    pointer-events: auto;
   }
+  .op-frame > * { pointer-events: auto; }
 }
 
 .op-app {
@@ -121,11 +127,11 @@
 .op-mic-fab svg { width: 24px; height: 24px; stroke: #080808; fill: none; stroke-width: 2; }
 .op-mic-fab.op-listening::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid rgba(201,168,76,0.55); animation: op-pulse 1.6s ease-out infinite; }
 .op-mic-fab.op-listening::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 1px solid rgba(201,168,76,0.7); animation: op-pulse 1.6s ease-out infinite .4s; }
-@media (min-width: 768px) { .op-mic-fab { position: absolute; } }
+@media (min-width: 1280px) and (pointer: fine) and (hover: hover) { .op-mic-fab { position: absolute; } }
 
 /* Voice listening overlay (when FAB engaged) */
 .op-voice-overlay { position: fixed; left: 16px; right: 16px; bottom: calc(170px + env(safe-area-inset-bottom, 0px)); background: #1a1610; border: 0.5px solid #C9A84C; border-radius: 18px; padding: 14px 16px; z-index: 60; box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 0 6px rgba(201,168,76,0.08); animation: op-fade-up .18s ease-out; }
-@media (min-width: 768px) { .op-voice-overlay { position: absolute; } }
+@media (min-width: 1280px) and (pointer: fine) and (hover: hover) { .op-voice-overlay { position: absolute; } }
 .op-voice-overlay-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .op-voice-overlay-label { font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 2px; color: #C9A84C; display: flex; align-items: center; gap: 8px; }
 .op-voice-overlay-label::before { content: ''; width: 8px; height: 8px; background: #C9A84C; border-radius: 50%; box-shadow: 0 0 0 4px rgba(201,168,76,0.22); animation: op-blink 1.2s ease-in-out infinite; }
@@ -142,7 +148,7 @@
 
 /* ---- Bottom nav ---- */
 .op-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: calc(84px + env(safe-area-inset-bottom, 0px)); background: #0e0e0e; border-top: 0.5px solid #2a2a2a; display: flex; justify-content: space-around; align-items: flex-start; padding: 12px 8px calc(28px + env(safe-area-inset-bottom, 0px)); z-index: 40; }
-@media (min-width: 768px) { .op-bottom-nav { position: absolute; } }
+@media (min-width: 1280px) and (pointer: fine) and (hover: hover) { .op-bottom-nav { position: absolute; } }
 .op-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-height: 44px; cursor: pointer; text-decoration: none; background: transparent; border: 0; padding: 0; color: inherit; }
 .op-nav-item svg { width: 22px; height: 22px; stroke: #888; stroke-width: 1.75; fill: none; }
 .op-nav-item .op-nav-label { font-size: 9px; letter-spacing: 1px; color: #888; text-transform: uppercase; font-family: 'DM Mono', monospace; }
@@ -335,7 +341,7 @@
 .op-img-cap { padding: 6px 10px; font-size: 11px; color: #aaa; }
 
 .op-composer { position: fixed; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; padding: 12px 14px; background: #0e0e0e; border-top: 0.5px solid #2a2a2a; z-index: 30; }
-@media (min-width: 768px) { .op-composer { position: absolute; } }
+@media (min-width: 1280px) and (pointer: fine) and (hover: hover) { .op-composer { position: absolute; } }
 .op-listening-pill { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #1a1610; border: 0.5px solid #C9A84C; border-radius: 24px; padding: 8px 14px; box-shadow: 0 0 0 4px rgba(201,168,76,0.08); }
 .op-listening-dot { width: 8px; height: 8px; background: #C9A84C; border-radius: 50%; box-shadow: 0 0 0 3px rgba(201,168,76,0.25); flex-shrink: 0; animation: op-blink 1.2s ease-in-out infinite; }
 .op-listening-text { font-family: 'Bebas Neue', sans-serif; font-size: 12px; color: #C9A84C; letter-spacing: 2px; line-height: 1; flex-shrink: 0; }
