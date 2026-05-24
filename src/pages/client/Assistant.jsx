@@ -3,7 +3,6 @@ import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip }
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { streamAssistant, streamAgentAssistant, gemini, uploadArchitectImage } from '../../lib/claudeClient';
-import { Button } from '../../components/ui/Button';
 import { ContextPinMenu } from '../../components/ContextPinMenu';
 
 const MAX_IMAGE_LONG_EDGE = 2048;
@@ -530,13 +529,13 @@ export default function Assistant() {
           </div>
         ) : null}
 
-        <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-6">
+        <div className="flex-1 overflow-y-auto rounded-[14px] border-[0.5px] border-[#2a2a2a] bg-[#0E0E0E] p-4 sm:p-5">
           {messages.length === 0 ? (
             <div className="text-sm leading-relaxed text-faint">
               Start with a single, specific question. Example: why did my bench stall at 85 kg for three weeks.
             </div>
           ) : (
-            <ul className="space-y-6">
+            <ul className="space-y-4">
               {messages.map((m, i) => {
                 const action = m.role === 'assistant' && !m._system ? parseAction(m.content) : null;
                 const isLastAssistant =
@@ -548,15 +547,18 @@ export default function Assistant() {
                 return (
                   <li key={i} className={m.role === 'user' ? 'text-right' : ''}>
                     <div
-                      className={`inline-block max-w-[80%] border p-4 text-sm ${
+                      className={`inline-block max-w-[88%] rounded-[14px] border-[0.5px] p-4 text-sm sm:max-w-[80%] ${
                         m.role === 'user'
-                          ? 'border-gold text-ink'
+                          ? 'border-[#C9A84C]/40 bg-[#161616] text-ink'
                           : m._system
-                          ? 'border-faint bg-black/10 text-faint italic'
-                          : 'border-line bg-black/30 text-ink/90'
+                          ? 'border-[#2a2a2a] bg-[#101010] text-faint italic'
+                          : 'border-[#2a2a2a] bg-[#161616] text-ink/90'
                       }`}
                     >
-                      <div className="label mb-2">
+                      <div
+                        className="mb-2 text-[11px] uppercase tracking-wider text-[#C9A84C]"
+                        style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+                      >
                         {m.role === 'user' ? 'You' : m._system ? 'System' : 'Architect'}
                       </div>
                       <div className="whitespace-pre-wrap leading-relaxed">{visibleContent}</div>
@@ -677,18 +679,7 @@ export default function Assistant() {
           </div>
         ) : null}
 
-        <form onSubmit={send} className="mt-4 flex items-end gap-3">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleInputKeyDown}
-            placeholder="Ask a specific question"
-            disabled={transcribing}
-            rows={1}
-            className="flex-1 resize-none overflow-y-auto border border-line bg-black/40 px-4 py-3 font-body leading-relaxed text-ink placeholder:text-faint transition-[height] duration-150 focus:border-gold disabled:opacity-60"
-            style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px` }}
-          />
+        <form onSubmit={send} className="mt-4 flex items-end gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -696,36 +687,56 @@ export default function Assistant() {
             onChange={handleFileChosen}
             className="hidden"
           />
+          <div className="relative flex-1">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Ask a specific question"
+              disabled={transcribing}
+              rows={1}
+              className="w-full resize-none overflow-y-auto rounded-[14px] border-[0.5px] border-[#2a2a2a] bg-[#161616] py-3 pl-16 pr-4 font-body leading-relaxed text-ink placeholder:text-faint transition-[height,border-color] duration-150 focus:border-[#C9A84C] focus:outline-none disabled:opacity-60"
+              style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px` }}
+            />
+            <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || busy || transcribing}
+                aria-label="Attach image"
+                className={`pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                  pendingUpload ? 'text-[#C9A84C]' : 'text-[#888] hover:text-[#C9A84C]'
+                }`}
+              >
+                <Paperclip size={16} className={uploading ? 'animate-pulse' : ''} />
+              </button>
+              <button
+                type="button"
+                onClick={recording ? stopRecording : startRecording}
+                disabled={transcribing || busy}
+                aria-label={recording ? 'Stop recording' : 'Record voice'}
+                aria-pressed={recording}
+                className={`pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                  recording ? 'text-signal animate-pulse' : 'text-[#888] hover:text-[#C9A84C]'
+                }`}
+              >
+                {recording ? <Square size={16} /> : <Mic size={16} />}
+              </button>
+            </div>
+          </div>
           <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading || busy || transcribing}
-            aria-label="Attach image"
-            className={`flex h-12 w-12 shrink-0 items-center justify-center border ${
-              pendingUpload
-                ? 'border-gold bg-gold/20 text-gold'
-                : 'border-line bg-black/40 text-mute hover:border-gold hover:text-gold'
-            } disabled:opacity-60`}
+            type="submit"
+            disabled={busy || (!input.trim() && !pendingUpload) || recording || transcribing}
+            className={`h-12 shrink-0 rounded-[14px] px-5 text-xs uppercase tracking-[0.2em] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+              busy
+                ? 'border-[0.5px] border-[#C9A84C]/40 bg-[#C9A84C]/10 text-[#C9A84C] animate-pulse'
+                : 'bg-[#C9A84C] text-[#080808] hover:bg-[#D4B560]'
+            }`}
+            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
-            <Paperclip size={16} className={uploading ? 'animate-pulse' : ''} />
+            {busy ? 'Thinking' : 'Ask'}
           </button>
-          <button
-            type="button"
-            onClick={recording ? stopRecording : startRecording}
-            disabled={transcribing || busy}
-            aria-label={recording ? 'Stop recording' : 'Record voice'}
-            aria-pressed={recording}
-            className={`flex h-12 w-12 shrink-0 items-center justify-center border ${
-              recording
-                ? 'border-signal bg-signal/20 text-signal'
-                : 'border-line bg-black/40 text-mute hover:border-gold hover:text-gold'
-            } disabled:opacity-60`}
-          >
-            {recording ? <Square size={16} /> : <Mic size={16} />}
-          </button>
-          <Button type="submit" disabled={busy || (!input.trim() && !pendingUpload) || recording || transcribing}>
-            {busy ? 'Thinking' : 'Send'}
-          </Button>
         </form>
         <p className="mt-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
           Enter to send · Shift+Enter for newline · Cmd/Ctrl+K jumps here
