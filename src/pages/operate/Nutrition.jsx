@@ -94,6 +94,9 @@ export default function OperateNutrition() {
   // Slot currently capturing voice; null when not capturing. Global voice
   // button uses 'SNACKS' so a quick log lands in the snacks bucket.
   const [voiceSlot, setVoiceSlot] = useState(null);
+  // Suppress onFinal after cancel — recognizer stop is async and the last
+  // buffered phrase would otherwise still insert a meal.
+  const voiceCancelledRef = useRef(false);
   // Undo toast for the most recent add. Survives 5s; tap UNDO to delete.
   const [undo, setUndo] = useState(null); // { id, label, ts }
   const undoTimer = useRef(null);
@@ -119,6 +122,10 @@ export default function OperateNutrition() {
     onFinal: async (text) => {
       const slot = voiceSlot || 'SNACKS';
       setVoiceSlot(null);
+      if (voiceCancelledRef.current) {
+        voiceCancelledRef.current = false;
+        return;
+      }
       if (!user || !text.trim()) return;
       const row = {
         client_id: user.id,
@@ -228,10 +235,12 @@ export default function OperateNutrition() {
   }
 
   function startVoiceFor(slot) {
+    voiceCancelledRef.current = false;
     setVoiceSlot(slot);
     voice.start();
   }
   function cancelVoice() {
+    voiceCancelledRef.current = true;
     setVoiceSlot(null);
     voice.stop();
   }
