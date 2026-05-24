@@ -1,8 +1,27 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Mic,
+  Square,
+  Check,
+  X,
+  Pin,
+  ChevronDown,
+  Zap,
+  Paperclip,
+  Volume2,
+  Loader2,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
-import { streamAssistant, streamAgentAssistant, gemini, uploadArchitectImage } from '../../lib/claudeClient';
+import {
+  streamAssistant,
+  streamAgentAssistant,
+  gemini,
+  uploadArchitectImage,
+  architectTts,
+} from '../../lib/claudeClient';
 import { ContextPinMenu } from '../../components/ContextPinMenu';
 
 const MAX_IMAGE_LONG_EDGE = 2048;
@@ -133,6 +152,28 @@ export default function Assistant() {
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // Per-message text-to-speech. `audioState` tracks which message is
+  // currently loading/playing; `audioRef` is the single in-flight Audio
+  // element (one playback at a time); `audioCacheRef` caches blob URLs for
+  // long messages so a replay doesn't re-call the TTS API; `toolTtsAudio`
+  // maps a message index to a voice_tts-generated data URL when the agent
+  // itself emits speech as a tool result — letting us reuse that audio
+  // instead of paying for a second synthesis.
+  const [audioState, setAudioState] = useState({ index: null, status: 'idle' });
+  const audioRef = useRef(null);
+  const audioCacheRef = useRef(new Map());
+  const [toolTtsAudio, setToolTtsAudio] = useState({});
+
+  useEffect(() => {
+    const cache = audioCacheRef.current;
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      for (const url of cache.values()) URL.revokeObjectURL(url);
+      cache.clear();
+    };
+  }, []);
+
   // Auto-resize the textarea on every input change. Reset to `auto` so the
   // browser recalculates `scrollHeight` from the actual content rather than
   // the previous (possibly larger) height, then clamp to a sensible max so
@@ -210,7 +251,14 @@ export default function Assistant() {
     const outgoing = attachmentMarker
       ? (text ? `${attachmentMarker}\n${text}` : attachmentMarker)
       : text;
-    setMessages((m) => [...m, { role: 'user', content: outgoing }, { role: 'assistant', content: '' }]);
+    // Capture the index the assistant placeholder will occupy so we can
+    // tag any voice_tts audio_url that arrives mid-stream to this exact
+    // message — even if the user later scrolls back and re-plays it.
+    let assistantMsgIndex = -1;
+    setMessages((m) => {
+      assistantMsgIndex = m.length + 1;
+      return [...m, { role: 'user', content: outgoing }, { role: 'assistant', content: '' }];
+    });
     setInput('');
     setPendingUpload(null);
     setBusy(true);
@@ -240,6 +288,12 @@ export default function Assistant() {
             setAgentEvents((evts) => [...evts, { kind: 'tool_call', ...data }]);
           } else if (event === 'tool_result') {
             setAgentEvents((evts) => [...evts, { kind: 'tool_result', ...data }]);
+            // Architect just emitted speech inline — tie the audio to this
+            // message so the speaker button replays the same bytes instead
+            // of paying for a second tts-1-hd synthesis.
+            if (data?.audio_url && assistantMsgIndex >= 0) {
+              setToolTtsAudio((cur) => ({ ...cur, [assistantMsgIndex]: data.audio_url }));
+            }
           } else if (event === 'approval_request') {
             setAgentEvents((evts) => [...evts, { kind: 'approval_request', ...data }]);
           } else if (event === 'soft_prompt') {
@@ -418,6 +472,67 @@ export default function Assistant() {
       ...m,
       { role: 'assistant', content: '✗ Action cancelled.', _system: true },
     ]);
+  }
+
+  // Tap-to-play TTS for any architect message. iOS Safari requires the
+  // Audio element be created and play() called inside the same user-gesture
+  // tick, which is exactly what this onClick handler is. We keep a single
+  // active Audio instance so a second tap on a different message stops the
+  // previous one before starting the new one.
+  async function toggleTts(messageIndex, text) {
+    const trimmed = (text ?? '').trim();
+    if (!trimmed) return;
+
+    const isPlayingThis =
+      audioState.index === messageIndex && audioState.status === 'playing';
+    if (isPlayingThis) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setAudioState({ index: null, status: 'idle' });
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setErr(null);
+    setAudioState({ index: messageIndex, status: 'loading' });
+
+    try {
+      let src = toolTtsAudio[messageIndex];
+      if (!src) {
+        let cached = audioCacheRef.current.get(messageIndex);
+        if (!cached) {
+          const blob = await architectTts({ text: trimmed, voice: 'onyx' });
+          cached = URL.createObjectURL(blob);
+          if (trimmed.length > 500) {
+            audioCacheRef.current.set(messageIndex, cached);
+          }
+        }
+        src = cached;
+      }
+
+      const audio = new Audio(src);
+      audioRef.current = audio;
+      audio.onended = () => {
+        if (audioRef.current === audio) audioRef.current = null;
+        setAudioState((s) =>
+          s.index === messageIndex ? { index: null, status: 'idle' } : s,
+        );
+      };
+      audio.onerror = () => {
+        if (audioRef.current === audio) audioRef.current = null;
+        setAudioState({ index: messageIndex, status: 'error' });
+      };
+      await audio.play();
+      setAudioState({ index: messageIndex, status: 'playing' });
+    } catch (e) {
+      if (audioRef.current) audioRef.current = null;
+      setAudioState({ index: messageIndex, status: 'error' });
+      setErr(`Audio failed: ${e.message}`);
+    }
   }
 
   return (
@@ -599,6 +714,36 @@ export default function Assistant() {
                       ) : action && resolvedActions[i] === 'cancelled' ? (
                         <div className="mt-2 text-[0.65rem] uppercase tracking-widest2 text-faint">
                           ✗ Cancelled
+                        </div>
+                      ) : null}
+                      {m.role === 'assistant' && !m._system && visibleContent.trim() ? (
+                        <div className="mt-3 flex items-center justify-start">
+                          <button
+                            type="button"
+                            onClick={() => toggleTts(i, visibleContent)}
+                            disabled={audioState.index === i && audioState.status === 'loading'}
+                            aria-label={
+                              audioState.index === i && audioState.status === 'playing'
+                                ? 'Stop audio'
+                                : 'Play audio'
+                            }
+                            aria-pressed={audioState.index === i && audioState.status === 'playing'}
+                            className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors disabled:cursor-wait ${
+                              audioState.index === i && audioState.status === 'playing'
+                                ? 'bg-[#C9A84C]/15 text-[#C9A84C] animate-pulse'
+                                : audioState.index === i && audioState.status === 'loading'
+                                ? 'text-[#C9A84C] animate-pulse'
+                                : audioState.index === i && audioState.status === 'error'
+                                ? 'text-signal'
+                                : 'text-[#888] hover:text-[#C9A84C]'
+                            }`}
+                          >
+                            {audioState.index === i && audioState.status === 'loading' ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Volume2 size={14} />
+                            )}
+                          </button>
                         </div>
                       ) : null}
                     </div>
