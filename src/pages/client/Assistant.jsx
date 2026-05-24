@@ -273,6 +273,42 @@ export default function Assistant() {
     };
   }, [drawerOpen]);
 
+  // Left-edge swipe to open the drawer. We bind a single touchstart listener
+  // to the window and only react if the gesture begins within 24px of the
+  // left viewport edge — this avoids stealing horizontal swipes inside chat
+  // bubbles. Once started, a >60px rightward delta in <600ms opens the drawer.
+  useEffect(() => {
+    let startX = null;
+    let startY = null;
+    let startT = 0;
+    function onTouchStart(e) {
+      const t = e.touches?.[0];
+      if (!t) return;
+      if (t.clientX > 24) return;
+      startX = t.clientX;
+      startY = t.clientY;
+      startT = Date.now();
+    }
+    function onTouchEnd(e) {
+      if (startX == null) return;
+      const t = e.changedTouches?.[0];
+      if (!t) return;
+      const dx = t.clientX - startX;
+      const dy = Math.abs(t.clientY - startY);
+      const dt = Date.now() - startT;
+      startX = null;
+      if (dx > 60 && dy < 50 && dt < 600) {
+        setDrawerOpen(true);
+      }
+    }
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+
   function handleInputKeyDown(e) {
     // Standard chat pattern: Enter submits, Shift+Enter inserts a newline.
     // Cmd/Ctrl+Enter also submits as an explicit alternative for users used
