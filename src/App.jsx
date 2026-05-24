@@ -5,6 +5,7 @@ import { OwnerRedirect } from './components/OwnerRedirect';
 import { RequiresActiveSubscription } from './components/RequiresActiveSubscription';
 
 import EnterIntro from './pages/EnterIntro.jsx';
+import Diagnose from './pages/Diagnose.jsx';
 import HomeScreen from './pages/HomeScreen.jsx';
 import Owner from './pages/Owner.jsx';
 import ImageLab from './pages/owner/ImageLab.jsx';
@@ -71,6 +72,16 @@ export default function App() {
       <Route path="/legal/terms" element={<Terms />} />
       <Route path="/legal/coaching" element={<CoachingAgreement />} />
       <Route path="/legal/privacy" element={<Privacy />} />
+
+      {/* Public AI intake — replaces the paid ManyChat AI add-on. One
+          component (Diagnose) drives all five keyword surfaces; it reads
+          the path (or ?key=) to select the system-prompt framing. */}
+      <Route path="/standard" element={<Diagnose />} />
+      <Route path="/structure" element={<Diagnose />} />
+      <Route path="/system" element={<Diagnose />} />
+      <Route path="/protocol" element={<Diagnose />} />
+      <Route path="/align" element={<Diagnose />} />
+      <Route path="/diagnose" element={<Diagnose />} />
 
       {/* iPhone-style home screen — outside the Layout chrome so it occupies
           the full viewport with its own dock. Still gated by auth + active
