@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip } from 'lucide-react';
+import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip, Play, Pause } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { streamAssistant, streamAgentAssistant, gemini, uploadArchitectImage } from '../../lib/claudeClient';
@@ -86,6 +86,74 @@ const ACTION_LABELS = {
     `Flag this for Percy's next review${p.note ? `: ${String(p.note).slice(0, 80)}` : ''}`,
 };
 
+// Inline player for tool_result.audio_url (voice_tts). Renders native HTML5
+// controls inside a charcoal pill that matches the architect chat. Attempts
+// autoplay when `autoplay` is true — silently swallows the rejection in
+// browsers that block it (Safari, mobile).
+function AudioPlayer({ src, voice, durationSeconds, autoplay }) {
+  const audioRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    const onEnded = () => setPlaying(false);
+    el.addEventListener('play', onPlay);
+    el.addEventListener('pause', onPause);
+    el.addEventListener('ended', onEnded);
+    if (autoplay) {
+      const p = el.play();
+      if (p && typeof p.then === 'function') p.catch(() => {});
+    }
+    return () => {
+      el.removeEventListener('play', onPlay);
+      el.removeEventListener('pause', onPause);
+      el.removeEventListener('ended', onEnded);
+    };
+  }, [src, autoplay]);
+
+  function toggle() {
+    const el = audioRef.current;
+    if (!el) return;
+    if (el.paused) {
+      const p = el.play();
+      if (p && typeof p.then === 'function') p.catch(() => {});
+    } else {
+      el.pause();
+    }
+  }
+
+  const captionParts = [];
+  if (voice) captionParts.push(voice.charAt(0).toUpperCase() + voice.slice(1));
+  if (typeof durationSeconds === 'number') captionParts.push(`${durationSeconds.toFixed(1)}s`);
+
+  return (
+    <div className="mt-3 inline-flex max-w-full items-center gap-3 border border-line bg-black/40 px-3 py-2">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={playing ? 'Pause audio' : 'Play audio'}
+        className="flex h-8 w-8 shrink-0 items-center justify-center border border-gold bg-gold/15 text-gold hover:bg-gold/25"
+      >
+        {playing ? <Pause size={14} /> : <Play size={14} />}
+      </button>
+      <audio
+        ref={audioRef}
+        controls
+        preload="auto"
+        src={src}
+        className="h-8 min-w-0 flex-1"
+      />
+      {captionParts.length > 0 ? (
+        <span className="text-[0.6rem] uppercase tracking-widest2 text-faint whitespace-nowrap">
+          {captionParts.join(' · ')}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 async function executeAction({ conversationId, action, params }) {
   const session = (await supabase.auth.getSession()).data.session;
   if (!session?.access_token) throw new Error('Not authenticated');
@@ -124,6 +192,11 @@ export default function Assistant() {
   // owner can toggle this off if they want the simpler chat-only experience.
   const [agenticMode, setAgenticMode] = useState(isOwner);
   const [agentEvents, setAgentEvents] = useState([]);  // tool calls + approvals
+  // Inline audio attachments produced by voice_tts during a turn. Keyed by
+  // the assistant message index they should render under. Persists across
+  // turns within the same conversation view; cleared when switching threads.
+  const [messageAudios, setMessageAudios] = useState({});
+  const turnAssistantIdxRef = useRef(null);
   const [convUsd, setConvUsd] = useState(0);
   // Pending image attachment for the next outgoing message. Cleared after send.
   const [pendingUpload, setPendingUpload] = useState(null); // { upload_id, mime, bytes, filename, preview_url }
@@ -179,6 +252,9 @@ export default function Assistant() {
         .filter((m) => m.role === 'user' || m.role === 'assistant')
         .map((m) => ({ role: m.role, content: m.content })),
     );
+    // Audio attachments are ephemeral per turn (not persisted); clear when
+    // switching into a historical thread.
+    setMessageAudios({});
     setPins(Array.isArray(conv?.context) ? conv.context : []);
   }, []);
 
@@ -211,6 +287,9 @@ export default function Assistant() {
     const outgoing = attachmentMarker
       ? (text ? `${attachmentMarker}\n${text}` : attachmentMarker)
       : text;
+    // The assistant placeholder we're about to append lands at the new length-1.
+    // `messages.length` is the pre-push length; user goes there, assistant at +1.
+    turnAssistantIdxRef.current = messages.length + 1;
     setMessages((m) => [...m, { role: 'user', content: outgoing }, { role: 'assistant', content: '' }]);
     setInput('');
     setPendingUpload(null);
@@ -241,6 +320,27 @@ export default function Assistant() {
             setAgentEvents((evts) => [...evts, { kind: 'tool_call', ...data }]);
           } else if (event === 'tool_result') {
             setAgentEvents((evts) => [...evts, { kind: 'tool_result', ...data }]);
+            if (typeof data?.audio_url === 'string' && data.audio_url.startsWith('data:audio/')) {
+              const idx = turnAssistantIdxRef.current;
+              if (typeof idx === 'number') {
+                setMessageAudios((prev) => {
+                  const list = prev[idx] ?? [];
+                  return {
+                    ...prev,
+                    [idx]: [
+                      ...list,
+                      {
+                        id: data.tool_call_id ?? `${idx}-${list.length}`,
+                        audio_url: data.audio_url,
+                        voice: data.voice ?? null,
+                        duration_seconds:
+                          typeof data.duration_seconds === 'number' ? data.duration_seconds : null,
+                      },
+                    ],
+                  };
+                });
+              }
+            }
           } else if (event === 'approval_request') {
             setAgentEvents((evts) => [...evts, { kind: 'approval_request', ...data }]);
           } else if (event === 'soft_prompt') {
@@ -358,6 +458,7 @@ export default function Assistant() {
   function startNew() {
     setCurrentId(null);
     setMessages([]);
+    setMessageAudios({});
     setPins([]);
     setErr(null);
   }
@@ -560,6 +661,21 @@ export default function Assistant() {
                         {m.role === 'user' ? 'You' : m._system ? 'System' : 'Architect'}
                       </div>
                       <div className="whitespace-pre-wrap leading-relaxed">{visibleContent}</div>
+                      {m.role === 'assistant' && !m._system && messageAudios[i]?.length > 0 ? (
+                        <div className="flex flex-col items-start gap-2">
+                          {messageAudios[i].map((a, aIdx) => (
+                            <AudioPlayer
+                              key={a.id}
+                              src={a.audio_url}
+                              voice={a.voice}
+                              durationSeconds={a.duration_seconds}
+                              autoplay={
+                                i === messages.length - 1 && aIdx === messageAudios[i].length - 1
+                              }
+                            />
+                          ))}
+                        </div>
+                      ) : null}
                       {showActionUI ? (
                         <div className="mt-3 border-t border-line pt-3">
                           <div className="text-[0.65rem] uppercase tracking-widest2 text-faint mb-2">

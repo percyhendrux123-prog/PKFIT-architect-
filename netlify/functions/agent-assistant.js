@@ -301,6 +301,11 @@ export default async (req) => {
                 audit_id: result.audit_id,
                 summary: result.tool_result?.summary ?? null,
                 error: result.tool_result?.error ?? null,
+                // Forward inline audio so the UI can render an <audio> player.
+                // voice_tts returns a base64 data: URL; everything else is null.
+                audio_url: result.tool_result?.audio_url ?? null,
+                duration_seconds: result.tool_result?.duration_seconds ?? null,
+                voice: result.tool_result?.voice ?? null,
               });
             }
             toolResults.push({
