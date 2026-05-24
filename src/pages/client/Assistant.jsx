@@ -12,6 +12,7 @@ import {
   Paperclip,
   Volume2,
   Loader2,
+  History,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
@@ -60,6 +61,26 @@ async function resizeImageFile(file) {
 }
 
 const TEXTAREA_MAX_HEIGHT = 240;
+
+// Compact relative time for the drawer list. Matches the DM Mono / muted feel
+// of the /standard page — no "ago" suffix, just the unit (1h, 3d, 2w).
+function relativeTime(iso) {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const diff = Math.max(0, Date.now() - then);
+  const min = Math.round(diff / 60000);
+  if (min < 1) return 'now';
+  if (min < 60) return `${min}m`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h`;
+  const d = Math.round(hr / 24);
+  if (d < 7) return `${d}d`;
+  const w = Math.round(d / 7);
+  if (w < 5) return `${w}w`;
+  const mo = Math.round(d / 30);
+  return `${mo}mo`;
+}
 
 async function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -137,6 +158,10 @@ export default function Assistant() {
   const [resolvedActions, setResolvedActions] = useState({});
   const [actionBusy, setActionBusy] = useState(false);
   const [pinsOpen, setPinsOpen] = useState(false);
+  // History drawer. Replaces the always-visible sidebar from the previous
+  // layout. Open via the top-left History icon or a left-edge swipe; close
+  // via outside-tap, swipe-left, or selecting a conversation.
+  const [drawerOpen, setDrawerOpen] = useState(false);
   // Owner-agentic mode (Phase 1). When the signed-in user is an owner, the
   // Assistant routes to /agent-assistant instead of /client-assistant. The
   // owner can toggle this off if they want the simpler chat-only experience.
@@ -225,6 +250,17 @@ export default function Assistant() {
   useEffect(() => { loadConversations(); }, [loadConversations]);
   useEffect(() => { loadMessages(currentId); }, [currentId, loadMessages]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // Lock body scroll while the drawer is open so the iOS rubber-band doesn't
+  // bleed through the overlay. Restore on unmount or when it closes.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [drawerOpen]);
 
   function handleInputKeyDown(e) {
     // Standard chat pattern: Enter submits, Shift+Enter inserts a newline.
@@ -413,6 +449,13 @@ export default function Assistant() {
     setMessages([]);
     setPins([]);
     setErr(null);
+    setDrawerOpen(false);
+    inputRef.current?.focus();
+  }
+
+  function selectConversation(id) {
+    setCurrentId(id);
+    setDrawerOpen(false);
   }
 
   async function removeConversation(id) {
@@ -536,117 +579,92 @@ export default function Assistant() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-160px)] grid-cols-1 gap-6 md:grid-cols-[240px_1fr] md:gap-8">
-      <aside className="border border-line bg-black/20">
-        <div className="flex items-center justify-between border-b border-line px-4 py-3">
-          <div className="label">Conversations</div>
+    <div className="flex min-h-[calc(100vh-160px)] flex-col">
+      {/* Minimal top icon bar — replaces the old "Assistant / THE ARCHITECT"
+          header. Two 16px gold glyphs only: thread history (left) opens the
+          drawer; plus (right) starts a fresh conversation. No labels, no
+          banner text — the chat surface gets the whole viewport. */}
+      <div className="flex items-center justify-between border-b-[0.5px] border-[#2a2a2a] px-2 py-2.5">
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open conversation history"
+          aria-expanded={drawerOpen}
+          className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[#C9A84C] transition-colors hover:bg-[#161616] active:bg-[#1f1f1f]"
+        >
+          <History size={16} strokeWidth={1.75} />
+        </button>
+        {isOwner ? (
           <button
-            onClick={startNew}
-            aria-label="Start a new conversation"
-            className="flex items-center gap-1 text-xs uppercase tracking-widest2 text-gold"
+            type="button"
+            onClick={() => setAgenticMode((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-full border-[0.5px] px-2.5 py-1 text-[0.6rem] uppercase tracking-widest2 transition-colors ${
+              agenticMode
+                ? 'border-[#C9A84C]/40 bg-[#C9A84C]/5 text-[#C9A84C]'
+                : 'border-[#2a2a2a] text-[#888] hover:text-[#C9A84C]'
+            }`}
+            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
           >
-            <Plus size={14} /> New
+            <Zap size={11} />
+            Agent {agenticMode ? 'on' : 'off'}
           </button>
-        </div>
-        <ul className="max-h-[60vh] overflow-y-auto md:max-h-none">
-          {conversations.length === 0 ? (
-            <li className="p-4 text-xs text-faint">No threads. Start one below.</li>
-          ) : (
-            conversations.map((c) => (
-              <li key={c.id} className="group flex items-center">
-                <button
-                  onClick={() => setCurrentId(c.id)}
-                  className={`flex-1 truncate px-4 py-3 text-left text-sm ${
-                    currentId === c.id ? 'bg-black/40 text-gold' : 'text-mute hover:text-ink'
-                  }`}
-                >
-                  <div className="truncate font-display tracking-wider2">{c.title || 'Untitled'}</div>
-                  <div className="text-[0.6rem] uppercase tracking-widest2 text-faint">
-                    {new Date(c.updated_at).toLocaleDateString()}
-                  </div>
-                </button>
-                <button
-                  onClick={() => removeConversation(c.id)}
-                  className="px-3 text-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-signal"
-                  aria-label="Delete conversation"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      </aside>
-
-      <section className="flex flex-col">
-        <header className="mb-8">
-          <div className="label mb-3">Assistant</div>
-          <h1 className="font-display text-4xl tracking-wider2">The Architect</h1>
-          <p className="mt-3 max-w-reading text-sm leading-relaxed text-mute">
-            Mechanism over motivation. No hype. Ask the question you would ask the coach.
-          </p>
-          {isOwner ? (
-            <div className="mt-3 flex flex-wrap items-center gap-3 border border-line bg-black/20 px-3 py-2 text-[0.65rem] uppercase tracking-widest2 text-mute">
-              <Zap size={12} className={agenticMode ? 'text-gold' : 'text-faint'} />
-              <button
-                type="button"
-                onClick={() => setAgenticMode((v) => !v)}
-                className={`underline-offset-4 hover:underline ${agenticMode ? 'text-gold' : 'text-faint'}`}
-              >
-                Agentic mode: {agenticMode ? 'on' : 'off'}
-              </button>
-              <span className="text-faint">·</span>
-              <span>Conv cost: ${convUsd.toFixed(4)}</span>
-              {agenticMode ? (
-                <>
-                  <span className="text-faint">·</span>
-                  <a href="/owner/agent-log" className="hover:text-gold">Audit log →</a>
-                </>
-              ) : null}
-            </div>
-          ) : null}
-        </header>
-
-        {agentEvents.length > 0 ? (
-          <div className="mb-3 max-h-44 overflow-y-auto border border-line bg-black/30 p-3 text-[0.7rem]">
-            <div className="label mb-2">Agent activity</div>
-            <ul className="space-y-1 text-mute">
-              {agentEvents.slice(-12).map((e, idx) => {
-                if (e.kind === 'tool_call') {
-                  return (
-                    <li key={idx} className="text-faint">
-                      → <span className="text-ink">{e.name}</span>
-                    </li>
-                  );
-                }
-                if (e.kind === 'tool_result') {
-                  return (
-                    <li key={idx} className={e.error ? 'text-signal' : 'text-mute'}>
-                      ← <span className="text-gold">{e.name}</span> {e.error ? `error: ${e.error}` : (e.summary ?? 'ok')}
-                      {e.risk_level ? <span className="ml-2 text-faint">[{e.risk_level}/{e.approval_status}]</span> : null}
-                    </li>
-                  );
-                }
-                if (e.kind === 'approval_request') {
-                  return (
-                    <li key={idx} className="text-signal">
-                      ⚠ approval required for <span className="text-gold">{e.name}</span> ({e.risk}) — reply &quot;yes&quot; to proceed
-                      {e.required_token ? <span> · type <code>{e.required_token}</code></span> : null}
-                    </li>
-                  );
-                }
-                if (e.kind === 'soft_prompt') {
-                  return <li key={idx} className="text-gold">${e.message ?? ''}</li>;
-                }
-                return null;
-              })}
-            </ul>
-          </div>
         ) : null}
+        <button
+          type="button"
+          onClick={startNew}
+          aria-label="Start a new conversation"
+          className="group flex h-9 w-9 items-center justify-center rounded-[10px] text-[#C9A84C] transition-all hover:bg-[#161616] active:scale-95 active:bg-[#1f1f1f]"
+        >
+          <Plus size={16} strokeWidth={1.75} className="transition-transform group-active:scale-110" />
+        </button>
+      </div>
 
+      {agentEvents.length > 0 ? (
+        <div className="mx-2 mt-3 max-h-44 overflow-y-auto rounded-[14px] border-[0.5px] border-[#2a2a2a] bg-[#101010] p-3 text-[0.7rem]">
+          <div
+            className="mb-2 text-[10px] uppercase tracking-widest2 text-[#888]"
+            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+          >
+            Agent activity
+          </div>
+          <ul className="space-y-1 text-[#888]">
+            {agentEvents.slice(-12).map((e, idx) => {
+              if (e.kind === 'tool_call') {
+                return (
+                  <li key={idx} className="text-faint">
+                    → <span className="text-ink">{e.name}</span>
+                  </li>
+                );
+              }
+              if (e.kind === 'tool_result') {
+                return (
+                  <li key={idx} className={e.error ? 'text-signal' : 'text-mute'}>
+                    ← <span className="text-[#C9A84C]">{e.name}</span> {e.error ? `error: ${e.error}` : (e.summary ?? 'ok')}
+                    {e.risk_level ? <span className="ml-2 text-faint">[{e.risk_level}/{e.approval_status}]</span> : null}
+                  </li>
+                );
+              }
+              if (e.kind === 'approval_request') {
+                return (
+                  <li key={idx} className="text-signal">
+                    ⚠ approval required for <span className="text-[#C9A84C]">{e.name}</span> ({e.risk}) — reply &quot;yes&quot; to proceed
+                    {e.required_token ? <span> · type <code>{e.required_token}</code></span> : null}
+                  </li>
+                );
+              }
+              if (e.kind === 'soft_prompt') {
+                return <li key={idx} className="text-[#C9A84C]">${e.message ?? ''}</li>;
+              }
+              return null;
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      <section className="flex flex-1 flex-col px-2 pt-3">
         <div className="flex-1 overflow-y-auto rounded-[14px] border-[0.5px] border-[#2a2a2a] bg-[#0E0E0E] p-4 sm:p-5">
           {messages.length === 0 ? (
-            <div className="text-sm leading-relaxed text-faint">
+            <div className="text-sm leading-relaxed text-[#888]">
               Start with a single, specific question. Example: why did my bench stall at 85 kg for three weeks.
             </div>
           ) : (
@@ -757,7 +775,7 @@ export default function Assistant() {
 
         {err ? <div className="mt-3 text-xs uppercase tracking-widest2 text-signal">{err}</div> : null}
 
-        <div className="mt-6 border-t border-line pt-3">
+        <div className="mt-4 border-t border-line pt-3">
           <button
             type="button"
             onClick={() => setPinsOpen((o) => !o)}
@@ -824,7 +842,7 @@ export default function Assistant() {
           </div>
         ) : null}
 
-        <form onSubmit={send} className="mt-4 flex items-end gap-2">
+        <form onSubmit={send} className="mt-4 flex items-end gap-2 pb-3">
           <input
             ref={fileInputRef}
             type="file"
@@ -883,10 +901,164 @@ export default function Assistant() {
             {busy ? 'Thinking' : 'Ask'}
           </button>
         </form>
-        <p className="mt-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
-          Enter to send · Shift+Enter for newline · Cmd/Ctrl+K jumps here
-        </p>
+        {isOwner && agenticMode ? (
+          <p className="-mt-2 mb-2 text-[0.55rem] uppercase tracking-widest2 text-faint">
+            Conv cost: ${convUsd.toFixed(4)} · <a href="/owner/agent-log" className="hover:text-[#C9A84C]">audit log →</a>
+          </p>
+        ) : null}
       </section>
+
+      <HistoryDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        conversations={conversations}
+        currentId={currentId}
+        onSelect={selectConversation}
+        onDelete={removeConversation}
+        onNew={startNew}
+      />
     </div>
+  );
+}
+
+// Slide-in left drawer with glassmorphism, matching the /standard aesthetic.
+// Overlay covers the full viewport (fixed inset-0) so it sits above the
+// Layout chrome. Backdrop fades; panel translates 100% → 0 over 250ms.
+function HistoryDrawer({ open, onClose, conversations, currentId, onSelect, onDelete, onNew }) {
+  // Close on Escape.
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  // Track touch deltas on the panel to support swipe-left-to-dismiss.
+  const startRef = useRef(null);
+  function onTouchStart(e) {
+    const t = e.touches?.[0];
+    if (!t) return;
+    startRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  }
+  function onTouchEnd(e) {
+    if (!startRef.current) return;
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    const dx = t.clientX - startRef.current.x;
+    const dy = Math.abs(t.clientY - startRef.current.y);
+    const dt = Date.now() - startRef.current.t;
+    startRef.current = null;
+    if (dx < -60 && dy < 50 && dt < 600) onClose();
+  }
+
+  return (
+    <>
+      {/* Backdrop. Tap-to-dismiss; only mounts while open so it doesn't
+          intercept anything once dismissed. The opacity transition gives the
+          200ms fade-out the spec asked for. */}
+      <div
+        aria-hidden
+        onClick={onClose}
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity ease-in ${
+          open ? 'pointer-events-auto opacity-100 duration-[250ms]' : 'pointer-events-none opacity-0 duration-[200ms]'
+        }`}
+      />
+      {/* Panel. Always mounted so the open/close transform animates; the
+          panel itself is the keyboard-trap and gesture surface. */}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Conversation history"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        className={`fixed inset-y-0 left-0 z-50 flex w-[80%] max-w-sm flex-col border-r-[0.5px] border-[#2a2a2a] bg-[#161616]/85 backdrop-blur-xl transition-transform sm:w-[360px] ${
+          open ? 'translate-x-0 duration-[250ms] ease-out' : '-translate-x-full duration-[200ms] ease-in'
+        }`}
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-center justify-between px-4 py-3">
+          <span
+            className="text-[11px] uppercase tracking-[0.16em] text-[#888]"
+            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+          >
+            History
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close history"
+            className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[#888] transition-colors hover:bg-[#1f1f1f] hover:text-[#C9A84C]"
+          >
+            <X size={14} strokeWidth={1.75} />
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={onNew}
+          className="mx-3 flex items-center justify-center gap-2 rounded-[14px] border-[0.5px] border-[#C9A84C]/40 bg-[#C9A84C]/10 px-4 py-3 text-[14px] uppercase tracking-[0.18em] text-[#C9A84C] transition-all duration-150 hover:bg-[#C9A84C]/20 active:scale-[0.98]"
+          style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+        >
+          <Plus size={14} strokeWidth={2} />
+          New
+        </button>
+
+        <ul className="mt-3 flex-1 overflow-y-auto px-1 pb-4">
+          {conversations.length === 0 ? (
+            <li
+              className="px-4 py-6 text-center text-[12px] text-[#888]"
+              style={{ fontFamily: '"DM Mono", ui-monospace, monospace' }}
+            >
+              No conversations yet
+            </li>
+          ) : (
+            conversations.map((c) => {
+              const active = c.id === currentId;
+              const preview = (c.title && c.title.trim())
+                ? c.title.length > 60 ? `${c.title.slice(0, 60)}…` : c.title
+                : 'Untitled';
+              return (
+                <li key={c.id} className="group relative">
+                  <button
+                    type="button"
+                    onClick={() => onSelect(c.id)}
+                    className={`flex w-full items-start gap-2 rounded-[10px] px-3 py-3 text-left transition-colors ${
+                      active
+                        ? 'border-l-2 border-[#C9A84C] bg-[#C9A84C]/[0.04]'
+                        : 'border-l-2 border-transparent hover:bg-[#1f1f1f]/60'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className={`truncate text-[13px] leading-snug ${active ? 'text-[#F5F5F5]' : 'text-[#F5F5F5]/85'}`}
+                        style={{ fontFamily: '"DM Mono", ui-monospace, monospace' }}
+                      >
+                        {preview}
+                      </div>
+                      <div
+                        className="mt-1 text-[11px] text-[#888]"
+                        style={{ fontFamily: '"DM Mono", ui-monospace, monospace' }}
+                      >
+                        {relativeTime(c.updated_at)}
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onDelete(c.id); }}
+                    aria-label="Delete conversation"
+                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-[8px] text-[#888]/0 transition-all hover:bg-[#1f1f1f] hover:text-[#ef5350] group-hover:text-[#888]"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      </aside>
+    </>
   );
 }
