@@ -102,6 +102,7 @@ export default function OperateHome() {
   const [sessions, setSessions] = useState([]);
   const [todayMeals, setTodayMeals] = useState([]);
   const [coachMsg, setCoachMsg] = useState(null);
+  const [skipState, setSkipState] = useState('idle'); // idle | sending | done | error
 
   useEffect(() => {
     if (!isSupabaseConfigured || !user) return undefined;
@@ -244,6 +245,48 @@ export default function OperateHome() {
 
   const sessionCount = sessionExercises.length;
 
+  // SKIP today's session → notify the coach via the existing DM thread.
+  // No coach_alerts table exists; dm_messages is the surgical signal that
+  // shows up in the coach's inbox immediately.
+  async function skipToday() {
+    if (skipState !== 'idle' || !user) return;
+    setSkipState('sending');
+    try {
+      let { data: thread } = await supabase
+        .from('dm_threads')
+        .select('id')
+        .eq('client_id', user.id)
+        .maybeSingle();
+      if (!thread?.id) {
+        const created = await supabase
+          .from('dm_threads')
+          .insert({ client_id: user.id })
+          .select('id')
+          .maybeSingle();
+        thread = created.data ?? null;
+      }
+      if (!thread?.id) throw new Error('No thread');
+      const today = ymd(new Date());
+      const titleBit = sessionTitle ? ` (${sessionTitle})` : '';
+      await supabase.from('dm_messages').insert({
+        thread_id: thread.id,
+        author_id: user.id,
+        content: `⚠️ Skipped today's session${titleBit} — auto-flagged ${today}`,
+        read_by_client: true,
+        read_by_coach: false,
+      });
+      await supabase
+        .from('dm_threads')
+        .update({ last_activity_at: new Date().toISOString() })
+        .eq('id', thread.id);
+      setSkipState('done');
+      setTimeout(() => setSkipState('idle'), 4000);
+    } catch {
+      setSkipState('error');
+      setTimeout(() => setSkipState('idle'), 4000);
+    }
+  }
+
   return (
     <PhoneShell screen="Home">
       <div className="op-app">
@@ -273,7 +316,30 @@ export default function OperateHome() {
         </div>
         <div className="op-greeting-name">{timeOfDayGreeting()}, {name}</div>
 
-        <div className="op-section-label"><span>TODAY&apos;S SESSION</span><a>SKIP</a></div>
+        <div className="op-section-label">
+          <span>TODAY&apos;S SESSION</span>
+          <button
+            type="button"
+            onClick={skipToday}
+            disabled={skipState !== 'idle'}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: skipState === 'done' ? '#C9A84C' : '#888',
+              fontFamily: 'inherit',
+              fontSize: 10,
+              letterSpacing: '2px',
+              cursor: skipState === 'idle' ? 'pointer' : 'default',
+              padding: 0,
+              textTransform: 'uppercase',
+            }}
+          >
+            {skipState === 'sending' ? 'SKIPPING…'
+              : skipState === 'done' ? 'COACH NOTIFIED'
+              : skipState === 'error' ? 'RETRY SKIP'
+              : 'SKIP'}
+          </button>
+        </div>
         {sessionCount > 0 ? (
           <div
             className="op-session-card"
