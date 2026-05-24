@@ -14,7 +14,13 @@ import { useLocation } from 'react-router-dom';
 //   ink    #F5F5F5
 //   mute   #888
 //   gold   #C9A84C (used only for active state, send button, key numbers,
-//                   and the hot-intent qualifier surface)
+//                   and tool-driven offer cards)
+//
+// Tool cards: the diagnose function may return a `tool_calls` array per
+// turn. Cards render inline after the assistant bubble that triggered them.
+// Four kinds: offer_workbook → WorkbookCard (Gumroad), offer_qualifier →
+// QualifierCard (pkfitelite.co.site), offer_consultation → ConsultationCard
+// (inline form), generate_micro_plan → MicroPlanCard (structured 5-7 day plan).
 
 const BG = '#080808';
 const CARD = '#161616';
@@ -35,6 +41,7 @@ const KEY_COPY = {
   align:     { subhead: 'Move when the standard moves.' },
 };
 
+const GUMROAD_URL = 'https://percyhendrux.gumroad.com/l/dxnenk';
 const QUALIFIER_URL = 'https://pkfitelite.co.site';
 
 function resolveKey(location) {
@@ -50,7 +57,6 @@ function genSessionId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
-  // RFC4122 v4 fallback for older browsers.
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
@@ -69,11 +75,8 @@ export default function Diagnose() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState(null);
-  const [intentLevel, setIntentLevel] = useState(null);
   const scrollerRef = useRef(null);
   const textareaRef = useRef(null);
-
-  const hot = (intentLevel ?? 0) >= 4;
 
   useEffect(() => {
     document.title = `PKFIT × ${keyword.toUpperCase()}`;
@@ -108,8 +111,15 @@ export default function Diagnose() {
       if (!res.ok) {
         throw new Error(payload?.error || `request failed (${res.status})`);
       }
-      setMessages((m) => [...m, { role: 'assistant', content: payload.reply }]);
-      if (payload.intent_level) setIntentLevel(payload.intent_level);
+      const toolCalls = Array.isArray(payload.tool_calls) ? payload.tool_calls : [];
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          content: payload.reply,
+          tool_calls: toolCalls,
+        },
+      ]);
     } catch (e) {
       setErr(e?.message || 'Network error');
       setMessages((m) => [
@@ -175,10 +185,15 @@ export default function Diagnose() {
           {messages.length === 0 ? (
             <Opener keyword={keyword} />
           ) : (
-            messages.map((m, i) => <Bubble key={i} role={m.role} text={m.content} system={m._system} />)
+            messages.map((m, i) => (
+              <MessageRow
+                key={i}
+                message={m}
+                sessionId={sessionId}
+              />
+            ))
           )}
           {sending ? <Typing /> : null}
-          {hot ? <QualifierCard /> : null}
         </div>
 
         {err ? (
@@ -207,6 +222,42 @@ export default function Diagnose() {
       />
     </div>
   );
+}
+
+function MessageRow({ message, sessionId }) {
+  return (
+    <>
+      <Bubble role={message.role} text={message.content} system={message._system} />
+      {Array.isArray(message.tool_calls) && message.tool_calls.length > 0 ? (
+        <ToolCardStack toolCalls={message.tool_calls} sessionId={sessionId} />
+      ) : null}
+    </>
+  );
+}
+
+function ToolCardStack({ toolCalls, sessionId }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {toolCalls.map((tc) => (
+        <ToolCard key={tc.id} call={tc} sessionId={sessionId} />
+      ))}
+    </div>
+  );
+}
+
+function ToolCard({ call, sessionId }) {
+  switch (call?.name) {
+    case 'offer_workbook':
+      return <WorkbookCard framing={call.input?.framing} />;
+    case 'offer_qualifier':
+      return <QualifierCard framing={call.input?.framing} />;
+    case 'offer_consultation':
+      return <ConsultationCard framing={call.input?.framing} sessionId={sessionId} />;
+    case 'generate_micro_plan':
+      return <MicroPlanCard plan={call.input} />;
+    default:
+      return null;
+  }
 }
 
 function Header({ keyword, subhead }) {
@@ -287,6 +338,7 @@ function Opener({ keyword }) {
 
 function Bubble({ role, text, system }) {
   const isUser = role === 'user';
+  if (!text) return null;
   return (
     <div
       style={{
@@ -354,36 +406,282 @@ function Dot({ delay }) {
   );
 }
 
-function QualifierCard() {
+// ─── tool cards ─────────────────────────────────────────────────────────
+
+const CARD_HEADING_STYLE = {
+  fontFamily: '"Bebas Neue", system-ui, sans-serif',
+  letterSpacing: '0.08em',
+  fontSize: 16,
+  color: GOLD,
+};
+
+const CARD_FRAMING_STYLE = {
+  marginTop: 4,
+  fontSize: 13,
+  color: MUTE,
+  lineHeight: 1.5,
+};
+
+const PRIMARY_BUTTON_STYLE = {
+  display: 'inline-block',
+  background: GOLD,
+  color: BG,
+  border: `0.5px solid ${GOLD}`,
+  borderRadius: RADIUS - 4,
+  padding: '9px 16px',
+  fontFamily: '"Bebas Neue", system-ui, sans-serif',
+  letterSpacing: '0.08em',
+  fontSize: 14,
+  textDecoration: 'none',
+  cursor: 'pointer',
+  transition: 'opacity 120ms ease',
+};
+
+function GlassCard({ children, accent = false }) {
   return (
-    <a
-      href={QUALIFIER_URL}
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
       style={{
-        display: 'block',
-        background: '#0f0f0f',
-        border: `0.5px solid ${GOLD}`,
+        background: 'rgba(22, 22, 22, 0.85)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        border: `0.5px solid ${accent ? GOLD : BORDER}`,
         borderRadius: RADIUS,
         padding: '14px 16px',
         color: INK,
-        textDecoration: 'none',
       }}
     >
+      {children}
+    </div>
+  );
+}
+
+function WorkbookCard({ framing }) {
+  return (
+    <GlassCard>
+      <div style={CARD_HEADING_STYLE}>THE PKFIT DIAGNOSTIC</div>
+      {framing ? <div style={CARD_FRAMING_STYLE}>{framing}</div> : null}
+      <div style={{ marginTop: 12 }}>
+        <a
+          href={GUMROAD_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={PRIMARY_BUTTON_STYLE}
+        >
+          GET THE DIAGNOSTIC
+        </a>
+      </div>
+    </GlassCard>
+  );
+}
+
+function QualifierCard({ framing }) {
+  return (
+    <GlassCard accent>
+      <div style={CARD_HEADING_STYLE}>OPEN QUALIFIER</div>
+      <div style={CARD_FRAMING_STYLE}>
+        {framing || 'Percy reviews every submission personally.'}
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <a
+          href={QUALIFIER_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={PRIMARY_BUTTON_STYLE}
+        >
+          OPEN QUALIFIER
+        </a>
+      </div>
+    </GlassCard>
+  );
+}
+
+function ConsultationCard({ framing, sessionId }) {
+  const [email, setEmail] = useState('');
+  const [times, setTimes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const canSubmit = validEmail && times.trim().length > 0 && !submitting && !result;
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch('/.netlify/functions/consultation-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          lead_email: email.trim(),
+          preferred_times: times.trim(),
+        }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(payload?.error || `request failed (${res.status})`);
+      }
+      setResult(payload);
+    } catch (e2) {
+      setError(e2?.message || 'Submission failed. Try again in a moment.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (result) {
+    return (
+      <GlassCard accent>
+        <div style={CARD_HEADING_STYLE}>REQUEST RECEIVED</div>
+        <div style={CARD_FRAMING_STYLE}>Got it. Percy will reach out within 24 hours.</div>
+      </GlassCard>
+    );
+  }
+
+  return (
+    <GlassCard accent>
+      <div style={CARD_HEADING_STYLE}>REQUEST CONSULTATION</div>
+      <div style={CARD_FRAMING_STYLE}>
+        {framing || 'Drop your email and a few times that work. Percy reaches out direct.'}
+      </div>
+      <form onSubmit={onSubmit} style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          aria-label="Email"
+          style={{
+            background: '#0f0f0f',
+            color: INK,
+            border: `0.5px solid ${BORDER}`,
+            borderRadius: RADIUS - 6,
+            padding: '10px 12px',
+            fontFamily: '"DM Mono", ui-monospace, monospace',
+            fontSize: 13,
+            outline: 'none',
+          }}
+        />
+        <textarea
+          required
+          value={times}
+          onChange={(e) => setTimes(e.target.value)}
+          placeholder="e.g. Tuesday after 5pm, Wednesday mornings, weekend"
+          rows={3}
+          aria-label="Preferred times"
+          style={{
+            background: '#0f0f0f',
+            color: INK,
+            border: `0.5px solid ${BORDER}`,
+            borderRadius: RADIUS - 6,
+            padding: '10px 12px',
+            fontFamily: '"DM Mono", ui-monospace, monospace',
+            fontSize: 13,
+            resize: 'vertical',
+            outline: 'none',
+          }}
+        />
+        {error ? (
+          <div style={{ color: GOLD, fontSize: 12, letterSpacing: '0.04em' }}>{error}</div>
+        ) : null}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          style={{
+            ...PRIMARY_BUTTON_STYLE,
+            background: canSubmit ? GOLD : '#3a3a3a',
+            color: canSubmit ? BG : MUTE,
+            border: `0.5px solid ${canSubmit ? GOLD : BORDER}`,
+            cursor: canSubmit ? 'pointer' : 'not-allowed',
+            opacity: submitting ? 0.7 : 1,
+            alignSelf: 'flex-start',
+          }}
+        >
+          {submitting ? 'SENDING…' : 'REQUEST CONSULTATION'}
+        </button>
+      </form>
+    </GlassCard>
+  );
+}
+
+function MicroPlanCard({ plan }) {
+  if (!plan || !Array.isArray(plan.days) || plan.days.length === 0) return null;
+  const sortedDays = [...plan.days].sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <GlassCard>
+        <div style={CARD_HEADING_STYLE}>YOUR FIRST 7 DAYS</div>
+        {plan.identified_pain ? (
+          <div style={{ ...CARD_FRAMING_STYLE, marginTop: 6 }}>
+            <span style={{ color: GOLD }}>The pain:</span> {plan.identified_pain}
+          </div>
+        ) : null}
+        {plan.week_goal ? (
+          <div style={{ ...CARD_FRAMING_STYLE, marginTop: 4 }}>
+            <span style={{ color: GOLD }}>The standard:</span> {plan.week_goal}
+          </div>
+        ) : null}
+        <div
+          style={{
+            marginTop: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            borderTop: `0.5px solid ${BORDER}`,
+            paddingTop: 12,
+          }}
+        >
+          {sortedDays.map((d, i) => (
+            <DayRow key={i} day={d.day} focus={d.focus} action={d.action} />
+          ))}
+        </div>
+      </GlassCard>
+      {plan.cliffhanger ? (
+        <GlassCard accent>
+          <div style={{ ...CARD_FRAMING_STYLE, color: INK, marginTop: 0 }}>{plan.cliffhanger}</div>
+          <div style={{ marginTop: 12 }}>
+            <a
+              href={QUALIFIER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={PRIMARY_BUTTON_STYLE}
+            >
+              OPEN QUALIFIER
+            </a>
+          </div>
+        </GlassCard>
+      ) : null}
+    </div>
+  );
+}
+
+function DayRow({ day, focus, action }) {
+  return (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'baseline' }}>
       <div
         style={{
           fontFamily: '"Bebas Neue", system-ui, sans-serif',
-          letterSpacing: '0.08em',
-          fontSize: 16,
+          letterSpacing: '0.06em',
+          fontSize: 18,
           color: GOLD,
+          minWidth: 36,
         }}
       >
-        OPEN QUALIFIER
+        DAY {day}
       </div>
-      <div style={{ marginTop: 4, fontSize: 12, color: MUTE, letterSpacing: '0.04em' }}>
-        pkfitelite.co.site — Percy reviews every submission personally.
+      <div style={{ flex: 1, fontSize: 13, color: INK, lineHeight: 1.5 }}>
+        {focus ? (
+          <div style={{ color: MUTE, fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            {focus}
+          </div>
+        ) : null}
+        {action ? <div style={{ marginTop: 2 }}>{action}</div> : null}
       </div>
-    </a>
+    </div>
   );
 }
 
