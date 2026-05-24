@@ -5,11 +5,13 @@
 .op-root {
   background: #080808;
   color: #F5F5F5;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   font-family: 'DM Mono', monospace;
   -webkit-font-smoothing: antialiased;
   position: relative;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* On desktop-with-mouse, show an iPhone preview frame.
@@ -18,12 +20,13 @@
    surface is the whole screen. */
 .op-frame {
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   position: relative;
   overflow: hidden;
   background: #080808;
   pointer-events: auto;
+  overscroll-behavior: none;
 }
 
 @media (min-width: 1280px) and (pointer: fine) and (hover: hover) {
@@ -43,9 +46,10 @@
 
 .op-app {
   padding: max(60px, env(safe-area-inset-top, 60px)) 20px calc(110px + env(safe-area-inset-bottom, 0px));
-  min-height: 100%;
+  height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .op-app.op-app--tight { padding-left: 16px; padding-right: 16px; }
 .op-app.op-app--training { padding-top: 160px; padding-left: 16px; padding-right: 16px; }
@@ -55,7 +59,8 @@
 .op-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-top: 8px; }
 .op-brand { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: #F5F5F5; }
 .op-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; }
-.op-icon-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; cursor: pointer; color: inherit; padding: 0; }
+.op-icon-btn { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; cursor: pointer; color: inherit; padding: 0; -webkit-tap-highlight-color: transparent; transition: opacity .12s ease; }
+.op-icon-btn:active { opacity: 0.65; }
 .op-icon-btn svg { width: 22px; height: 22px; stroke: #F5F5F5; fill: none; stroke-width: 1.75; }
 .op-icon-btn--mute svg { stroke: #888; width: 18px; height: 18px; }
 
@@ -67,7 +72,9 @@
 /* ---- HOME / Dashboard ---- */
 .op-greeting-label { font-size: 10px; color: #888; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
 .op-greeting-name { font-family: 'Bebas Neue', sans-serif; font-size: 38px; letter-spacing: 1px; line-height: 1; margin-bottom: 28px; }
-.op-session-card { background: #161616; border: 0.5px solid #2a2a2a; border-radius: 14px; padding: 18px; margin-bottom: 20px; }
+.op-session-card { background: #161616; border: 0.5px solid #2a2a2a; border-radius: 14px; padding: 18px; margin-bottom: 20px; -webkit-tap-highlight-color: transparent; transition: opacity .12s ease, transform .12s ease; }
+.op-session-card[role="button"] { cursor: pointer; }
+.op-session-card[role="button"]:active { opacity: 0.88; transform: scale(0.995); }
 .op-session-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 12px; }
 .op-session-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1.5px; line-height: 1; }
 .op-session-sub { font-size: 11px; color: #888; margin-top: 6px; letter-spacing: 0.5px; }
@@ -80,7 +87,9 @@
 .op-start-btn svg { width: 14px; height: 14px; fill: #080808; }
 
 .op-week-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 22px; }
-.op-day-cell { background: #161616; border: 0.5px solid #2a2a2a; border-radius: 10px; padding: 10px 2px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.op-day-cell { background: #161616; border: 0.5px solid #2a2a2a; border-radius: 10px; padding: 10px 2px; display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 44px; -webkit-tap-highlight-color: transparent; transition: opacity .12s ease; }
+.op-day-cell[role="button"] { cursor: pointer; }
+.op-day-cell[role="button"]:active { opacity: 0.7; }
 .op-day-cell.op-today { background: #1a1610; border-color: #C9A84C; }
 .op-day-letter { font-size: 9px; color: #888; letter-spacing: 1px; }
 .op-day-num { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.5px; line-height: 1; }
@@ -91,7 +100,9 @@
 .op-dot-pend { background: #2a2a2a; border: 1px solid #444; }
 
 .op-duo-row { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 22px; }
-.op-panel { background: #161616; border: 0.5px solid #2a2a2a; border-radius: 14px; padding: 14px; }
+.op-panel { background: #161616; border: 0.5px solid #2a2a2a; border-radius: 14px; padding: 14px; -webkit-tap-highlight-color: transparent; transition: opacity .12s ease; }
+.op-panel[role="button"] { cursor: pointer; }
+.op-panel[role="button"]:active { opacity: 0.85; }
 .op-panel-label { font-size: 9px; color: #888; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; }
 .op-panel-label .op-delta { font-family: 'Bebas Neue', sans-serif; font-size: 13px; color: #C9A84C; letter-spacing: 1px; }
 .op-macro-rings { display: flex; align-items: center; justify-content: center; position: relative; height: 108px; }

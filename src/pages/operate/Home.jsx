@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import PhoneShell from '../../components/operate/PhoneShell';
@@ -51,9 +51,20 @@ function buildWeekStrip(sessionsByDay) {
       n: d.getDate(),
       d: dotClass,
       today: isToday,
+      dateISO: key,
     });
   }
   return out;
+}
+
+// Keyboard-activate a click handler from Enter / Space on a role="button" div.
+function activateOnKey(fn) {
+  return (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fn();
+    }
+  };
 }
 
 function relativeTime(iso) {
@@ -83,6 +94,7 @@ function macroTotalsFromMeals(meals) {
 }
 
 export default function OperateHome() {
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const name = firstName(profile);
   const [activeProgram, setActiveProgram] = useState(null);
@@ -236,9 +248,24 @@ export default function OperateHome() {
     <PhoneShell screen="Home">
       <div className="op-app">
         <div className="op-header">
-          <button type="button" className="op-icon-btn" aria-label="Menu"><HamburgerSvg /></button>
+          {/* TODO: open drawer/sheet when a useDrawer hook exists — for now route to /profile (menu lives there). */}
+          <button
+            type="button"
+            className="op-icon-btn"
+            aria-label="Menu"
+            onClick={() => navigate('/profile')}
+          >
+            <HamburgerSvg />
+          </button>
           <div className="op-brand">PKFIT</div>
-          <button type="button" className="op-icon-btn" aria-label="Notifications"><BellSvg /></button>
+          <button
+            type="button"
+            className="op-icon-btn"
+            aria-label="Notifications"
+            onClick={() => navigate('/inbox')}
+          >
+            <BellSvg />
+          </button>
         </div>
 
         <div className="op-greeting-label">
@@ -248,7 +275,13 @@ export default function OperateHome() {
 
         <div className="op-section-label"><span>TODAY&apos;S SESSION</span><a>SKIP</a></div>
         {sessionCount > 0 ? (
-          <div className="op-session-card">
+          <div
+            className="op-session-card"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate(sessionRoute)}
+            onKeyDown={activateOnKey(() => navigate(sessionRoute))}
+          >
             <div className="op-session-head">
               <div>
                 <div className="op-session-title">{(sessionTitle || 'TRAINING SESSION').toUpperCase()}</div>
@@ -281,7 +314,13 @@ export default function OperateHome() {
             </Link>
           </div>
         ) : (
-          <div className="op-session-card">
+          <div
+            className="op-session-card"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate('/calendar')}
+            onKeyDown={activateOnKey(() => navigate('/calendar'))}
+          >
             <div className="op-session-head">
               <div>
                 <div className="op-session-title">NO SESSION SCHEDULED</div>
@@ -297,17 +336,37 @@ export default function OperateHome() {
 
         <div className="op-section-label"><span>THIS WEEK</span></div>
         <div className="op-week-strip">
-          {weekStrip.map((c, i) => (
-            <div key={i} className={`op-day-cell${c.today ? ' op-today' : ''}`}>
-              <span className="op-day-letter">{c.l}</span>
-              <span className="op-day-num">{c.n}</span>
-              <span className={`op-day-dot ${c.d}`} />
-            </div>
-          ))}
+          {weekStrip.map((c, i) => {
+            const goTo = c.today && todaySession?.id
+              ? sessionRoute
+              : `/calendar?day=${c.dateISO}`;
+            return (
+              <div
+                key={i}
+                className={`op-day-cell${c.today ? ' op-today' : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-label={`${c.l} ${c.n}`}
+                onClick={() => navigate(goTo)}
+                onKeyDown={activateOnKey(() => navigate(goTo))}
+              >
+                <span className="op-day-letter">{c.l}</span>
+                <span className="op-day-num">{c.n}</span>
+                <span className={`op-day-dot ${c.d}`} />
+              </div>
+            );
+          })}
         </div>
 
         <div className="op-duo-row">
-          <div className="op-panel">
+          <div
+            className="op-panel"
+            role="button"
+            tabIndex={0}
+            aria-label="Open meals"
+            onClick={() => navigate('/meals')}
+            onKeyDown={activateOnKey(() => navigate('/meals'))}
+          >
             <div className="op-panel-label">
               <span>MACROS TODAY</span>
               <span className="op-delta">{remaining} LEFT</span>

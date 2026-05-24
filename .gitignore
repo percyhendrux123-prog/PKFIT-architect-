@@ -12,3 +12,6 @@ yarn-error.log*
 
 # Vitest coverage output
 coverage
+
+# Local git worktrees (isolation for parallel agents)
+.worktrees/
