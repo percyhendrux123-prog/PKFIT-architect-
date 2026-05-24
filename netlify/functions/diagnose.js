@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 import { getAdminClient } from './_shared/supabase-admin.js';
 import { getAnthropic, loadPrompt } from './_shared/anthropic.js';
+import {
+  agentToolDefinitions,
+  AGENT_TOOL_NAMES,
+  handleToolUse,
+} from '../../src/lib/agentTools.js';
 
 // Public-facing AI intake. No auth. The keyword routes a visitor from
 // ManyChat (or any link) into a Claude-driven conversation with PKFIT.
@@ -46,101 +51,10 @@ const IP_DAILY_WINDOW_SEC = 86_400;
 const META_RE = /<!--META:(\{[^]*?\})-->\s*$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const TOOL_NAMES = new Set([
-  'offer_workbook',
-  'offer_qualifier',
-  'offer_consultation',
-  'generate_micro_plan',
-]);
-
-const TOOLS = [
-  {
-    name: 'offer_workbook',
-    description:
-      "Surface the free PKFIT diagnostic workbook (Gumroad) as a card in the chat. Call when the user has shared SPECIFIC pain AND seems unsure about coaching (level 2-3). Do not ask the user first — call the tool and the UI handles the offer.",
-    input_schema: {
-      type: 'object',
-      properties: {
-        framing: {
-          type: 'string',
-          description:
-            'One short line in Percy voice that names the value of the workbook — no marketing speak, no URL, no exclamation points. Example: "It walks the breakdown — appetite, system, structure, standard."',
-        },
-      },
-      required: ['framing'],
-    },
-  },
-  {
-    name: 'offer_qualifier',
-    description:
-      'Surface the pkfitelite.co.site qualifier as a card. Call when the user has explicitly asked about coaching, program, price, or how to start (level 4-5).',
-    input_schema: {
-      type: 'object',
-      properties: {
-        framing: {
-          type: 'string',
-          description:
-            'One short line in Percy voice framing what happens next. Example: "I review every submission personally."',
-        },
-      },
-      required: ['framing'],
-    },
-  },
-  {
-    name: 'offer_consultation',
-    description:
-      'Surface an inline form (email + preferred times) the user can submit to request a direct consultation. Call ONLY when the user is decisively ready (level 5) AND has shown specific intent (asked about start dates or said they are ready).',
-    input_schema: {
-      type: 'object',
-      properties: {
-        framing: {
-          type: 'string',
-          description:
-            'One short line in Percy voice telling them what happens after they submit.',
-        },
-      },
-      required: ['framing'],
-    },
-  },
-  {
-    name: 'generate_micro_plan',
-    description:
-      "Build and surface a structured 5-7 day starter plan as an inline card. Call at level 3-4 when the conversation has covered enough depth (2+ exchanges) that you can produce a plan SPECIFIC to the user's stated pain — not generic. The cliffhanger sets up the full system at the qualifier.",
-    input_schema: {
-      type: 'object',
-      properties: {
-        identified_pain: {
-          type: 'string',
-          description: 'The specific pain the user described, named back in Percy voice.',
-        },
-        week_goal: {
-          type: 'string',
-          description: 'The single standard they should be holding by end of week 1.',
-        },
-        days: {
-          type: 'array',
-          minItems: 5,
-          maxItems: 7,
-          items: {
-            type: 'object',
-            properties: {
-              day: { type: 'integer', minimum: 1, maximum: 7 },
-              focus: { type: 'string', description: 'The mechanism this day addresses.' },
-              action: { type: 'string', description: 'The exact action they take that day.' },
-            },
-            required: ['day', 'focus', 'action'],
-          },
-        },
-        cliffhanger: {
-          type: 'string',
-          description:
-            'A closing line in Percy voice naming that this is week 1 and the full system goes through the qualifier.',
-        },
-      },
-      required: ['identified_pain', 'week_goal', 'days', 'cliffhanger'],
-    },
-  },
-];
+// Tool definitions + dispatcher live in src/lib/agentTools.js so other Claude
+// surfaces (the audit app, future keyword pages) can share them. The diagnose
+// surface routes 'standard' and its siblings — each maps to source_surface=
+// keyword on consultation_requests when the user submits the form.
 
 function json(status, body, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -449,25 +363,41 @@ export default async (req) => {
       max_tokens: MAX_TOKENS,
       temperature: TEMPERATURE,
       system: buildSystemPrompt(sessionKeyword),
-      tools: TOOLS,
+      tools: agentToolDefinitions,
       messages: apiMessages,
     });
   } catch (err) {
     return json(502, { error: 'model error', detail: err?.message || 'unknown' });
   }
 
-  // Split the response into text + tool_use blocks. The text holds the
-  // Percy-voice reply (+ the META line); the tool_use blocks drive the UI.
+  // Split the response into text + tool_use blocks. Each tool_use block goes
+  // through the shared handleToolUse dispatcher so the resulting envelope
+  // matches every other surface that consumes the toolkit. surface=sessionKeyword
+  // tags the source for consultation_requests and any future capture sink.
   let rawText = '';
-  const toolUses = [];
+  const rawToolUses = [];
   for (const block of completion.content ?? []) {
     if (block.type === 'text' && typeof block.text === 'string') {
       rawText += block.text;
-    } else if (block.type === 'tool_use' && TOOL_NAMES.has(block.name)) {
+    } else if (block.type === 'tool_use' && AGENT_TOOL_NAMES.has(block.name)) {
+      rawToolUses.push(block);
+    }
+  }
+
+  const toolUses = [];
+  for (const block of rawToolUses) {
+    const envelope = await handleToolUse({
+      toolName: block.name,
+      toolInput: block.input ?? {},
+      sessionId,
+      context: { surface: sessionKeyword },
+    });
+    if (envelope.ok) {
       toolUses.push({
         id: block.id,
-        name: block.name,
-        input: block.input ?? {},
+        name: envelope.name,
+        kind: envelope.kind,
+        input: envelope.input,
       });
     }
   }
@@ -537,7 +467,5 @@ export const __test__ = {
   hashIp,
   rebuildApiMessages,
   buildLeadCaptureUpdate,
-  TOOLS,
-  TOOL_NAMES,
   ALLOWED_KEYS,
 };

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { ToolCard } from '../components/agent';
 
 // Public-facing intake. Routes /standard, /structure, /system, /protocol,
 // and /align all render this component. The page hosts a Claude-driven
@@ -17,10 +18,11 @@ import { useLocation } from 'react-router-dom';
 //                   and tool-driven offer cards)
 //
 // Tool cards: the diagnose function may return a `tool_calls` array per
-// turn. Cards render inline after the assistant bubble that triggered them.
-// Four kinds: offer_workbook → WorkbookCard (Gumroad), offer_qualifier →
-// QualifierCard (pkfitelite.co.site), offer_consultation → ConsultationCard
-// (inline form), generate_micro_plan → MicroPlanCard (structured 5-7 day plan).
+// turn. Rendering is delegated to the shared <ToolCard> from
+// src/components/agent — the same library serves the audit app and any
+// future Claude lead surface. This page owns only the chat shell and the
+// surface ('standard'/'structure'/'system'/'protocol'/'align') it passes
+// through.
 
 const BG = '#080808';
 const CARD = '#161616';
@@ -40,9 +42,6 @@ const KEY_COPY = {
   protocol:  { subhead: 'Behavior becomes identity.' },
   align:     { subhead: 'Move when the standard moves.' },
 };
-
-const GUMROAD_URL = 'https://percyhendrux.gumroad.com/l/dxnenk';
-const QUALIFIER_URL = 'https://pkfitelite.co.site';
 
 function resolveKey(location) {
   const params = new URLSearchParams(location.search);
@@ -186,11 +185,7 @@ export default function Diagnose() {
             <Opener keyword={keyword} />
           ) : (
             messages.map((m, i) => (
-              <MessageRow
-                key={i}
-                message={m}
-                sessionId={sessionId}
-              />
+              <MessageRow key={i} message={m} sessionId={sessionId} surface={keyword} />
             ))
           )}
           {sending ? <Typing /> : null}
@@ -224,40 +219,25 @@ export default function Diagnose() {
   );
 }
 
-function MessageRow({ message, sessionId }) {
+function MessageRow({ message, sessionId, surface }) {
+  const toolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
   return (
     <>
       <Bubble role={message.role} text={message.content} system={message._system} />
-      {Array.isArray(message.tool_calls) && message.tool_calls.length > 0 ? (
-        <ToolCardStack toolCalls={message.tool_calls} sessionId={sessionId} />
+      {toolCalls.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {toolCalls.map((tc) => (
+            <ToolCard
+              key={tc.id || `${tc.name}-${tc.kind}`}
+              call={tc}
+              sessionId={sessionId}
+              surface={surface}
+            />
+          ))}
+        </div>
       ) : null}
     </>
   );
-}
-
-function ToolCardStack({ toolCalls, sessionId }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {toolCalls.map((tc) => (
-        <ToolCard key={tc.id} call={tc} sessionId={sessionId} />
-      ))}
-    </div>
-  );
-}
-
-function ToolCard({ call, sessionId }) {
-  switch (call?.name) {
-    case 'offer_workbook':
-      return <WorkbookCard framing={call.input?.framing} />;
-    case 'offer_qualifier':
-      return <QualifierCard framing={call.input?.framing} />;
-    case 'offer_consultation':
-      return <ConsultationCard framing={call.input?.framing} sessionId={sessionId} />;
-    case 'generate_micro_plan':
-      return <MicroPlanCard plan={call.input} />;
-    default:
-      return null;
-  }
 }
 
 function Header({ keyword, subhead }) {
@@ -403,285 +383,6 @@ function Dot({ delay }) {
         animation: `pkfit-dot 1.2s ${delay}ms infinite ease-in-out`,
       }}
     />
-  );
-}
-
-// ─── tool cards ─────────────────────────────────────────────────────────
-
-const CARD_HEADING_STYLE = {
-  fontFamily: '"Bebas Neue", system-ui, sans-serif',
-  letterSpacing: '0.08em',
-  fontSize: 16,
-  color: GOLD,
-};
-
-const CARD_FRAMING_STYLE = {
-  marginTop: 4,
-  fontSize: 13,
-  color: MUTE,
-  lineHeight: 1.5,
-};
-
-const PRIMARY_BUTTON_STYLE = {
-  display: 'inline-block',
-  background: GOLD,
-  color: BG,
-  border: `0.5px solid ${GOLD}`,
-  borderRadius: RADIUS - 4,
-  padding: '9px 16px',
-  fontFamily: '"Bebas Neue", system-ui, sans-serif',
-  letterSpacing: '0.08em',
-  fontSize: 14,
-  textDecoration: 'none',
-  cursor: 'pointer',
-  transition: 'opacity 120ms ease',
-};
-
-function GlassCard({ children, accent = false }) {
-  return (
-    <div
-      style={{
-        background: 'rgba(22, 22, 22, 0.85)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        border: `0.5px solid ${accent ? GOLD : BORDER}`,
-        borderRadius: RADIUS,
-        padding: '14px 16px',
-        color: INK,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function WorkbookCard({ framing }) {
-  return (
-    <GlassCard>
-      <div style={CARD_HEADING_STYLE}>THE PKFIT DIAGNOSTIC</div>
-      {framing ? <div style={CARD_FRAMING_STYLE}>{framing}</div> : null}
-      <div style={{ marginTop: 12 }}>
-        <a
-          href={GUMROAD_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={PRIMARY_BUTTON_STYLE}
-        >
-          GET THE DIAGNOSTIC
-        </a>
-      </div>
-    </GlassCard>
-  );
-}
-
-function QualifierCard({ framing }) {
-  return (
-    <GlassCard accent>
-      <div style={CARD_HEADING_STYLE}>OPEN QUALIFIER</div>
-      <div style={CARD_FRAMING_STYLE}>
-        {framing || 'Percy reviews every submission personally.'}
-      </div>
-      <div style={{ marginTop: 12 }}>
-        <a
-          href={QUALIFIER_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={PRIMARY_BUTTON_STYLE}
-        >
-          OPEN QUALIFIER
-        </a>
-      </div>
-    </GlassCard>
-  );
-}
-
-function ConsultationCard({ framing, sessionId }) {
-  const [email, setEmail] = useState('');
-  const [times, setTimes] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const canSubmit = validEmail && times.trim().length > 0 && !submitting && !result;
-
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (!canSubmit) return;
-    setError(null);
-    setSubmitting(true);
-    try {
-      const res = await fetch('/.netlify/functions/consultation-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: sessionId,
-          lead_email: email.trim(),
-          preferred_times: times.trim(),
-        }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(payload?.error || `request failed (${res.status})`);
-      }
-      setResult(payload);
-    } catch (e2) {
-      setError(e2?.message || 'Submission failed. Try again in a moment.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  if (result) {
-    return (
-      <GlassCard accent>
-        <div style={CARD_HEADING_STYLE}>REQUEST RECEIVED</div>
-        <div style={CARD_FRAMING_STYLE}>Got it. Percy will reach out within 24 hours.</div>
-      </GlassCard>
-    );
-  }
-
-  return (
-    <GlassCard accent>
-      <div style={CARD_HEADING_STYLE}>REQUEST CONSULTATION</div>
-      <div style={CARD_FRAMING_STYLE}>
-        {framing || 'Drop your email and a few times that work. Percy reaches out direct.'}
-      </div>
-      <form onSubmit={onSubmit} style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          aria-label="Email"
-          style={{
-            background: '#0f0f0f',
-            color: INK,
-            border: `0.5px solid ${BORDER}`,
-            borderRadius: RADIUS - 6,
-            padding: '10px 12px',
-            fontFamily: '"DM Mono", ui-monospace, monospace',
-            fontSize: 13,
-            outline: 'none',
-          }}
-        />
-        <textarea
-          required
-          value={times}
-          onChange={(e) => setTimes(e.target.value)}
-          placeholder="e.g. Tuesday after 5pm, Wednesday mornings, weekend"
-          rows={3}
-          aria-label="Preferred times"
-          style={{
-            background: '#0f0f0f',
-            color: INK,
-            border: `0.5px solid ${BORDER}`,
-            borderRadius: RADIUS - 6,
-            padding: '10px 12px',
-            fontFamily: '"DM Mono", ui-monospace, monospace',
-            fontSize: 13,
-            resize: 'vertical',
-            outline: 'none',
-          }}
-        />
-        {error ? (
-          <div style={{ color: GOLD, fontSize: 12, letterSpacing: '0.04em' }}>{error}</div>
-        ) : null}
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          style={{
-            ...PRIMARY_BUTTON_STYLE,
-            background: canSubmit ? GOLD : '#3a3a3a',
-            color: canSubmit ? BG : MUTE,
-            border: `0.5px solid ${canSubmit ? GOLD : BORDER}`,
-            cursor: canSubmit ? 'pointer' : 'not-allowed',
-            opacity: submitting ? 0.7 : 1,
-            alignSelf: 'flex-start',
-          }}
-        >
-          {submitting ? 'SENDING…' : 'REQUEST CONSULTATION'}
-        </button>
-      </form>
-    </GlassCard>
-  );
-}
-
-function MicroPlanCard({ plan }) {
-  if (!plan || !Array.isArray(plan.days) || plan.days.length === 0) return null;
-  const sortedDays = [...plan.days].sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <GlassCard>
-        <div style={CARD_HEADING_STYLE}>YOUR FIRST 7 DAYS</div>
-        {plan.identified_pain ? (
-          <div style={{ ...CARD_FRAMING_STYLE, marginTop: 6 }}>
-            <span style={{ color: GOLD }}>The pain:</span> {plan.identified_pain}
-          </div>
-        ) : null}
-        {plan.week_goal ? (
-          <div style={{ ...CARD_FRAMING_STYLE, marginTop: 4 }}>
-            <span style={{ color: GOLD }}>The standard:</span> {plan.week_goal}
-          </div>
-        ) : null}
-        <div
-          style={{
-            marginTop: 12,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            borderTop: `0.5px solid ${BORDER}`,
-            paddingTop: 12,
-          }}
-        >
-          {sortedDays.map((d, i) => (
-            <DayRow key={i} day={d.day} focus={d.focus} action={d.action} />
-          ))}
-        </div>
-      </GlassCard>
-      {plan.cliffhanger ? (
-        <GlassCard accent>
-          <div style={{ ...CARD_FRAMING_STYLE, color: INK, marginTop: 0 }}>{plan.cliffhanger}</div>
-          <div style={{ marginTop: 12 }}>
-            <a
-              href={QUALIFIER_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={PRIMARY_BUTTON_STYLE}
-            >
-              OPEN QUALIFIER
-            </a>
-          </div>
-        </GlassCard>
-      ) : null}
-    </div>
-  );
-}
-
-function DayRow({ day, focus, action }) {
-  return (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'baseline' }}>
-      <div
-        style={{
-          fontFamily: '"Bebas Neue", system-ui, sans-serif',
-          letterSpacing: '0.06em',
-          fontSize: 18,
-          color: GOLD,
-          minWidth: 36,
-        }}
-      >
-        DAY {day}
-      </div>
-      <div style={{ flex: 1, fontSize: 13, color: INK, lineHeight: 1.5 }}>
-        {focus ? (
-          <div style={{ color: MUTE, fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            {focus}
-          </div>
-        ) : null}
-        {action ? <div style={{ marginTop: 2 }}>{action}</div> : null}
-      </div>
-    </div>
   );
 }
 

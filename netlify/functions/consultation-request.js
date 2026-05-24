@@ -1,16 +1,22 @@
 import { createHash } from 'node:crypto';
 import { getAdminClient } from './_shared/supabase-admin.js';
+import { AGENT_SURFACES, isValidSurface } from '../../src/lib/agentTools.js';
 
-// Public-facing consultation request endpoint. Fires when a visitor submits
-// the ConsultationCard form on /standard (or any of the /structure, /system,
-// /protocol, /align surfaces).
+// Generic consultation-request endpoint. Surface-agnostic: any agent-toolkit
+// consumer (diagnose siblings today, audit app + future keyword pages later)
+// can POST here as long as it passes `surface` matching the toolkit allowlist.
 //
 // Body shape:
-//   { session_id: uuid, lead_email: string, preferred_times: string }
+//   { session_id: uuid, lead_email: string, preferred_times: string,
+//     surface?: string  // default 'standard'; must be in AGENT_SURFACES }
 //
 // Side effects:
-//   - INSERT into consultation_requests with a snapshot of the conversation.
-//   - UPDATE diagnose_sessions: consultation_requested=true, lead_email=<input>.
+//   - INSERT into consultation_requests with a snapshot of the conversation
+//     (transcript pulled per-surface) and source_surface tagged.
+//   - For diagnose surfaces (standard/structure/system/protocol/align): also
+//     UPDATE diagnose_sessions: consultation_requested=true, lead_email.
+//   - For audit (and future non-diagnose surfaces): skip the diagnose_sessions
+//     update — the consuming surface owns its own session table.
 //   - Resend email to percyhendrux123@gmail.com with the full transcript.
 //
 // The Resend dispatch is best-effort. If RESEND_API_KEY is unset the row still
@@ -32,6 +38,11 @@ const IP_WINDOW_SEC = 3600;
 const OWNER_EMAIL = 'percyhendrux123@gmail.com';
 const FROM_NAME = 'PKFIT Diagnose';
 const FROM_EMAIL_FALLBACK = 'coach@pkfit.app';
+
+// Surfaces that share the diagnose_sessions table. Other surfaces in
+// AGENT_SURFACES (e.g. 'audit') will provide their own session resolver in a
+// follow-up — for now they get a 501 if they POST here.
+const DIAGNOSE_SURFACES = new Set(['standard', 'structure', 'system', 'protocol', 'align']);
 
 function json(status, body, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -112,6 +123,27 @@ function formatTranscript(messages, sessionKeyword) {
   return lines.join('\n');
 }
 
+// Per-surface session lookup. Each branch returns a normalized
+// { messages, intent_level, surfaceLabel } object (or null on miss).
+// Extending to a new surface = add a branch here that hits the right table.
+async function resolveSession({ admin, sessionId, surface }) {
+  if (DIAGNOSE_SURFACES.has(surface)) {
+    const { data } = await admin
+      .from('diagnose_sessions')
+      .select('id, keyword, messages, intent_level')
+      .eq('id', sessionId)
+      .maybeSingle();
+    if (!data) return null;
+    return {
+      messages: data.messages,
+      intent_level: data.intent_level,
+      surfaceLabel: data.keyword || surface,
+    };
+  }
+  // Future: branch for audit surface using its own session table.
+  return null;
+}
+
 async function sendResendEmail({ to, subject, body, replyTo }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -177,6 +209,7 @@ export default async (req) => {
     typeof body.preferred_times === 'string'
       ? body.preferred_times.trim().slice(0, MAX_TIMES_CHARS)
       : '';
+  const surface = isValidSurface(body.surface) ? body.surface : 'standard';
 
   if (!sessionId || !UUID_RE.test(sessionId)) {
     return json(400, { error: 'invalid session_id' });
@@ -186,6 +219,17 @@ export default async (req) => {
   }
   if (!preferredTimes) {
     return json(400, { error: 'preferred_times required' });
+  }
+  if (!DIAGNOSE_SURFACES.has(surface)) {
+    // Non-diagnose surfaces (e.g. 'audit') need their own session resolver
+    // wired before this endpoint can serve them. Fail loud so the integrating
+    // surface knows to extend resolveSession() rather than getting a silent
+    // session-not-found.
+    return json(501, {
+      error: 'surface not yet wired',
+      surface,
+      hint: `Add a session resolver for "${surface}" to consultation-request.js (or pass surface=standard if testing).`,
+    });
   }
 
   const admin = getAdminClient();
@@ -201,13 +245,10 @@ export default async (req) => {
     );
   }
 
-  // Pull the session for transcript + keyword. If it doesn't exist, refuse —
-  // we don't want orphan consultation requests with no context.
-  const { data: session } = await admin
-    .from('diagnose_sessions')
-    .select('id, keyword, messages, intent_level')
-    .eq('id', sessionId)
-    .maybeSingle();
+  // Resolve the session via the per-surface lookup. Currently all diagnose
+  // surfaces share diagnose_sessions; the audit/future branches will register
+  // their own resolver here.
+  const session = await resolveSession({ admin, sessionId, surface });
   if (!session) {
     return json(404, { error: 'session not found' });
   }
@@ -225,6 +266,7 @@ export default async (req) => {
       preferred_times: preferredTimes,
       full_conversation: messages,
       status: 'pending',
+      source_surface: surface,
     })
     .select('id, created_at')
     .maybeSingle();
@@ -235,18 +277,20 @@ export default async (req) => {
     });
   }
 
-  // Update the session — flag and capture the email. Best-effort; failure
-  // here doesn't void the consultation row.
-  await admin
-    .from('diagnose_sessions')
-    .update({
-      consultation_requested: true,
-      lead_email: leadEmail,
-      last_message_at: new Date().toISOString(),
-    })
-    .eq('id', sessionId);
+  // For diagnose surfaces, flag the session row and capture the email.
+  // Best-effort; failure here doesn't void the consultation row.
+  if (DIAGNOSE_SURFACES.has(surface)) {
+    await admin
+      .from('diagnose_sessions')
+      .update({
+        consultation_requested: true,
+        lead_email: leadEmail,
+        last_message_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+  }
 
-  const transcript = formatTranscript(messages, session.keyword);
+  const transcript = formatTranscript(messages, session.surfaceLabel || surface);
   const intentLine = session.intent_level
     ? `Intent level (last turn): ${session.intent_level}`
     : 'Intent level: not captured';
@@ -255,7 +299,7 @@ export default async (req) => {
     `New PKFIT consultation request.`,
     ``,
     `From: ${leadEmail}`,
-    `Session keyword: /${session.keyword || 'standard'}`,
+    `Surface: /${surface}`,
     `Session id: ${sessionId}`,
     `Request id: ${inserted.id}`,
     intentLine,
@@ -272,7 +316,7 @@ export default async (req) => {
   try {
     emailResult = await sendResendEmail({
       to: OWNER_EMAIL,
-      subject: `PKFIT consultation request from ${leadEmail}`,
+      subject: `PKFIT consultation request from ${leadEmail} (/${surface})`,
       body: emailBody,
       replyTo: leadEmail,
     });
