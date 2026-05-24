@@ -65,26 +65,15 @@ export default function OperateCoachInsights() {
     if (!isSupabaseConfigured || !user) return undefined;
     let cancelled = false;
     (async () => {
-      // Pull the coach's roster via assignment table; v1 RLS is "coach sees
-      // every client" so falling back to a `profiles where role='client'` is
-      // safe if the assignment table has no rows for this coach yet.
       const { data: assignments } = await supabase
         .from('coach_client_assignments')
         .select('client_id,is_primary,started_on,ended_on,profiles:client_id(id,name,email,created_at,plan,status)')
         .eq('coach_id', user.id)
         .is('ended_on', null);
 
-      let clientRows = (assignments ?? [])
+      const clientRows = (assignments ?? [])
         .map((a) => a.profiles)
         .filter(Boolean);
-      if (clientRows.length === 0) {
-        const { data: fallback } = await supabase
-          .from('profiles')
-          .select('id,name,email,created_at,plan,status')
-          .eq('role', 'client')
-          .order('created_at', { ascending: false });
-        clientRows = fallback ?? [];
-      }
       if (cancelled || clientRows.length === 0) {
         if (!cancelled) {
           setClients([]);
