@@ -170,6 +170,17 @@ export default function OperateCalendar() {
     if (id) nav(`/workouts/sessions/${id}`);
   }
 
+  // Tap a day cell: if a logged or planned session exists, jump straight to
+  // it. Otherwise scroll the upcoming list (rest day — no destination).
+  function openDay(cell) {
+    if (cell.muted) return;
+    const ev = eventsByDay.get(ymd(cell.date));
+    const session = ev?.sessions?.[0];
+    if (session?.id) {
+      nav(`/workouts/sessions/${session.id}`);
+    }
+  }
+
   return (
     <PhoneShell screen="Calendar">
       <div className="op-app">
@@ -178,7 +189,14 @@ export default function OperateCalendar() {
             <ChevronLeftSvg />
           </button>
           <div className="op-title">CALENDAR</div>
-          <button type="button" className="op-icon-btn" aria-label="Search"><SearchSvg /></button>
+          <button
+            type="button"
+            className="op-icon-btn"
+            aria-label="Workout history"
+            onClick={() => nav('/workouts/history')}
+          >
+            <SearchSvg />
+          </button>
         </div>
 
         <div className="op-month-bar">
@@ -201,8 +219,19 @@ export default function OperateCalendar() {
             if (c.muted) classes.push('op-muted');
             if (c.rest) classes.push('op-rest');
             if (c.today) classes.push('op-today op-selected');
+            const ev = eventsByDay.get(ymd(c.date));
+            const tappable = !c.muted && Boolean(ev?.sessions?.[0]?.id);
             return (
-              <div key={i} className={classes.join(' ')}>
+              <div
+                key={i}
+                className={classes.join(' ')}
+                role={tappable ? 'button' : undefined}
+                tabIndex={tappable ? 0 : undefined}
+                onClick={tappable ? () => openDay(c) : undefined}
+                onKeyDown={tappable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDay(c); } } : undefined}
+                style={tappable ? { cursor: 'pointer' } : undefined}
+                aria-label={tappable ? `Open session for ${MONTH_NAMES[c.date.getMonth()]} ${c.n}` : undefined}
+              >
                 <span className="op-mc-num">{c.n}</span>
                 {c.dot ? <span className={`op-mc-dot op-dot-${c.dot}`} /> : null}
               </div>
