@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import PhoneShell from '../../components/operate/PhoneShell';
 import BottomNav from '../../components/operate/BottomNav';
 import MicFab from '../../components/operate/MicFab';
-import { ChevronLeftSvg, ChevronRightSvg, CalendarSvg, MicSvg, CameraSvg, PlusSvg } from '../../components/operate/svg';
+import { ChevronLeftSvg, ChevronRightSvg, CalendarSvg, MicSvg, CameraSvg, PlusSvg, CloseSvg } from '../../components/operate/svg';
+import { SnapMealModal } from '../../components/SnapMealModal';
+import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const DOWS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -57,6 +59,22 @@ function ringOffset(consumed, target) {
   return Math.round(RING_CIRC * (1 - pct));
 }
 
+// 6-week month grid for the date picker popover (mirrors Calendar.jsx
+// pattern so the look matches the Training calendar).
+function buildPickerCells(cursor) {
+  const firstOfMonth = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const startOffset = firstOfMonth.getDay();
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(gridStart.getDate() - startOffset);
+  const cells = [];
+  for (let i = 0; i < 42; i += 1) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    cells.push({ date: d, muted: d.getMonth() !== cursor.getMonth() });
+  }
+  return cells;
+}
+
 export default function OperateNutrition() {
   const nav = useNavigate();
   const { user, profile } = useAuth();
@@ -64,6 +82,60 @@ export default function OperateNutrition() {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const dayKey = ymd(day);
+
+  // Snap-a-meal modal — opened by the global SNAP IT button.
+  const [snapOpen, setSnapOpen] = useState(false);
+  // Date picker popover — opened by the top-right calendar icon.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerCursor, setPickerCursor] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  // Slot currently capturing voice; null when not capturing. Global voice
+  // button uses 'SNACKS' so a quick log lands in the snacks bucket.
+  const [voiceSlot, setVoiceSlot] = useState(null);
+  // Undo toast for the most recent add. Survives 5s; tap UNDO to delete.
+  const [undo, setUndo] = useState(null); // { id, label, ts }
+  const undoTimer = useRef(null);
+
+  function showUndo(id, label) {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndo({ id, label, ts: Date.now() });
+    undoTimer.current = setTimeout(() => setUndo(null), 5000);
+  }
+  async function doUndo() {
+    if (!undo) return;
+    const id = undo.id;
+    setMeals((list) => list.filter((m) => m.id !== id));
+    setUndo(null);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    await supabase.from('meals').delete().eq('id', id);
+  }
+
+  // Voice capture — onFinal fires when the user stops speaking. We insert a
+  // meal row in the captured slot whose only item is the transcript so the
+  // food field shows what they said. Auto-parse into macros is TODO.
+  const voice = useVoiceCapture({
+    onFinal: async (text) => {
+      const slot = voiceSlot || 'SNACKS';
+      setVoiceSlot(null);
+      if (!user || !text.trim()) return;
+      const row = {
+        client_id: user.id,
+        day: dayKey,
+        date: dayKey,
+        meal_type: slot.toLowerCase(),
+        items: [{ name: text.trim() }],
+        macros: {},
+        eaten: false,
+      };
+      const { data } = await supabase.from('meals').insert(row).select().maybeSingle();
+      if (data) {
+        setMeals((list) => [...list, data]);
+        showUndo(data.id, `Added: ${text.trim().slice(0, 32)}`);
+      }
+    },
+  });
 
   const load = useCallback(async () => {
     if (!isSupabaseConfigured || !user) {
@@ -128,7 +200,45 @@ export default function OperateNutrition() {
       eaten: false,
     };
     const { data } = await supabase.from('meals').insert(row).select().maybeSingle();
-    if (data) setMeals((list) => [...list, data]);
+    if (data) {
+      setMeals((list) => [...list, data]);
+      showUndo(data.id, `Added blank ${slot.toLowerCase()}`);
+    }
+  }
+
+  // Snap-a-meal commit handler. Modal returns { meal_type, items, macros }.
+  async function onSnapConfirm(payload) {
+    if (!user) return;
+    const row = {
+      client_id: user.id,
+      day: dayKey,
+      date: dayKey,
+      meal_type: (payload.meal_type ?? 'meal').toLowerCase(),
+      items: payload.items ?? [],
+      macros: payload.macros ?? {},
+      eaten: true,
+      eaten_at: new Date().toISOString(),
+    };
+    const { data } = await supabase.from('meals').insert(row).select().maybeSingle();
+    if (data) {
+      setMeals((list) => [...list, data]);
+      const label = (payload.items?.[0]?.name) || 'photo meal';
+      showUndo(data.id, `Snapped: ${String(label).slice(0, 32)}`);
+    }
+  }
+
+  function startVoiceFor(slot) {
+    setVoiceSlot(slot);
+    voice.start();
+  }
+  function cancelVoice() {
+    setVoiceSlot(null);
+    voice.stop();
+  }
+
+  function pickDate(date) {
+    setDay(new Date(date));
+    setPickerOpen(false);
   }
 
   const dayLabel = `${isToday(day) ? 'TODAY · ' : ''}${DOWS[day.getDay()]} ${MONTHS[day.getMonth()]} ${day.getDate()}`;
@@ -141,7 +251,17 @@ export default function OperateNutrition() {
             <ChevronLeftSvg />
           </button>
           <div className="op-title">NUTRITION</div>
-          <button type="button" className="op-icon-btn" aria-label="History"><CalendarSvg /></button>
+          <button
+            type="button"
+            className="op-icon-btn"
+            aria-label="Pick a date"
+            onClick={() => {
+              setPickerCursor(new Date(day.getFullYear(), day.getMonth(), 1));
+              setPickerOpen(true);
+            }}
+          >
+            <CalendarSvg />
+          </button>
         </div>
 
         <div className="op-date-bar">
@@ -186,13 +306,24 @@ export default function OperateNutrition() {
         </div>
 
         <div className="op-voice-bar">
-          {/* TODO: wire to gemini-voice-turn function for voice meal log */}
-          <button type="button" className="op-v-btn op-voice">
+          <button
+            type="button"
+            className="op-v-btn op-voice"
+            onClick={() => (voice.listening ? cancelVoice() : startVoiceFor('SNACKS'))}
+            aria-pressed={voice.listening}
+            disabled={!voice.supported}
+          >
             <div className="op-v-icon"><MicSvg /></div>
-            <div className="op-v-text"><span className="op-v-title">SAY IT</span><span className="op-v-sub">VOICE LOG</span></div>
+            <div className="op-v-text">
+              <span className="op-v-title">{voice.listening ? 'LISTENING…' : 'SAY IT'}</span>
+              <span className="op-v-sub">{voice.listening ? (voice.transcript || 'speak…').slice(0, 24) : 'VOICE LOG'}</span>
+            </div>
           </button>
-          {/* TODO: wire to gemini-meal-photo function (already exists) — needs file input + modal */}
-          <button type="button" className="op-v-btn op-photo">
+          <button
+            type="button"
+            className="op-v-btn op-photo"
+            onClick={() => setSnapOpen(true)}
+          >
             <div className="op-v-icon"><CameraSvg /></div>
             <div className="op-v-text"><span className="op-v-title">SNAP IT</span><span className="op-v-sub">PHOTO MEAL</span></div>
           </button>
@@ -253,13 +384,149 @@ export default function OperateNutrition() {
                 <button type="button" className="op-meal-action" onClick={() => addBlankMeal(slot)}>
                   <PlusSvg />ADD FOOD
                 </button>
-                {/* TODO: voice-log per-slot — wire to gemini-voice-turn */}
-                <button type="button" className="op-meal-action op-gold"><MicSvg />SAY IT</button>
+                <button
+                  type="button"
+                  className="op-meal-action op-gold"
+                  onClick={() => {
+                    if (voice.listening && voiceSlot === slot) {
+                      cancelVoice();
+                    } else {
+                      startVoiceFor(slot);
+                    }
+                  }}
+                  aria-pressed={voice.listening && voiceSlot === slot}
+                  disabled={!voice.supported}
+                >
+                  <MicSvg />
+                  {voice.listening && voiceSlot === slot ? 'LISTENING…' : 'SAY IT'}
+                </button>
               </div>
             </div>
           );
         })}
       </div>
+
+      {pickerOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pick a meal date"
+          onClick={() => setPickerOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            paddingTop: 80,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(360px, 92vw)', background: '#161616', border: '1px solid #2a2a2a',
+              borderRadius: 14, padding: 16, color: '#F5F5F5',
+              fontFamily: '"DM Mono", monospace',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <button
+                type="button" className="op-icon-btn op-icon-btn--mute"
+                onClick={() => setPickerCursor((c) => new Date(c.getFullYear(), c.getMonth() - 1, 1))}
+                aria-label="Previous month"
+              ><ChevronLeftSvg /></button>
+              <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 18, letterSpacing: '2px' }}>
+                {MONTHS[pickerCursor.getMonth()]} {pickerCursor.getFullYear()}
+              </div>
+              <button
+                type="button" className="op-icon-btn op-icon-btn--mute"
+                onClick={() => setPickerCursor((c) => new Date(c.getFullYear(), c.getMonth() + 1, 1))}
+                aria-label="Next month"
+              ><ChevronRightSvg /></button>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4,
+              fontSize: 10, color: '#888', letterSpacing: '1px', textAlign: 'center',
+              marginBottom: 6,
+            }}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((l, i) => <span key={i}>{l}</span>)}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+              {buildPickerCells(pickerCursor).map((c, i) => {
+                const sel = ymd(c.date) === dayKey;
+                const isTd = isToday(c.date);
+                return (
+                  <button
+                    key={i} type="button"
+                    onClick={() => pickDate(c.date)}
+                    style={{
+                      aspectRatio: '1', background: sel ? '#1a1610' : '#0e0e0e',
+                      border: sel ? '1px solid #C9A84C' : '0.5px solid #1a1a1a',
+                      borderRadius: 8, color: c.muted ? '#444' : (sel || isTd ? '#C9A84C' : '#F5F5F5'),
+                      fontFamily: '"Bebas Neue", sans-serif', fontSize: 14,
+                      letterSpacing: '0.5px', cursor: 'pointer', padding: 0,
+                    }}
+                    aria-label={`${MONTHS[c.date.getMonth()]} ${c.date.getDate()}`}
+                  >
+                    {c.date.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button
+                type="button"
+                onClick={() => pickDate(new Date())}
+                style={{
+                  flex: 1, background: 'transparent', border: '1px solid #2a2a2a',
+                  borderRadius: 8, padding: 9, color: '#F5F5F5',
+                  fontFamily: '"Bebas Neue", sans-serif', fontSize: 12, letterSpacing: '2px', cursor: 'pointer',
+                }}
+              >TODAY</button>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(false)}
+                style={{
+                  flex: 1, background: '#C9A84C', border: 'none', borderRadius: 8,
+                  padding: 9, color: '#080808',
+                  fontFamily: '"Bebas Neue", sans-serif', fontSize: 12, letterSpacing: '2px', cursor: 'pointer',
+                }}
+              >DONE</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <SnapMealModal open={snapOpen} onClose={() => setSnapOpen(false)} onConfirm={onSnapConfirm} />
+
+      {undo ? (
+        <div
+          role="status"
+          style={{
+            position: 'fixed', left: '50%', bottom: 92, transform: 'translateX(-50%)',
+            background: 'rgba(22,22,22,0.95)', border: '1px solid #2a2a2a',
+            borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12,
+            color: '#F5F5F5', fontFamily: '"DM Mono", monospace', fontSize: 12,
+            zIndex: 55, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            maxWidth: '92vw',
+          }}
+        >
+          <span style={{ letterSpacing: '0.5px' }}>{undo.label}</span>
+          <button
+            type="button" onClick={doUndo}
+            style={{
+              background: 'transparent', border: 'none', color: '#C9A84C',
+              fontFamily: '"Bebas Neue", sans-serif', fontSize: 13, letterSpacing: '2px',
+              cursor: 'pointer', padding: '2px 4px',
+            }}
+          >UNDO</button>
+          <button
+            type="button" onClick={() => setUndo(null)} aria-label="Dismiss"
+            style={{
+              background: 'transparent', border: 'none', color: '#888', cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', padding: 2,
+            }}
+          ><CloseSvg /></button>
+        </div>
+      ) : null}
 
       <MicFab context="nutrition" />
       <BottomNav active="nutrition" />
