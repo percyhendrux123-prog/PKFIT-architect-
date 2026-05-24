@@ -1,13 +1,56 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip } from 'lucide-react';
+import {
+  Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip,
+  Radio, MicOff, Copy, RotateCcw, FileText, Brain,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
-import { streamAssistant, streamAgentAssistant, gemini, uploadArchitectImage } from '../../lib/claudeClient';
+import {
+  streamAssistant, streamAgentAssistant, gemini, uploadArchitectFile, getAuthHeaders,
+} from '../../lib/claudeClient';
+import { VoiceMode, VOICE_STATES } from '../../lib/voiceMode';
 import { Button } from '../../components/ui/Button';
 import { ContextPinMenu } from '../../components/ContextPinMenu';
+import MarkdownContent from '../../components/MarkdownContent';
 
 const MAX_IMAGE_LONG_EDGE = 2048;
 const IMAGE_QUALITY = 0.85;
+const MAX_DOC_BYTES = 32 * 1024 * 1024;
+const ATTACH_ACCEPT =
+  'image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/markdown,text/plain,text/csv,.md,.txt,.csv,.docx,.xlsx,.pdf';
+
+const TOOL_LABEL_IN_PROGRESS = {
+  web_search: 'Searching web',
+  web_fetch: 'Fetching page',
+  read_file: 'Reading file',
+  write_file: 'Writing file',
+  analyze_image: 'Reading image',
+  analyze_document: 'Reading document',
+  read_operator_upload: 'Inspecting upload',
+  read_client_data: 'Reading your data',
+  run_generator: 'Running generator',
+  compare_periods: 'Comparing periods',
+  aggregate_clients: 'Aggregating clients',
+  supabase_query_read: 'Querying database',
+  supabase_query_write: 'Writing to database',
+  mcp_call: 'Calling integration',
+  generate_image: 'Generating image',
+  voice_tts: 'Synthesizing voice',
+  spawn_code_task: 'Spawning task',
+  send_message_to_task: 'Messaging task',
+  read_task_transcript: 'Reading task output',
+  set_env_var: 'Setting env var',
+  client_memory_read: 'Recalling from history',
+  client_memory_write: 'Saving to memory',
+};
+
+function toolLabel(name) {
+  return TOOL_LABEL_IN_PROGRESS[name] || name.replace(/_/g, ' ');
+}
+
+function isMemoryTool(name) {
+  return typeof name === 'string' && /memory/i.test(name);
+}
 
 // Client-side resize: long edge clamped to 2048px, re-encode as JPEG q85.
 // Returns a File so the FormData append carries the original name.
@@ -126,13 +169,26 @@ export default function Assistant() {
   const [agentEvents, setAgentEvents] = useState([]);  // tool calls + approvals
   const [convUsd, setConvUsd] = useState(0);
   // Pending image attachment for the next outgoing message. Cleared after send.
-  const [pendingUpload, setPendingUpload] = useState(null); // { upload_id, mime, bytes, filename, preview_url }
+  const [pendingUpload, setPendingUpload] = useState(null); // { upload_id, mime, bytes, filename, preview_url, kind }
   const [uploading, setUploading] = useState(false);
+  // Voice-mode (continuous two-way) state. Separate from push-to-talk above.
+  const [voiceModeOn, setVoiceModeOn] = useState(false);
+  const [voiceState, setVoiceState] = useState(VOICE_STATES.IDLE);
+  // Per-assistant-message tool events: messageTools[messageIndex] = [{name, status, summary, error, memory}]
+  const [messageTools, setMessageTools] = useState({});
+  const [copiedIndex, setCopiedIndex] = useState(null);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const endRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  // The index of the assistant message currently being streamed — so
+  // tool_call / tool_result events from the agent loop attach to the
+  // right message bubble for inline chip rendering.
+  const currentAssistantIdxRef = useRef(null);
+  const voiceRef = useRef(null);
+  const abortRef = useRef(null);
+  const lastSendRef = useRef(null); // { outgoing, pendingUpload } — for regenerate
 
   // Auto-resize the textarea on every input change. Reset to `auto` so the
   // browser recalculates `scrollHeight` from the actual content rather than
@@ -185,6 +241,57 @@ export default function Assistant() {
   useEffect(() => { loadConversations(); }, [loadConversations]);
   useEffect(() => { loadMessages(currentId); }, [currentId, loadMessages]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  // Tear down voice mode on unmount or page navigation.
+  useEffect(() => () => {
+    if (voiceRef.current) {
+      voiceRef.current.stop();
+      voiceRef.current = null;
+    }
+  }, []);
+
+  // Ref to the latest send so VoiceMode (created once) can call into the
+  // current closure when a transcript arrives — without re-creating the
+  // VoiceMode instance on every render.
+  const dispatchSendRef = useRef(null);
+
+  async function toggleVoiceMode() {
+    if (voiceModeOn) {
+      if (voiceRef.current) {
+        voiceRef.current.stop();
+        voiceRef.current = null;
+      }
+      setVoiceModeOn(false);
+      setVoiceState(VOICE_STATES.IDLE);
+      return;
+    }
+    const vm = new VoiceMode({
+      getAuthHeaders,
+      onTranscript: (transcript) => {
+        const trimmed = transcript.trim();
+        if (!trimmed) return;
+        setInput('');
+        // If a stream is already running, abort it — the user is interrupting.
+        if (abortRef.current) {
+          try { abortRef.current.abort(); } catch { /* ignore */ }
+          abortRef.current = null;
+        }
+        const dispatcher = dispatchSendRef.current;
+        if (dispatcher) dispatcher({ outgoing: trimmed, attachmentForMarker: null });
+      },
+      onError: (msg) => setErr(msg),
+      onStateChange: (next) => setVoiceState(next),
+    });
+    voiceRef.current = vm;
+    setVoiceModeOn(true);
+    await vm.start();
+  }
+
+  function muteVoice() {
+    voiceRef.current?.mute();
+  }
+  function unmuteVoice() {
+    voiceRef.current?.unmute();
+  }
 
   function handleInputKeyDown(e) {
     // Standard chat pattern: Enter submits, Shift+Enter inserts a newline.
@@ -197,50 +304,107 @@ export default function Assistant() {
     if (input.trim() && !busy && !recording) send(e);
   }
 
-  async function send(e) {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text && !pendingUpload) return;
-    // Prefix the outgoing message with an [image attached: …] marker so the
-    // Architect's tool-use loop knows to call analyze_image(upload_id, …).
-    // The marker is intentionally machine-readable; the user sees it in the
-    // transcript as a small annotation above their typed text.
-    const attachmentMarker = pendingUpload
-      ? `[image attached: upload_id=${pendingUpload.upload_id}, mime=${pendingUpload.mime}, bytes=${pendingUpload.bytes}]`
-      : '';
-    const outgoing = attachmentMarker
-      ? (text ? `${attachmentMarker}\n${text}` : attachmentMarker)
-      : text;
-    setMessages((m) => [...m, { role: 'user', content: outgoing }, { role: 'assistant', content: '' }]);
-    setInput('');
-    setPendingUpload(null);
+  async function dispatchSend({ outgoing, attachmentForMarker, replaceLastAssistant = false }) {
     setBusy(true);
     setErr(null);
     setAgentEvents([]);
-    let resolvedConversationId = currentId;
+    lastSendRef.current = { outgoing, attachmentForMarker };
+
+    let assistantIdx;
+    setMessages((m) => {
+      const next = [...m];
+      if (replaceLastAssistant && next.length > 0 && next[next.length - 1]?.role === 'assistant') {
+        next[next.length - 1] = { role: 'assistant', content: '' };
+        assistantIdx = next.length - 1;
+      } else {
+        next.push({ role: 'user', content: outgoing });
+        next.push({ role: 'assistant', content: '' });
+        assistantIdx = next.length - 1;
+      }
+      return next;
+    });
+    // Schedule index capture after state apply.
+    queueMicrotask(() => {
+      currentAssistantIdxRef.current = assistantIdx;
+    });
+    setMessageTools((mt) => ({ ...mt, [assistantIdx]: [] }));
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     const streamer = agenticMode ? streamAgentAssistant : streamAssistant;
+    let resolvedConversationId = currentId;
+
     try {
       await streamer({
         conversationId: currentId,
         message: outgoing,
+        signal: controller.signal,
         onEvent: ({ event, data }) => {
           if (event === 'meta' && data?.conversationId) {
             resolvedConversationId = data.conversationId;
             if (!currentId) setCurrentId(data.conversationId);
             if (typeof data.conv_usd === 'number') setConvUsd(data.conv_usd);
           } else if (event === 'delta' && typeof data?.text === 'string') {
+            const chunk = data.text;
             setMessages((m) => {
               const next = [...m];
               const last = next[next.length - 1];
               if (last?.role === 'assistant') {
-                next[next.length - 1] = { ...last, content: last.content + data.text };
+                next[next.length - 1] = { ...last, content: last.content + chunk };
               }
               return next;
             });
+            if (voiceRef.current && voiceModeOn) voiceRef.current.pushTokens(chunk);
           } else if (event === 'tool_call') {
             setAgentEvents((evts) => [...evts, { kind: 'tool_call', ...data }]);
+            const idx = currentAssistantIdxRef.current;
+            if (idx != null) {
+              setMessageTools((mt) => {
+                const list = mt[idx] ? [...mt[idx]] : [];
+                list.push({
+                  id: data?.tool_use_id || `${data?.name}-${list.length}`,
+                  name: data?.name,
+                  status: 'in_progress',
+                  memory: isMemoryTool(data?.name),
+                });
+                return { ...mt, [idx]: list };
+              });
+            }
           } else if (event === 'tool_result') {
             setAgentEvents((evts) => [...evts, { kind: 'tool_result', ...data }]);
+            const idx = currentAssistantIdxRef.current;
+            if (idx != null) {
+              setMessageTools((mt) => {
+                const list = mt[idx] ? [...mt[idx]] : [];
+                // Match by tool_use_id when possible, else by latest in_progress with same name.
+                let i = -1;
+                if (data?.tool_use_id) i = list.findIndex((x) => x.id === data.tool_use_id);
+                if (i < 0) {
+                  for (let j = list.length - 1; j >= 0; j -= 1) {
+                    if (list[j].name === data?.name && list[j].status === 'in_progress') { i = j; break; }
+                  }
+                }
+                if (i >= 0) {
+                  list[i] = {
+                    ...list[i],
+                    status: data?.error ? 'error' : 'done',
+                    summary: data?.summary,
+                    error: data?.error,
+                  };
+                } else {
+                  list.push({
+                    id: data?.tool_use_id || `${data?.name}-${list.length}`,
+                    name: data?.name,
+                    status: data?.error ? 'error' : 'done',
+                    summary: data?.summary,
+                    error: data?.error,
+                    memory: isMemoryTool(data?.name),
+                  });
+                }
+                return { ...mt, [idx]: list };
+              });
+            }
           } else if (event === 'approval_request') {
             setAgentEvents((evts) => [...evts, { kind: 'approval_request', ...data }]);
           } else if (event === 'soft_prompt') {
@@ -249,6 +413,7 @@ export default function Assistant() {
             // Live usage updates — quiet; conv_usd is updated by done.
           } else if (event === 'done') {
             if (typeof data?.conv_usd === 'number') setConvUsd(data.conv_usd);
+            if (voiceRef.current && voiceModeOn) voiceRef.current.finalize();
           } else if (event === 'error') {
             setErr(data?.message ?? 'Stream failed');
           }
@@ -259,18 +424,79 @@ export default function Assistant() {
         // nothing to reload — messages already appended client-side
       }
     } catch (e) {
-      setErr(e.message);
-      // Strip the empty assistant placeholder if the stream failed outright.
-      setMessages((m) => {
-        const next = [...m];
-        const last = next[next.length - 1];
-        if (last?.role === 'assistant' && last.content === '') next.pop();
-        return next;
-      });
+      if (e?.name === 'AbortError' || /aborted/i.test(e?.message || '')) {
+        // User pressed Stop — keep whatever streamed text we have.
+      } else {
+        setErr(e.message);
+        setMessages((m) => {
+          const next = [...m];
+          const last = next[next.length - 1];
+          if (last?.role === 'assistant' && last.content === '') next.pop();
+          return next;
+        });
+      }
     } finally {
       setBusy(false);
+      abortRef.current = null;
+      currentAssistantIdxRef.current = null;
     }
   }
+
+  async function send(e) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text && !pendingUpload) return;
+    // Prefix the outgoing message with a context marker so the Architect's
+    // tool-use loop knows to call analyze_image / analyze_document.
+    let attachmentMarker = '';
+    if (pendingUpload) {
+      const kind = pendingUpload.kind === 'document' ? 'file' : 'image';
+      attachmentMarker = `[${kind} attached: upload_id=${pendingUpload.upload_id}, mime=${pendingUpload.mime}, bytes=${pendingUpload.bytes}, filename=${pendingUpload.filename || 'upload'}]`;
+    }
+    const outgoing = attachmentMarker
+      ? (text ? `${attachmentMarker}\n${text}` : attachmentMarker)
+      : text;
+    setInput('');
+    const stashUpload = pendingUpload;
+    setPendingUpload(null);
+    await dispatchSend({ outgoing, attachmentForMarker: stashUpload });
+  }
+
+  function stopStream() {
+    if (abortRef.current) {
+      try { abortRef.current.abort(); } catch { /* ignore */ }
+      abortRef.current = null;
+    }
+    if (voiceRef.current) voiceRef.current.cancelSpeech();
+    setBusy(false);
+  }
+
+  async function regenerateLast() {
+    if (busy) return;
+    // Find the most recent user message and replay it.
+    let lastUserIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i].role === 'user') { lastUserIdx = i; break; }
+    }
+    if (lastUserIdx < 0) return;
+    const outgoing = messages[lastUserIdx].content;
+    await dispatchSend({ outgoing, attachmentForMarker: null, replaceLastAssistant: true });
+  }
+
+  function copyMessage(idx, content) {
+    const text = String(content || '').replace(ACTION_TAG_RE, '').trim();
+    if (!text) return;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedIndex(idx);
+        setTimeout(() => setCopiedIndex((cur) => (cur === idx ? null : cur)), 1200);
+      }).catch(() => {});
+    }
+  }
+
+  // Keep the ref pointing at the latest dispatchSend closure so VoiceMode's
+  // onTranscript can use the freshest version of conv state.
+  dispatchSendRef.current = dispatchSend;
 
   async function startRecording() {
     setErr(null);
@@ -317,32 +543,45 @@ export default function Assistant() {
     setRecording(false);
   }
 
-  // Architect image upload (paperclip). Resize client-side, POST to the
-  // upload endpoint, stash the upload_id so the next send prefixes the
-  // [image attached: …] marker.
+  // Architect file upload (paperclip). Images are resized client-side; docs
+  // are sent raw. Both POST to /architect-upload; the resulting upload_id is
+  // attached to the next user message as a [image|file attached: …] marker.
   async function handleFileChosen(e) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setErr('Only images are supported.');
+    const isImage = file.type.startsWith('image/');
+    const isDoc = (
+      file.type === 'application/pdf' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'text/markdown' ||
+      file.type === 'text/x-markdown' ||
+      file.type === 'text/plain' ||
+      file.type === 'text/csv' ||
+      /\.(pdf|docx|xlsx|md|txt|csv)$/i.test(file.name || '')
+    );
+    if (!isImage && !isDoc) {
+      setErr('Unsupported file type. Accepted: images, PDF, DOCX, XLSX, MD, TXT, CSV.');
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      setErr('Image is larger than 20MB.');
+    const cap = isImage ? 20 * 1024 * 1024 : MAX_DOC_BYTES;
+    if (file.size > cap) {
+      setErr(`File is larger than ${Math.round(cap / (1024 * 1024))}MB.`);
       return;
     }
     setErr(null);
     setUploading(true);
     try {
-      const resized = await resizeImageFile(file);
-      const result = await uploadArchitectImage({ file: resized });
+      const upload = isImage ? await resizeImageFile(file) : file;
+      const result = await uploadArchitectFile({ file: upload });
       setPendingUpload({
         upload_id: result.upload_id,
         mime: result.mime,
         bytes: result.bytes,
+        kind: result.kind || (isImage ? 'image' : 'document'),
         filename: file.name,
-        preview_url: result.signed_url,
+        preview_url: isImage ? result.signed_url : null,
       });
     } catch (ex) {
       setErr(ex?.message ?? 'Upload failed');
@@ -465,32 +704,73 @@ export default function Assistant() {
       </aside>
 
       <section className="flex flex-col">
-        <header className="mb-8">
-          <div className="label mb-3">Assistant</div>
-          <h1 className="font-display text-4xl tracking-wider2">The Architect</h1>
-          <p className="mt-3 max-w-reading text-sm leading-relaxed text-mute">
+        <header className="mb-10">
+          <div className="label mb-4">Assistant</div>
+          <h1 className="font-display text-[2.5rem] leading-[1] tracking-wider2 md:text-5xl">The Architect</h1>
+          <p className="mt-4 max-w-reading text-sm leading-7 text-mute">
             Mechanism over motivation. No hype. Ask the question you would ask the coach.
           </p>
-          {isOwner ? (
-            <div className="mt-3 flex flex-wrap items-center gap-3 border border-line bg-black/20 px-3 py-2 text-[0.65rem] uppercase tracking-widest2 text-mute">
-              <Zap size={12} className={agenticMode ? 'text-gold' : 'text-faint'} />
-              <button
-                type="button"
-                onClick={() => setAgenticMode((v) => !v)}
-                className={`underline-offset-4 hover:underline ${agenticMode ? 'text-gold' : 'text-faint'}`}
-              >
-                Agentic mode: {agenticMode ? 'on' : 'off'}
-              </button>
-              <span className="text-faint">·</span>
-              <span>Conv cost: ${convUsd.toFixed(4)}</span>
-              {agenticMode ? (
-                <>
-                  <span className="text-faint">·</span>
-                  <a href="/owner/agent-log" className="hover:text-gold">Audit log →</a>
-                </>
-              ) : null}
-            </div>
-          ) : null}
+          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 border border-line bg-black/20 px-4 py-2.5 text-[0.65rem] uppercase tracking-widest2 text-mute">
+            {isOwner ? (
+              <>
+                <Zap size={12} className={agenticMode ? 'text-gold' : 'text-faint'} />
+                <button
+                  type="button"
+                  onClick={() => setAgenticMode((v) => !v)}
+                  className={`underline-offset-4 hover:underline ${agenticMode ? 'text-gold' : 'text-faint'}`}
+                >
+                  Agentic mode: {agenticMode ? 'on' : 'off'}
+                </button>
+                <span className="text-faint">·</span>
+              </>
+            ) : null}
+            <Radio size={12} className={voiceModeOn ? 'text-gold' : 'text-faint'} />
+            <button
+              type="button"
+              onClick={toggleVoiceMode}
+              className={`underline-offset-4 hover:underline ${voiceModeOn ? 'text-gold' : 'text-faint'}`}
+              aria-pressed={voiceModeOn}
+              aria-label="Toggle live voice mode"
+            >
+              Voice mode: {voiceModeOn ? voiceState : 'off'}
+            </button>
+            {voiceModeOn ? (
+              <>
+                <span className="text-faint">·</span>
+                {voiceState === VOICE_STATES.MUTED ? (
+                  <button
+                    type="button"
+                    onClick={unmuteVoice}
+                    className="flex items-center gap-1 text-faint hover:text-gold"
+                    aria-label="Unmute mic"
+                  >
+                    <MicOff size={12} /> unmute
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={muteVoice}
+                    className="flex items-center gap-1 text-faint hover:text-gold"
+                    aria-label="Mute mic"
+                  >
+                    <Mic size={12} /> mute
+                  </button>
+                )}
+              </>
+            ) : null}
+            {isOwner ? (
+              <>
+                <span className="text-faint">·</span>
+                <span>Conv cost: ${convUsd.toFixed(4)}</span>
+                {agenticMode ? (
+                  <>
+                    <span className="text-faint">·</span>
+                    <a href="/owner/agent-log" className="hover:text-gold">Audit log →</a>
+                  </>
+                ) : null}
+              </>
+            ) : null}
+          </div>
         </header>
 
         {agentEvents.length > 0 ? (
@@ -530,13 +810,22 @@ export default function Assistant() {
           </div>
         ) : null}
 
-        <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-6">
+        <div className="flex-1 overflow-y-auto border border-line bg-black/20 p-6 md:p-8">
           {messages.length === 0 ? (
-            <div className="text-sm leading-relaxed text-faint">
-              Start with a single, specific question. Example: why did my bench stall at 85 kg for three weeks.
+            <div className="flex h-full min-h-[280px] flex-col items-start justify-end">
+              <div className="label mb-4 text-faint">Open a thread</div>
+              <p className="font-display text-2xl leading-tight tracking-wider2 text-ink md:text-3xl">
+                One specific question.
+              </p>
+              <p className="mt-3 max-w-reading text-sm leading-7 text-mute">
+                Why did my bench stall at 85 kg for three weeks. What is the right deload window after a competition prep. How do I read my last review.
+              </p>
+              <p className="mt-6 max-w-reading text-[0.7rem] uppercase tracking-widest2 text-faint">
+                Attach a photo, PDF, or spreadsheet · Toggle voice mode for a hands-free conversation
+              </p>
             </div>
           ) : (
-            <ul className="space-y-6">
+            <ul className="space-y-7 md:space-y-8">
               {messages.map((m, i) => {
                 const action = m.role === 'assistant' && !m._system ? parseAction(m.content) : null;
                 const isLastAssistant =
@@ -545,21 +834,107 @@ export default function Assistant() {
                 const visibleContent = action
                   ? m.content.replace(ACTION_TAG_RE, '').trim()
                   : m.content;
+                const tools = m.role === 'assistant' && !m._system ? messageTools[i] : null;
+                const memoryEvents = tools ? tools.filter((t) => t.memory) : [];
+                const otherEvents = tools ? tools.filter((t) => !t.memory) : [];
+                const isEmptyAssistant = m.role === 'assistant' && !m._system && !visibleContent;
                 return (
-                  <li key={i} className={m.role === 'user' ? 'text-right' : ''}>
+                  <li key={i} className={`pkfit-msg-in ${m.role === 'user' ? 'text-right' : ''}`}>
+                    {memoryEvents.length > 0 ? (
+                      <div className="mb-2 inline-flex max-w-[88%] flex-col gap-1 text-left">
+                        {memoryEvents.map((t, ti) => (
+                          <div
+                            key={`mem-${i}-${ti}`}
+                            className="inline-flex items-center gap-2 border border-gold/30 bg-gold/[0.06] px-2.5 py-1 text-[0.62rem] uppercase tracking-widest2 text-gold/80"
+                          >
+                            <Brain size={11} />
+                            {/client_memory_write|memory_save|memory_write/i.test(t.name) ? (
+                              <span>Wants to save{t.summary ? `: ${t.summary}` : ''} — approve in Coach panel</span>
+                            ) : (
+                              <span>Recalled from history{t.summary ? `: ${t.summary}` : ''}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    {otherEvents.length > 0 ? (
+                      <div className="mb-2 flex max-w-[88%] flex-wrap gap-1.5 text-left">
+                        {otherEvents.map((t, ti) => (
+                          <span
+                            key={`chip-${i}-${ti}`}
+                            className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.6rem] uppercase tracking-widest2 transition-colors duration-200 ${
+                              t.status === 'in_progress'
+                                ? 'border-gold/40 bg-gold/[0.08] text-gold/90'
+                                : t.status === 'error'
+                                ? 'border-signal/60 bg-signal/[0.08] text-signal'
+                                : 'border-line bg-black/40 text-mute'
+                            }`}
+                            title={t.summary || t.error || ''}
+                          >
+                            <span
+                              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                                t.status === 'in_progress'
+                                  ? 'bg-gold pkfit-typing-dot'
+                                  : t.status === 'error'
+                                  ? 'bg-signal'
+                                  : 'bg-gold/60'
+                              }`}
+                            />
+                            <span>{toolLabel(t.name)}</span>
+                            {t.status === 'done' && t.summary ? (
+                              <span className="ml-1 normal-case tracking-normal text-mute/70">
+                                — {String(t.summary).slice(0, 48)}{String(t.summary).length > 48 ? '…' : ''}
+                              </span>
+                            ) : null}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     <div
-                      className={`inline-block max-w-[80%] border p-4 text-sm ${
+                      className={`group relative inline-block max-w-[88%] border p-5 text-sm transition-colors duration-200 ${
                         m.role === 'user'
-                          ? 'border-gold text-ink'
+                          ? 'border-gold/80 text-ink'
                           : m._system
                           ? 'border-faint bg-black/10 text-faint italic'
                           : 'border-line bg-black/30 text-ink/90'
                       }`}
                     >
-                      <div className="label mb-2">
+                      <div className="label mb-3">
                         {m.role === 'user' ? 'You' : m._system ? 'System' : 'Architect'}
                       </div>
-                      <div className="whitespace-pre-wrap leading-relaxed">{visibleContent}</div>
+                      {isEmptyAssistant && busy ? (
+                        <div className="flex items-center gap-1.5 py-1" aria-label="Thinking">
+                          <span className="pkfit-typing-dot inline-block h-1.5 w-1.5 rounded-full bg-gold/80" style={{ animationDelay: '0ms' }} />
+                          <span className="pkfit-typing-dot inline-block h-1.5 w-1.5 rounded-full bg-gold/80" style={{ animationDelay: '180ms' }} />
+                          <span className="pkfit-typing-dot inline-block h-1.5 w-1.5 rounded-full bg-gold/80" style={{ animationDelay: '360ms' }} />
+                        </div>
+                      ) : m.role === 'assistant' && !m._system ? (
+                        <MarkdownContent text={visibleContent} />
+                      ) : (
+                        <div className="whitespace-pre-wrap font-body leading-7">{visibleContent}</div>
+                      )}
+                      {m.role === 'assistant' && !m._system && visibleContent ? (
+                        <div className="absolute right-1 top-1 hidden gap-1 group-hover:flex group-focus-within:flex">
+                          <button
+                            type="button"
+                            onClick={() => copyMessage(i, visibleContent)}
+                            className="border border-line bg-black/60 p-1 text-faint hover:border-gold hover:text-gold"
+                            aria-label="Copy message"
+                          >
+                            {copiedIndex === i ? <Check size={11} /> : <Copy size={11} />}
+                          </button>
+                          {isLastAssistant && !busy ? (
+                            <button
+                              type="button"
+                              onClick={regenerateLast}
+                              className="border border-line bg-black/60 p-1 text-faint hover:border-gold hover:text-gold"
+                              aria-label="Regenerate response"
+                            >
+                              <RotateCcw size={11} />
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
                       {showActionUI ? (
                         <div className="mt-3 border-t border-line pt-3">
                           <div className="text-[0.65rem] uppercase tracking-widest2 text-faint mb-2">
@@ -645,7 +1020,11 @@ export default function Assistant() {
                 alt="attachment preview"
                 className="h-10 w-10 object-cover border border-line"
               />
-            ) : null}
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-line bg-black/40 text-gold">
+                <FileText size={16} />
+              </div>
+            )}
             <div className="flex-1 truncate">
               <div className="text-ink">{pendingUpload.filename}</div>
               <div className="text-[0.6rem] uppercase tracking-widest2 text-faint">
@@ -692,7 +1071,7 @@ export default function Assistant() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept={ATTACH_ACCEPT}
             onChange={handleFileChosen}
             className="hidden"
           />
@@ -700,7 +1079,7 @@ export default function Assistant() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || busy || transcribing}
-            aria-label="Attach image"
+            aria-label="Attach image or document"
             className={`flex h-12 w-12 shrink-0 items-center justify-center border ${
               pendingUpload
                 ? 'border-gold bg-gold/20 text-gold'
@@ -709,26 +1088,60 @@ export default function Assistant() {
           >
             <Paperclip size={16} className={uploading ? 'animate-pulse' : ''} />
           </button>
-          <button
-            type="button"
-            onClick={recording ? stopRecording : startRecording}
-            disabled={transcribing || busy}
-            aria-label={recording ? 'Stop recording' : 'Record voice'}
-            aria-pressed={recording}
-            className={`flex h-12 w-12 shrink-0 items-center justify-center border ${
-              recording
-                ? 'border-signal bg-signal/20 text-signal'
-                : 'border-line bg-black/40 text-mute hover:border-gold hover:text-gold'
-            } disabled:opacity-60`}
-          >
-            {recording ? <Square size={16} /> : <Mic size={16} />}
-          </button>
-          <Button type="submit" disabled={busy || (!input.trim() && !pendingUpload) || recording || transcribing}>
-            {busy ? 'Thinking' : 'Send'}
-          </Button>
+          {voiceModeOn ? (
+            <div
+              role="status"
+              aria-live="polite"
+              aria-label={`Voice mode ${voiceState}`}
+              className={`flex h-12 w-12 shrink-0 items-center justify-center border ${
+                voiceState === VOICE_STATES.LISTENING
+                  ? 'border-gold bg-gold/10 text-gold animate-pulse'
+                  : voiceState === VOICE_STATES.SPEAKING
+                  ? 'border-gold bg-gold/30 text-gold'
+                  : voiceState === VOICE_STATES.PROCESSING
+                  ? 'border-gold bg-gold/20 text-gold animate-pulse'
+                  : voiceState === VOICE_STATES.MUTED
+                  ? 'border-faint bg-black/40 text-faint'
+                  : 'border-signal bg-signal/10 text-signal'
+              }`}
+            >
+              {voiceState === VOICE_STATES.MUTED ? <MicOff size={16} /> : <Radio size={16} />}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={transcribing || busy}
+              aria-label={recording ? 'Stop recording' : 'Record voice'}
+              aria-pressed={recording}
+              className={`flex h-12 w-12 shrink-0 items-center justify-center border ${
+                recording
+                  ? 'border-signal bg-signal/20 text-signal'
+                  : 'border-line bg-black/40 text-mute hover:border-gold hover:text-gold'
+              } disabled:opacity-60`}
+            >
+              {recording ? <Square size={16} /> : <Mic size={16} />}
+            </button>
+          )}
+          {busy ? (
+            <button
+              type="button"
+              onClick={stopStream}
+              aria-label="Stop response"
+              className="flex h-12 shrink-0 items-center gap-2 border border-signal bg-signal/20 px-4 text-xs uppercase tracking-widest2 text-signal hover:bg-signal/30"
+            >
+              <Square size={14} /> Stop
+            </button>
+          ) : (
+            <Button type="submit" disabled={(!input.trim() && !pendingUpload) || recording || transcribing}>
+              Send
+            </Button>
+          )}
         </form>
         <p className="mt-2 text-[0.6rem] uppercase tracking-widest2 text-faint">
-          Enter to send · Shift+Enter for newline · Cmd/Ctrl+K jumps here
+          {voiceModeOn
+            ? `Voice mode active — ${voiceState}. Toggle off in the header.`
+            : 'Enter to send · Shift+Enter for newline · Cmd/Ctrl+K jumps here'}
         </p>
       </section>
     </div>
