@@ -5,7 +5,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { useRealtime } from '../../hooks/useRealtime';
 import PhoneShell from '../../components/operate/PhoneShell';
 import BottomNav from '../../components/operate/BottomNav';
-import { ChevronLeftSvg, PhoneSvg, PlusSvg, CameraSvg, MicSvg } from '../../components/operate/svg';
+import { ChevronLeftSvg, PhoneSvg, PlusSvg, CameraSvg, MicSvg, CloseSvg } from '../../components/operate/svg';
 import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 
 const LIVE_WAVE = [4, 10, 14, 8, 16, 12, 6, 14, 10, 16, 8, 12, 6, 14];
@@ -48,6 +48,11 @@ export default function OperateMessages() {
   const [coachProfile, setCoachProfile] = useState(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
+  const [callState, setCallState] = useState('idle'); // idle | sending | done | error
+  const [uploadErr, setUploadErr] = useState(null);
+  const fileRef = useRef(null);
+  const photoRef = useRef(null);
   const endRef = useRef(null);
   const { listening, transcript, toggle } = useVoiceCapture({
     onFinal: (text) => setDraft((d) => (d ? `${d} ${text}` : text)),
@@ -124,6 +129,67 @@ export default function OperateMessages() {
     }
   }
 
+  // Upload a picked file to baseline-photos (the bucket has confirmed RLS for
+  // client-write + coach-read under {user.id}/...) and send a dm_message with
+  // a 24h signed URL inline. No schema change required.
+  async function uploadAndSend(file) {
+    if (!file || !user || !thread) return;
+    setUploadErr(null);
+    setBusy(true);
+    try {
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'file';
+      const path = `${user.id}/dm/${Date.now()}-${safe}`;
+      const up = await supabase.storage
+        .from('baseline-photos')
+        .upload(path, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
+      if (up.error) throw up.error;
+      const signed = await supabase.storage
+        .from('baseline-photos')
+        .createSignedUrl(path, 60 * 60 * 24);
+      if (signed.error) throw signed.error;
+      const isImg = (file.type || '').startsWith('image/');
+      const content = `${isImg ? '🖼' : '📎'} ${safe}\n${signed.data.signedUrl}`;
+      await supabase.from('dm_messages').insert({
+        thread_id: thread.id,
+        author_id: user.id,
+        content,
+        read_by_client: role !== 'coach',
+        read_by_coach: role === 'coach',
+      });
+      await supabase.from('dm_threads').update({ last_activity_at: new Date().toISOString() }).eq('id', thread.id);
+      await load();
+    } catch (e) {
+      setUploadErr(e.message || 'Upload failed');
+      setTimeout(() => setUploadErr(null), 4000);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function requestCall() {
+    if (callState !== 'idle' || !user || !thread) return;
+    setCallState('sending');
+    try {
+      await supabase.from('dm_messages').insert({
+        thread_id: thread.id,
+        author_id: user.id,
+        content: '📞 Requested a call — please reach out when free.',
+        read_by_client: true,
+        read_by_coach: false,
+      });
+      await supabase
+        .from('dm_threads')
+        .update({ last_activity_at: new Date().toISOString() })
+        .eq('id', thread.id);
+      setCallState('done');
+      await load();
+      setTimeout(() => { setCallState('idle'); setCallOpen(false); }, 1500);
+    } catch {
+      setCallState('error');
+      setTimeout(() => setCallState('idle'), 4000);
+    }
+  }
+
   const grouped = useMemo(() => {
     const buckets = [];
     for (const m of messages) {
@@ -160,7 +226,14 @@ export default function OperateMessages() {
             <span className="op-coach-status">{messages.length ? 'OPEN THREAD' : 'NEW THREAD'}</span>
           </div>
         </div>
-        <button type="button" className="op-icon-btn" aria-label="Call"><PhoneSvg /></button>
+        <button
+          type="button"
+          className="op-icon-btn"
+          aria-label="Request a call"
+          onClick={() => setCallOpen(true)}
+        >
+          <PhoneSvg />
+        </button>
       </div>
 
       <div className="op-thread">
@@ -203,9 +276,24 @@ export default function OperateMessages() {
           className="op-composer-row"
           onSubmit={(e) => { e.preventDefault(); send(); }}
         >
-          {/* TODO: needs an `audio_attachment` column on dm_messages to support coach voice memos.
-              For now the + button is a placeholder. */}
-          <button type="button" className="op-cmp-btn" aria-label="Add attachment"><PlusSvg /></button>
+          <button
+            type="button"
+            className="op-cmp-btn"
+            aria-label="Add attachment"
+            onClick={() => fileRef.current?.click()}
+            disabled={busy || !thread}
+          ><PlusSvg /></button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,application/pdf,video/*,audio/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadAndSend(f);
+              if (fileRef.current) fileRef.current.value = '';
+            }}
+            style={{ display: 'none' }}
+          />
           <input
             className="op-cmp-input"
             placeholder={listening ? (transcript || 'Speak…') : 'Message…'}
@@ -213,7 +301,25 @@ export default function OperateMessages() {
             onChange={(e) => setDraft(e.target.value)}
             readOnly={listening || busy}
           />
-          <button type="button" className="op-cmp-btn" aria-label="Send photo"><CameraSvg /></button>
+          <button
+            type="button"
+            className="op-cmp-btn"
+            aria-label="Send photo"
+            onClick={() => photoRef.current?.click()}
+            disabled={busy || !thread}
+          ><CameraSvg /></button>
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            capture="environment"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadAndSend(f);
+              if (photoRef.current) photoRef.current.value = '';
+            }}
+            style={{ display: 'none' }}
+          />
           <button
             type="button"
             className={`op-cmp-btn op-mic-cmp${listening ? ' op-listening' : ''}`}
@@ -235,6 +341,86 @@ export default function OperateMessages() {
           ) : null}
         </form>
       </div>
+
+      {uploadErr ? (
+        <div
+          role="status"
+          style={{
+            position: 'fixed', left: '50%', bottom: 92, transform: 'translateX(-50%)',
+            background: 'rgba(40,12,12,0.95)', border: '1px solid #5a1f1f',
+            borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10,
+            color: '#F5F5F5', fontFamily: '"DM Mono", monospace', fontSize: 12,
+            zIndex: 55, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            maxWidth: '92vw',
+          }}
+        >
+          <span>{uploadErr.slice(0, 80)}</span>
+          <button
+            type="button" onClick={() => setUploadErr(null)} aria-label="Dismiss"
+            style={{ background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', padding: 2, display: 'inline-flex' }}
+          ><CloseSvg /></button>
+        </div>
+      ) : null}
+
+      {callOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Request a call"
+          onClick={() => (callState === 'idle' ? setCallOpen(false) : null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(360px, 92vw)', background: '#161616', border: '1px solid #2a2a2a',
+              borderRadius: 14, padding: 20, color: '#F5F5F5',
+              fontFamily: '"DM Mono", monospace',
+            }}
+          >
+            <div style={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: 22, letterSpacing: '2px', marginBottom: 6 }}>
+              REQUEST A CALL
+            </div>
+            <div style={{ color: '#888', fontSize: 12, lineHeight: 1.5, marginBottom: 18 }}>
+              {coachName} will get a notification in their inbox and reach out as soon as they can.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setCallOpen(false)}
+                disabled={callState !== 'idle'}
+                style={{
+                  flex: 1, background: 'transparent', border: '1px solid #2a2a2a',
+                  borderRadius: 8, padding: 11, color: '#F5F5F5',
+                  fontFamily: '"Bebas Neue", sans-serif', fontSize: 13, letterSpacing: '2px',
+                  cursor: callState === 'idle' ? 'pointer' : 'default',
+                }}
+              >CANCEL</button>
+              <button
+                type="button"
+                onClick={requestCall}
+                disabled={callState !== 'idle'}
+                style={{
+                  flex: 1.4, background: '#C9A84C', border: 'none', borderRadius: 8,
+                  padding: 11, color: '#080808',
+                  fontFamily: '"Bebas Neue", sans-serif', fontSize: 13, letterSpacing: '2px',
+                  cursor: callState === 'idle' ? 'pointer' : 'default',
+                }}
+              >
+                {callState === 'sending' ? 'NOTIFYING…'
+                  : callState === 'done' ? 'NOTIFIED ✓'
+                  : callState === 'error' ? 'RETRY'
+                  : 'NOTIFY COACH'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <BottomNav active="messages" />
     </PhoneShell>
