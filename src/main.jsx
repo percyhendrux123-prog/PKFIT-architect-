@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { registerServiceWorker } from './lib/registerSW.js';
 import './index.css';
+import './styles/operate.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

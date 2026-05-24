@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { OwnerRedirect } from './components/OwnerRedirect';
@@ -47,6 +47,16 @@ import Programs from './pages/coach/Programs.jsx';
 import Revenue from './pages/coach/Revenue.jsx';
 import Announcements from './pages/coach/Announcements.jsx';
 import AssistantLog from './pages/coach/AssistantLog.jsx';
+
+// operatefitness.app redesign v3 — Trainerize-class mobile UI per locked mockups.
+import OperateHome from './pages/operate/Home.jsx';
+import OperateCalendar from './pages/operate/Calendar.jsx';
+import OperateTraining from './pages/operate/Training.jsx';
+import OperateNutrition from './pages/operate/Nutrition.jsx';
+import OperateMessages from './pages/operate/Messages.jsx';
+import OperateGoals from './pages/operate/Goals.jsx';
+import OperateProfile from './pages/operate/Profile.jsx';
+import OperateCoachInsights from './pages/operate/CoachInsights.jsx';
 
 export default function App() {
   return (
@@ -103,7 +113,25 @@ export default function App() {
         }
       />
 
-      {/* Client-protected (with sidebar/dock chrome) */}
+      {/* operatefitness.app v3 — full-bleed mobile screens (no Layout chrome). */}
+      <Route
+        element={
+          <ProtectedRoute role="client">
+            <RequiresActiveSubscription />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard" element={<OperateHome />} />
+        <Route path="/calendar" element={<OperateCalendar />} />
+        <Route path="/workouts/sessions/:id" element={<OperateTraining />} />
+        <Route path="/meals" element={<OperateNutrition />} />
+        <Route path="/inbox" element={<OperateMessages />} />
+        <Route path="/habits" element={<OperateGoals />} />
+        <Route path="/profile" element={<OwnerRedirect><OperateProfile /></OwnerRedirect>} />
+      </Route>
+
+      {/* Client-protected (legacy sidebar/dock chrome — for screens not yet
+          reskinned in the v3 redesign). */}
       <Route
         element={
           <ProtectedRoute role="client">
@@ -113,27 +141,38 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard-legacy" element={<Dashboard />} />
         <Route path="/workouts" element={<Workouts />} />
         <Route path="/workouts/history" element={<ExerciseHistory />} />
-        <Route path="/workouts/sessions/:id" element={<SessionDetail />} />
+        <Route path="/workouts/sessions-legacy/:id" element={<SessionDetail />} />
         <Route path="/workouts/generator" element={<WorkoutGenerator />} />
         <Route path="/workouts/builder" element={<WorkoutBuilder />} />
-        <Route path="/meals" element={<Meals />} />
+        <Route path="/meals-legacy" element={<Meals />} />
         <Route path="/meals/generator" element={<MealGenerator />} />
-        <Route path="/habits" element={<Habits />} />
-        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/habits-legacy" element={<Habits />} />
+        <Route path="/calendar-legacy" element={<CalendarPage />} />
         <Route path="/assistant" element={<Assistant />} />
         <Route path="/reviews" element={<Reviews />} />
         <Route path="/reviews/:id" element={<ReviewDetail />} />
-        <Route path="/inbox" element={<Inbox />} />
+        <Route path="/inbox-legacy" element={<Inbox />} />
         <Route path="/billing" element={<Billing />} />
-        <Route path="/profile" element={<OwnerRedirect><Profile /></OwnerRedirect>} />
+        <Route path="/profile-legacy" element={<OwnerRedirect><Profile /></OwnerRedirect>} />
         <Route path="/settings" element={<OwnerRedirect><Settings /></OwnerRedirect>} />
         <Route path="/import" element={<Import />} />
       </Route>
 
-      {/* Coach-protected */}
+      {/* Coach v3 — operatefitness.app reskinned roster (full-bleed). */}
+      <Route
+        element={
+          <ProtectedRoute role="coach">
+            <Outlet />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/coach/clients" element={<OperateCoachInsights />} />
+      </Route>
+
+      {/* Coach-protected (legacy sidebar/dock chrome). */}
       <Route
         element={
           <ProtectedRoute role="coach">
@@ -143,7 +182,7 @@ export default function App() {
       >
         <Route path="/coach" element={<CoachDashboard />} />
         <Route path="/coach/inbox" element={<CoachInbox />} />
-        <Route path="/coach/clients" element={<Clients />} />
+        <Route path="/coach/clients-legacy" element={<Clients />} />
         <Route path="/coach/clients/:id" element={<ClientDetail />} />
         <Route path="/coach/clients/:id/sessions/:sid" element={<CoachSessionDetail />} />
         <Route path="/coach/programs" element={<Programs />} />
