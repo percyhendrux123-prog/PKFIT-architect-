@@ -301,6 +301,12 @@ export default async (req) => {
                 audit_id: result.audit_id,
                 summary: result.tool_result?.summary ?? null,
                 error: result.tool_result?.error ?? null,
+                // voice_tts emits playable audio; forward the URL + metadata so
+                // the UI can render an inline player. Other tools won't set
+                // these and they pass through as undefined.
+                audio_url: result.tool_result?.audio_url ?? null,
+                duration_seconds: result.tool_result?.duration_seconds ?? null,
+                voice: result.tool_result?.voice ?? null,
               });
             }
             toolResults.push({

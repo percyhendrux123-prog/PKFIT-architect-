@@ -120,6 +120,31 @@ export async function streamAssistant(args) {
   return streamFromEndpoint('client-assistant', args);
 }
 
+// On-demand TTS for a single architect message. Returns an audio/mpeg Blob.
+// Throws on auth / config failures so the caller can surface a toast.
+export async function architectTts({ text, voice }) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(await authHeader()),
+  };
+  const res = await fetch('/.netlify/functions/architect-tts', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ text, voice }),
+  });
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const j = await res.json();
+      detail = j?.error || j?.detail || '';
+    } catch {
+      detail = await res.text().catch(() => '');
+    }
+    throw new Error(detail || `TTS failed (${res.status})`);
+  }
+  return res.blob();
+}
+
 // Owner-agentic stream. Emits the same base events plus tool_call, tool_result,
 // approval_request, soft_prompt, usage. Owner-only on the server (OWNER_EMAILS).
 export async function streamAgentAssistant(args) {
