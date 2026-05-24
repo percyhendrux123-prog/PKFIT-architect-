@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip, Play, Pause } from 'lucide-react';
+import { Plus, Trash2, Mic, Square, Check, X, Pin, ChevronDown, Zap, Paperclip } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { streamAssistant, streamAgentAssistant, gemini, uploadArchitectImage } from '../../lib/claudeClient';
@@ -87,68 +87,27 @@ const ACTION_LABELS = {
 };
 
 // Inline player for tool_result.audio_url (voice_tts). Renders native HTML5
-// controls inside a charcoal pill that matches the architect chat. Attempts
-// autoplay when `autoplay` is true — silently swallows the rejection in
-// browsers that block it (Safari, mobile).
+// audio controls — no extra wrapper styling so it inherits the assistant
+// bubble's existing container. Attempts autoplay when `autoplay` is true and
+// silently swallows the rejection in browsers that block it (Safari, mobile).
 function AudioPlayer({ src, voice, durationSeconds, autoplay }) {
   const audioRef = useRef(null);
-  const [playing, setPlaying] = useState(false);
   useEffect(() => {
     const el = audioRef.current;
-    if (!el) return;
-    const onPlay = () => setPlaying(true);
-    const onPause = () => setPlaying(false);
-    const onEnded = () => setPlaying(false);
-    el.addEventListener('play', onPlay);
-    el.addEventListener('pause', onPause);
-    el.addEventListener('ended', onEnded);
-    if (autoplay) {
-      const p = el.play();
-      if (p && typeof p.then === 'function') p.catch(() => {});
-    }
-    return () => {
-      el.removeEventListener('play', onPlay);
-      el.removeEventListener('pause', onPause);
-      el.removeEventListener('ended', onEnded);
-    };
+    if (!el || !autoplay) return;
+    const p = el.play();
+    if (p && typeof p.then === 'function') p.catch(() => {});
   }, [src, autoplay]);
-
-  function toggle() {
-    const el = audioRef.current;
-    if (!el) return;
-    if (el.paused) {
-      const p = el.play();
-      if (p && typeof p.then === 'function') p.catch(() => {});
-    } else {
-      el.pause();
-    }
-  }
 
   const captionParts = [];
   if (voice) captionParts.push(voice.charAt(0).toUpperCase() + voice.slice(1));
   if (typeof durationSeconds === 'number') captionParts.push(`${durationSeconds.toFixed(1)}s`);
 
   return (
-    <div className="mt-3 inline-flex max-w-full items-center gap-3 border border-line bg-black/40 px-3 py-2">
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={playing ? 'Pause audio' : 'Play audio'}
-        className="flex h-8 w-8 shrink-0 items-center justify-center border border-gold bg-gold/15 text-gold hover:bg-gold/25"
-      >
-        {playing ? <Pause size={14} /> : <Play size={14} />}
-      </button>
-      <audio
-        ref={audioRef}
-        controls
-        preload="auto"
-        src={src}
-        className="h-8 min-w-0 flex-1"
-      />
+    <div className="mt-3">
+      <audio ref={audioRef} controls preload="auto" src={src} className="w-full" />
       {captionParts.length > 0 ? (
-        <span className="text-[0.6rem] uppercase tracking-widest2 text-faint whitespace-nowrap">
-          {captionParts.join(' · ')}
-        </span>
+        <div className="label mt-1 text-faint">{captionParts.join(' · ')}</div>
       ) : null}
     </div>
   );
@@ -661,9 +620,8 @@ export default function Assistant() {
                         {m.role === 'user' ? 'You' : m._system ? 'System' : 'Architect'}
                       </div>
                       <div className="whitespace-pre-wrap leading-relaxed">{visibleContent}</div>
-                      {m.role === 'assistant' && !m._system && messageAudios[i]?.length > 0 ? (
-                        <div className="flex flex-col items-start gap-2">
-                          {messageAudios[i].map((a, aIdx) => (
+                      {m.role === 'assistant' && !m._system && messageAudios[i]?.length > 0
+                        ? messageAudios[i].map((a, aIdx) => (
                             <AudioPlayer
                               key={a.id}
                               src={a.audio_url}
@@ -673,9 +631,8 @@ export default function Assistant() {
                                 i === messages.length - 1 && aIdx === messageAudios[i].length - 1
                               }
                             />
-                          ))}
-                        </div>
-                      ) : null}
+                          ))
+                        : null}
                       {showActionUI ? (
                         <div className="mt-3 border-t border-line pt-3">
                           <div className="text-[0.65rem] uppercase tracking-widest2 text-faint mb-2">
