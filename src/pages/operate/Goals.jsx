@@ -1,40 +1,127 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import PhoneShell from '../../components/operate/PhoneShell';
 import BottomNav from '../../components/operate/BottomNav';
 import MicFab from '../../components/operate/MicFab';
 import { ChevronLeftSvg, TrendingSvg, CalendarSvg, ClockSvg, PlusSvg, MicSvg, CheckSvg } from '../../components/operate/svg';
 import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 
-const GOALS = [
-  {
-    priority: true, pct: 55, dashoffset: 124, tag: 'PRIMARY · BODY COMP', tagGold: true,
-    title: 'CUT TO 8% BODY FAT', now: '11.2%', target: '8.0%', due: 'BY AUG 15',
-    checkin: 'NEXT CHECK-IN · TOMORROW', checkinIcon: 'cal', streak: '21 DAY STREAK',
-  },
-  {
-    pct: 68, dashoffset: 88, tag: 'STRENGTH · UPPER',
-    title: 'INCLINE PRESS 225 × 5', now: '205 × 5', target: '225 × 5', due: 'BY JUN 30',
-    checkin: 'RETEST IN 11 DAYS', checkinIcon: 'cal', streak: 'ON PACE',
-  },
-  {
-    pct: 25, dashoffset: 207, tag: 'HABIT · SLEEP',
-    title: '7+ HOURS · 6X / WEEK', now: '3 / 6', target: '6 / 6', due: 'THIS WEEK',
-    checkin: 'WEEKLY CHECK SUNDAY', checkinIcon: 'clock', streak: 'FALLING BEHIND', streakRed: true,
-  },
-  {
-    pct: 10, dashoffset: 248, tag: 'CONDITIONING',
-    title: '5K UNDER 22 MIN', now: '26:14', target: '21:59', due: 'BY SEP 1',
-    checkin: 'RETEST MAY 31', checkinIcon: 'cal', streak: 'JUST STARTED',
-  },
-];
+const RING_CIRC = 276; // 2*pi*44
+
+function ymd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// For each habit, compute adherence over the trailing 7 days.
+function adherenceFor(habitId, history, days = 7) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let hits = 0;
+  for (let i = 0; i < days; i += 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dayMap = history[ymd(d)] ?? {};
+    if (dayMap[habitId]) hits += 1;
+  }
+  return { hits, days };
+}
+
+function currentStreakFor(habitId, history) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let count = 0;
+  for (let i = 0; i < 365; i += 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dayMap = history[ymd(d)] ?? {};
+    if (dayMap[habitId]) count += 1;
+    else if (i > 0) break; // today's miss is allowed grace
+  }
+  return count;
+}
 
 export default function OperateGoals() {
   const nav = useNavigate();
-  const [draftStandard, setDraftStandard] = useState('');
+  const { user } = useAuth();
+  const [row, setRow] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState('');
   const { listening, transcript, toggle } = useVoiceCapture({
-    onFinal: (t) => setDraftStandard(t),
+    onFinal: (t) => setDraft(t),
   });
+
+  const load = useCallback(async () => {
+    if (!isSupabaseConfigured || !user) return;
+    const { data } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setRow(data ?? null);
+  }, [user?.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const list = row?.habit_list ?? [];
+  const history = row?.check_history ?? {};
+
+  async function persist(payload) {
+    setBusy(true);
+    try {
+      if (row) {
+        const { data } = await supabase.from('habits').update(payload).eq('id', row.id).select().maybeSingle();
+        if (data) setRow(data);
+      } else {
+        const { data } = await supabase.from('habits').insert({ client_id: user.id, ...payload }).select().maybeSingle();
+        if (data) setRow(data);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addStandard(name) {
+    if (!name?.trim()) return;
+    const next = [...list, { id: crypto.randomUUID(), name: name.trim() }];
+    setDraft('');
+    await persist({ habit_list: next, check_history: history });
+  }
+
+  const goals = useMemo(() => {
+    return list.map((h) => {
+      const { hits, days } = adherenceFor(h.id, history, 7);
+      const streak = currentStreakFor(h.id, history);
+      const pct = Math.round((hits / days) * 100);
+      const dashoffset = Math.round(RING_CIRC * (1 - pct / 100));
+      const lowAdherence = pct < 50;
+      return {
+        id: h.id,
+        title: (h.name ?? 'STANDARD').toUpperCase(),
+        // TODO: needs explicit goal categories / target metrics in schema —
+        // habits is flat list. Showing 7-day adherence as the proxy metric.
+        tag: 'HABIT · DAILY',
+        tagGold: false,
+        now: `${hits} / ${days} DAYS`,
+        target: '7 / 7',
+        due: 'THIS WEEK',
+        checkin: streak > 0 ? `${streak} DAY STREAK` : 'NO STREAK',
+        checkinIcon: 'clock',
+        streak: lowAdherence ? 'FALLING BEHIND' : (streak >= 7 ? 'ON PACE' : 'BUILDING'),
+        streakRed: lowAdherence,
+        pct,
+        dashoffset,
+      };
+    });
+  }, [list, history]);
+
+  const activeCount = goals.length;
 
   return (
     <PhoneShell screen="Standards">
@@ -52,18 +139,26 @@ export default function OperateGoals() {
         </div>
 
         <div className="op-filter-row">
-          <button type="button" className="op-chip op-active">ACTIVE · 4</button>
-          <button type="button" className="op-chip">COMPLETED · 7</button>
+          <button type="button" className="op-chip op-active">ACTIVE · {activeCount}</button>
+          <button type="button" className="op-chip">COMPLETED · 0</button>
           <button type="button" className="op-chip">PAUSED</button>
         </div>
 
-        {GOALS.map((g, i) => (
-          <div key={i} className={`op-goal-card${g.priority ? ' op-priority' : ''}`}>
+        {goals.length === 0 ? (
+          <div style={{ padding: 30, textAlign: 'center', color: '#888', fontSize: 11, letterSpacing: '2px', lineHeight: 1.6 }}>
+            NO STANDARDS YET.<br />
+            INSTALL ONE BELOW — KEEP IT TO THREE.
+          </div>
+        ) : null}
+
+        {goals.map((g, i) => (
+          <div key={g.id} className={`op-goal-card${i === 0 && g.pct >= 50 ? ' op-priority' : ''}`}>
             <div className="op-gc-row">
               <div className="op-gc-ring">
                 <svg viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="44" fill="none" stroke="#2a2a2a" strokeWidth="8" />
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="#C9A84C" strokeWidth="8" strokeDasharray="276" strokeDashoffset={g.dashoffset} strokeLinecap="round" />
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="#C9A84C" strokeWidth="8"
+                    strokeDasharray={RING_CIRC} strokeDashoffset={g.dashoffset} strokeLinecap="round" />
                 </svg>
                 <div className="op-gc-pct">{g.pct}%</div>
               </div>
@@ -89,9 +184,14 @@ export default function OperateGoals() {
         ))}
 
         <div className="op-add-goal-row">
-          <button type="button" className="op-add-goal">
+          <button
+            type="button"
+            className="op-add-goal"
+            onClick={() => addStandard(draft)}
+            disabled={busy || !draft.trim()}
+          >
             <PlusSvg />
-            {draftStandard ? draftStandard.toUpperCase() : 'ADD A STANDARD'}
+            {draft ? draft.toUpperCase() : 'ADD A STANDARD'}
           </button>
           <button
             type="button"
@@ -103,6 +203,24 @@ export default function OperateGoals() {
             <MicSvg />
           </button>
         </div>
+        {!listening && draft ? (
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Type a standard…"
+            style={{
+              marginTop: 10,
+              width: '100%',
+              background: '#0e0e0e',
+              border: '1px solid #2a2a2a',
+              color: '#f5f5f5',
+              padding: '10px 12px',
+              fontSize: 13,
+              letterSpacing: '1px',
+              fontFamily: 'inherit',
+            }}
+          />
+        ) : null}
         {listening ? (
           <div className="op-voice-overlay" style={{ position: 'static', marginTop: 10 }}>
             <div className="op-voice-overlay-head">
@@ -113,21 +231,31 @@ export default function OperateGoals() {
           </div>
         ) : null}
 
-        <div className="op-section-label-tight">RECENTLY COMPLETED</div>
-        <div className="op-done-card">
-          <div className="op-dc-head">
-            <div className="op-dc-title">SQUAT 315 × 3</div>
-            <div className="op-dc-check"><CheckSvg /></div>
+        {/* TODO: needs `completed_at` per habit (or a separate goals table) to populate this. */}
+        <div className="op-section-label-tight">CHECKED IN TODAY</div>
+        {goals.filter((g) => {
+          const today = ymd(new Date());
+          return history[today]?.[g.id];
+        }).length === 0 ? (
+          <div className="op-done-card">
+            <div className="op-dc-head">
+              <div className="op-dc-title" style={{ color: '#666' }}>NOTHING CHECKED IN TODAY</div>
+            </div>
+            <div className="op-dc-meta">Open the legacy habits view to check items off.</div>
           </div>
-          <div className="op-dc-meta">Hit May 18 · 6 days ahead of target</div>
-        </div>
-        <div className="op-done-card">
-          <div className="op-dc-head">
-            <div className="op-dc-title">30 DAYS NO ALCOHOL</div>
-            <div className="op-dc-check"><CheckSvg /></div>
-          </div>
-          <div className="op-dc-meta">Hit May 10 · streak still active (37 days)</div>
-        </div>
+        ) : (
+          goals
+            .filter((g) => history[ymd(new Date())]?.[g.id])
+            .map((g) => (
+              <div key={`done-${g.id}`} className="op-done-card">
+                <div className="op-dc-head">
+                  <div className="op-dc-title">{g.title}</div>
+                  <div className="op-dc-check"><CheckSvg /></div>
+                </div>
+                <div className="op-dc-meta">Checked in today · {g.checkin.toLowerCase()}</div>
+              </div>
+            ))
+        )}
       </div>
 
       <MicFab context="goals" />
