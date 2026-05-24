@@ -62,6 +62,17 @@ async function resizeImageFile(file) {
 
 const TEXTAREA_MAX_HEIGHT = 240;
 
+// Starter prompts — Percy voice, mechanism-first. Shown above the input bar
+// only when the conversation is empty. Tapping one drops the text into the
+// textarea so the client can edit before sending.
+const STARTER_PROMPTS = [
+  "What's eating at my training right now",
+  "Build me this week's standard",
+  "Where am I leaking time",
+  "Diagnose my last 7 days",
+  "What's my next move on the build",
+];
+
 // Compact relative time for the drawer list. Matches the DM Mono / muted feel
 // of the /standard page — no "ago" suffix, just the unit (1h, 3d, 2w).
 function relativeTime(iso) {
@@ -465,6 +476,11 @@ export default function Assistant() {
     await loadConversations();
   }
 
+  function applyStarter(text) {
+    setInput(text);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
   // Handle client confirming Claude's proposed action. Calls the server-side
   // action handler, then appends a system-style note to the conversation so
   // the client (and Claude on next turn) can see what happened.
@@ -577,6 +593,8 @@ export default function Assistant() {
       setErr(`Audio failed: ${e.message}`);
     }
   }
+
+  const showStarters = messages.length === 0 && !busy;
 
   return (
     <div className="flex min-h-[calc(100vh-160px)] flex-col">
@@ -839,6 +857,27 @@ export default function Assistant() {
               aria-hidden
             />
             {recording ? 'Listening' : 'Transcribing'}
+          </div>
+        ) : null}
+
+        {showStarters ? (
+          <div
+            className="mt-4 -mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="list"
+            aria-label="Suggested starters"
+          >
+            {STARTER_PROMPTS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                role="listitem"
+                onClick={() => applyStarter(p)}
+                className="shrink-0 rounded-[14px] border-[0.5px] border-[#2a2a2a] bg-[#161616]/60 px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-[#C9A84C] backdrop-blur-md transition-transform duration-150 ease-out hover:scale-[1.04] hover:border-[#C9A84C]/40 active:scale-[1.08]"
+                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+              >
+                {p}
+              </button>
+            ))}
           </div>
         ) : null}
 
