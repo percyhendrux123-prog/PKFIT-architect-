@@ -308,9 +308,16 @@ function Opener({ keyword }) {
       <p style={{ margin: 0, lineHeight: 1.55, color: INK, fontSize: 14 }}>
         You typed <span style={{ color: GOLD }}>{keyword.toUpperCase()}</span>. Good.
       </p>
-      <p style={{ margin: '10px 0 0', lineHeight: 1.55, color: MUTE, fontSize: 13 }}>
-        Tell me what&apos;s actually going on. Wife, kids, work, mornings, the late-night fridge —
-        whatever has been moving lately. No script. No form.
+      {((() => {
+                const f = [
+                              "Tell me what's actually moving. Sleep, training, food, the version of you you used to know — wherever it's loudest.",
+                              "Wife, kids, work, mornings, the late-night fridge — whatever has been moving lately.",
+                              "Calendar owns you. Body pays for it. Where's the friction showing first — sleep, training, food, presence?",
+                              "Where you are vs where you used to be. The gap that's been growing. What's it actually about?",
+                              "What did you start and stop. Tell me what you actually tried — not the perfect version, the real one.",
+                            ];
+                return f[Math.floor(Math.random() * f.length)];
+    })())} No script. No form.
       </p>
     </div>
   );
