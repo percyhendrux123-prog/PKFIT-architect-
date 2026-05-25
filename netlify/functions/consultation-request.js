@@ -37,7 +37,10 @@ const IP_WINDOW_SEC = 3600;
 
 const OWNER_EMAIL = 'percyhendrux123@gmail.com';
 const FROM_NAME = 'PKFIT Diagnose';
-const FROM_EMAIL_FALLBACK = 'coach@pkfit.app';
+// Resend requires a verified sending domain. operatefitness.app is verified;
+// pkfit.app is not (the previous coach@pkfit.app value was failing silently
+// at the provider level).
+const FROM_EMAIL_FALLBACK = 'command@operatefitness.app';
 
 // Surfaces that share the diagnose_sessions table. Other surfaces in
 // AGENT_SURFACES (e.g. 'audit') will provide their own session resolver in a
@@ -329,6 +332,25 @@ export default async (req) => {
       warning: 'email_failed',
       detail: err?.message || 'unknown',
     });
+  }
+
+  // Lead-side confirmation. Best-effort — failure here doesn't void the
+  // application or block the owner-notification we already sent.
+  try {
+    await sendResendEmail({
+      to: leadEmail,
+      subject: 'PKFIT — request received',
+      body: [
+        'Got it.',
+        '',
+        'Percy reviews these directly. You\'ll hear within 24 hours.',
+        '',
+        '— PKFIT',
+      ].join('\n'),
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('[consultation-request] lead confirmation failed:', err?.message);
   }
 
   return json(200, {
