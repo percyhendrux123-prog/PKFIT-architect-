@@ -250,6 +250,13 @@ export default function Assistant() {
         .eq('id', conversationId)
         .maybeSingle(),
     ]);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error('[architect:first-message] loadMessages REPLACING state', {
+        conversationId,
+        dbCount: (msgs ?? []).length,
+      });
+    }
     setMessages(
       (msgs ?? [])
         .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -259,7 +266,13 @@ export default function Assistant() {
   }, []);
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
-  useEffect(() => { loadMessages(currentId); }, [currentId, loadMessages]);
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error('[architect:first-message] currentId-effect fires', { currentId, busy });
+    }
+    loadMessages(currentId);
+  }, [currentId, loadMessages]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   // Lock body scroll while the drawer is open so the iOS rubber-band doesn't
@@ -348,6 +361,14 @@ export default function Assistant() {
     setErr(null);
     setAgentEvents([]);
     let resolvedConversationId = currentId;
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error('[architect:first-message] send() start', {
+        currentId,
+        agenticMode,
+        messageLen: outgoing.length,
+      });
+    }
     const streamer = agenticMode ? streamAgentAssistant : streamAssistant;
     try {
       await streamer({
@@ -356,6 +377,14 @@ export default function Assistant() {
         onEvent: ({ event, data }) => {
           if (event === 'meta' && data?.conversationId) {
             resolvedConversationId = data.conversationId;
+            if (import.meta.env.DEV) {
+              // eslint-disable-next-line no-console
+              console.error('[architect:first-message] meta event', {
+                returnedConversationId: data.conversationId,
+                hadCurrentId: Boolean(currentId),
+                willSetCurrentId: !currentId,
+              });
+            }
             if (!currentId) setCurrentId(data.conversationId);
             if (typeof data.conv_usd === 'number') setConvUsd(data.conv_usd);
           } else if (event === 'delta' && typeof data?.text === 'string') {
@@ -364,6 +393,13 @@ export default function Assistant() {
               const last = next[next.length - 1];
               if (last?.role === 'assistant') {
                 next[next.length - 1] = { ...last, content: last.content + data.text };
+              } else if (import.meta.env.DEV) {
+                // eslint-disable-next-line no-console
+                console.error('[architect:first-message] DROPPED DELTA — last not assistant', {
+                  lastRole: last?.role,
+                  msgCount: next.length,
+                  textPreview: data.text.slice(0, 30),
+                });
               }
               return next;
             });

@@ -152,6 +152,7 @@ export default async (req) => {
 
   let conversationId = body.conversationId ?? null;
   let conversationContext = [];
+  let createdNewConv = false;
   if (conversationId) {
     const { data: conv } = await admin
       .from('conversations')
@@ -179,9 +180,10 @@ export default async (req) => {
       });
     }
     conversationId = created.id;
+    createdNewConv = true;
   }
 
-  await admin.from('conversation_messages').insert({
+  const { error: insertErr } = await admin.from('conversation_messages').insert({
     conversation_id: conversationId,
     role: 'user',
     content: userMessage,
@@ -197,6 +199,15 @@ export default async (req) => {
   const messages = (history ?? [])
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }));
+
+  // eslint-disable-next-line no-console
+  console.log('[architect:first-message] client-assistant', JSON.stringify({
+    user: user.id,
+    conversationId,
+    createdNewConv,
+    historyCount: messages.length,
+    insertErr: insertErr?.message ?? null,
+  }));
 
   // Owner path stays Quiet Assassin: pkfit-system.md base (voice rules,
   // mechanism-first, no emoji/exclamations) + owner-assistant.md scope.
