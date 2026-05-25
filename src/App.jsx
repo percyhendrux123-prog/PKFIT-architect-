@@ -6,6 +6,7 @@ import { RequiresActiveSubscription } from './components/RequiresActiveSubscript
 
 import EnterIntro from './pages/EnterIntro.jsx';
 import Diagnose from './pages/Diagnose.jsx';
+import Qualifier from './pages/Qualifier.jsx';
 import HomeScreen from './pages/HomeScreen.jsx';
 import Owner from './pages/Owner.jsx';
 import ImageLab from './pages/owner/ImageLab.jsx';
@@ -82,6 +83,10 @@ export default function App() {
       <Route path="/protocol" element={<Diagnose />} />
       <Route path="/align" element={<Diagnose />} />
       <Route path="/diagnose" element={<Diagnose />} />
+      {/* Native qualifier — replaces the external Typeform at
+          pkfitelite.co.site. Public, anonymous, single-page intake. */}
+      <Route path="/qualifier" element={<Qualifier />} />
+      <Route path="/apply" element={<Qualifier />} />
 
       {/* iPhone-style home screen — outside the Layout chrome so it occupies
           the full viewport with its own dock. Still gated by auth + active
