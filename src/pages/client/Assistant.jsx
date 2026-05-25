@@ -187,6 +187,17 @@ export default function Assistant() {
   const endRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  // Cold-start race guard. When the server creates a new conversation, its
+  // meta event arrives mid-stream and we setCurrentId(newId). The
+  // [currentId, loadMessages] effect would then fire loadMessages mid-stream
+  // and replace the local placeholder with whatever's in the DB — at that
+  // point just the user message, because the assistant text isn't persisted
+  // until the stream ends. Subsequent delta events would then see a
+  // user-role last message and silently drop their tokens. The flag is set
+  // by the meta handler right before setCurrentId and consumed by the effect
+  // on the very next run, so normal conversation-switching still triggers a
+  // proper reload.
+  const skipNextLoadRef = useRef(false);
 
   // Per-message text-to-speech. `audioState` tracks which message is
   // currently loading/playing; `audioRef` is the single in-flight Audio
@@ -267,6 +278,14 @@ export default function Assistant() {
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
   useEffect(() => {
+    if (skipNextLoadRef.current) {
+      skipNextLoadRef.current = false;
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.error('[architect:first-message] currentId-effect SKIPPED reload (stream in flight)', { currentId });
+      }
+      return;
+    }
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.error('[architect:first-message] currentId-effect fires', { currentId, busy });
@@ -385,7 +404,13 @@ export default function Assistant() {
                 willSetCurrentId: !currentId,
               });
             }
-            if (!currentId) setCurrentId(data.conversationId);
+            if (!currentId) {
+              // Prevent the currentId-effect from re-reading the DB mid-stream
+              // and wiping the assistant placeholder we just appended. See the
+              // skipNextLoadRef declaration for the full failure mode.
+              skipNextLoadRef.current = true;
+              setCurrentId(data.conversationId);
+            }
             if (typeof data.conv_usd === 'number') setConvUsd(data.conv_usd);
           } else if (event === 'delta' && typeof data?.text === 'string') {
             setMessages((m) => {
