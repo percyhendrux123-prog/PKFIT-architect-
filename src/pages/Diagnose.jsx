@@ -283,7 +283,34 @@ function Header({ keyword, subhead }) {
   );
 }
 
+// Five rotating opener frames. Picked at random per visitor so /standard
+// doesn't default everyone into the marriage-friction lane. The agent's
+// system prompt still surfaces marriage when the visitor brings it up,
+// but the visible opener no longer pre-loads the assumption — single,
+// career-grind, identity-drift, and restart visitors land on a frame
+// that fits their actual friction.
+const OPENER_FRAMES = [
+  // Open / default — broadest catch
+  "Tell me what's actually moving. Sleep, training, food, the version of you you used to know — wherever it's loudest.",
+  // Marriage / family — original frame, kept for the audience it fits
+  "Wife, kids, work, mornings, the late-night fridge — whatever has been moving lately.",
+  // Career-heavy — executive / high-earner pressure
+  "Calendar owns you. Body pays for it. Where's the friction showing first — sleep, training, food, presence?",
+  // Identity gap — the man who used to be there
+  "Where you are vs where you used to be. The gap that's been growing. What's it actually about?",
+  // Restart / false start — the guy who's tried before
+  "What did you start and stop. Tell me what you actually tried — not the perfect version, the real one.",
+];
+
+function pickOpenerFrame() {
+  return OPENER_FRAMES[Math.floor(Math.random() * OPENER_FRAMES.length)];
+}
+
 function Opener({ keyword }) {
+  // useMemo keeps the frame stable across re-renders within a single visit.
+  // Without it, React.StrictMode double-render or any parent state change
+  // would re-roll the random pick and feel jumpy to the visitor.
+  const frame = useMemo(pickOpenerFrame, []);
   return (
     <div
       style={{
@@ -309,8 +336,7 @@ function Opener({ keyword }) {
         You typed <span style={{ color: GOLD }}>{keyword.toUpperCase()}</span>. Good.
       </p>
       <p style={{ margin: '10px 0 0', lineHeight: 1.55, color: MUTE, fontSize: 13 }}>
-        Tell me what&apos;s actually going on. Wife, kids, work, mornings, the late-night fridge —
-        whatever has been moving lately. No script. No form.
+        {frame} No script. No form.
       </p>
     </div>
   );

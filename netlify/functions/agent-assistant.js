@@ -225,11 +225,26 @@ export default async (req) => {
           // Non-streaming `messages.create` waits for the full response (15–40s
           // for Opus 4.7 with sizable max_tokens), which blew past Netlify's
           // function timeout and killed the SSE stream mid-iteration.
+          // Prompt caching: system prompt + tool definitions are constant
+          // per conversation. Caching them drops input-token cost ~90% on
+          // every turn after the first (Opus 4.7 input $15/M -> $1.50/M
+          // cached). cache_control on the LAST tool implicitly caches the
+          // tool array up to that point. Last-N messages are NOT cached —
+          // they change every turn, so caching adds overhead with no win.
+          const cachedSystem = [
+            { type: 'text', text: system, cache_control: { type: 'ephemeral' } },
+          ];
+          const cachedTools = tools.length
+            ? [
+                ...tools.slice(0, -1),
+                { ...tools[tools.length - 1], cache_control: { type: 'ephemeral' } },
+              ]
+            : tools;
           const anthStream = anthropic.messages.stream({
             model: MODEL,
             max_tokens: MAX_TOKENS_PER_TURN,
-            system,
-            tools,
+            system: cachedSystem,
+            tools: cachedTools,
             messages,
           });
 

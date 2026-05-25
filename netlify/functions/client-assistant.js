@@ -236,18 +236,28 @@ export default async (req) => {
       let fullText = '';
       try {
         const anthropic = getAnthropic(apiKeyOverride);
+        // Prompt caching: system prompt is constant per session. Caching it
+        // drops input-token cost ~90% on every turn after the first.
         const streamParams = {
           model,
           max_tokens: 1024,
-          system,
+          system: [
+            { type: 'text', text: system, cache_control: { type: 'ephemeral' } },
+          ],
           messages,
         };
         // Architect (owner) gets Anthropic's native web_search server tool —
         // search runs at Anthropic, results fold into the model's text output.
         // max_uses caps per-turn searches to keep cost bounded ($10/1k).
+        // cache_control on the tool definition keeps the tool block cached.
         if (role === 'owner') {
           streamParams.tools = [
-            { type: 'web_search_20250305', name: 'web_search', max_uses: 3 },
+            {
+              type: 'web_search_20250305',
+              name: 'web_search',
+              max_uses: 3,
+              cache_control: { type: 'ephemeral' },
+            },
           ];
         }
         const anthStream = anthropic.messages.stream(streamParams);
