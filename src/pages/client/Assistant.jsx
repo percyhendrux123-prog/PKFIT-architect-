@@ -62,6 +62,16 @@ async function resizeImageFile(file) {
 
 const TEXTAREA_MAX_HEIGHT = 240;
 
+// 44-byte zero-sample mono 16-bit 44.1kHz WAV. Used to prime the singleton
+// Audio element inside the user-gesture event handler — iOS Safari requires
+// .play() to be invoked synchronously within a tap/click before it will
+// allow later .src swaps and .play() calls on the same element. Without
+// this prime, the post-fetch .play() in toggleTts throws NotSupportedError
+// ("The operation is not supported"), which surfaced as Percy's "Audio
+// failed" error on every TTS tap.
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+
 // Starter prompts — Percy voice, mechanism-first. Shown above the input bar
 // only when the conversation is empty. Tapping one drops the text into the
 // textarea so the client can edit before sending.
@@ -630,12 +640,14 @@ export default function Assistant() {
     ]);
   }
 
-  // Tap-to-play TTS for any architect message. iOS Safari requires the
-  // Audio element be created and play() called inside the same user-gesture
-  // tick, which is exactly what this onClick handler is. We keep a single
-  // active Audio instance so a second tap on a different message stops the
-  // previous one before starting the new one.
-  async function toggleTts(messageIndex, text) {
+  // Tap-to-play TTS for any architect message. The previous implementation
+  // awaited the TTS fetch BEFORE constructing the Audio element, which broke
+  // iOS Safari's user-gesture rule and made every .play() throw
+  // NotSupportedError. Fix: construct the Audio element and call .play() on
+  // a silent stub synchronously inside this click handler (the gesture
+  // window). Once the real TTS bytes arrive, swap .src and call .play()
+  // again on the same — now gesture-unlocked — element.
+  function toggleTts(messageIndex, text) {
     const trimmed = (text ?? '').trim();
     if (!trimmed) return;
 
@@ -653,42 +665,60 @@ export default function Assistant() {
       audioRef.current = null;
     }
 
+    // SYNCHRONOUS in the user gesture: instantiate the element and call
+    // play() with the silent stub. iOS Safari blesses subsequent .play()
+    // calls on this specific element after this point. The catch silences
+    // the prime's NotAllowedError on browsers that auto-block; the unlock
+    // still registers regardless of the promise outcome.
+    const audio = new Audio(SILENT_WAV);
+    audioRef.current = audio;
+    const primePromise = audio.play().catch(() => {});
+
     setErr(null);
     setAudioState({ index: messageIndex, status: 'loading' });
 
-    try {
-      let src = toolTtsAudio[messageIndex];
-      if (!src) {
-        let cached = audioCacheRef.current.get(messageIndex);
-        if (!cached) {
-          const blob = await architectTts({ text: trimmed, voice: 'onyx' });
-          cached = URL.createObjectURL(blob);
-          if (trimmed.length > 500) {
-            audioCacheRef.current.set(messageIndex, cached);
+    (async () => {
+      try {
+        let src = toolTtsAudio[messageIndex];
+        if (!src) {
+          let cached = audioCacheRef.current.get(messageIndex);
+          if (!cached) {
+            const blob = await architectTts({ text: trimmed, voice: 'onyx' });
+            cached = URL.createObjectURL(blob);
+            if (trimmed.length > 500) {
+              audioCacheRef.current.set(messageIndex, cached);
+            }
           }
+          src = cached;
         }
-        src = cached;
-      }
 
-      const audio = new Audio(src);
-      audioRef.current = audio;
-      audio.onended = () => {
-        if (audioRef.current === audio) audioRef.current = null;
-        setAudioState((s) =>
-          s.index === messageIndex ? { index: null, status: 'idle' } : s,
-        );
-      };
-      audio.onerror = () => {
+        // Wait for the prime to settle so Safari's media-element state isn't
+        // confused by an in-flight load when we swap src.
+        await primePromise;
+
+        // Bail if another click superseded us — that click will have
+        // installed a different Audio in audioRef.current.
+        if (audioRef.current !== audio) return;
+
+        audio.src = src;
+        audio.onended = () => {
+          if (audioRef.current === audio) audioRef.current = null;
+          setAudioState((s) =>
+            s.index === messageIndex ? { index: null, status: 'idle' } : s,
+          );
+        };
+        audio.onerror = () => {
+          if (audioRef.current === audio) audioRef.current = null;
+          setAudioState({ index: messageIndex, status: 'error' });
+        };
+        await audio.play();
+        setAudioState({ index: messageIndex, status: 'playing' });
+      } catch (e) {
         if (audioRef.current === audio) audioRef.current = null;
         setAudioState({ index: messageIndex, status: 'error' });
-      };
-      await audio.play();
-      setAudioState({ index: messageIndex, status: 'playing' });
-    } catch (e) {
-      if (audioRef.current) audioRef.current = null;
-      setAudioState({ index: messageIndex, status: 'error' });
-      setErr(`Audio failed: ${e.message}`);
-    }
+        setErr(`Audio failed: ${e.message}`);
+      }
+    })();
   }
 
   const showStarters = messages.length === 0 && !busy;
