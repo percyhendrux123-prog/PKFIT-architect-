@@ -36,7 +36,7 @@ const KEYS = ['standard', 'structure', 'system', 'protocol', 'align'];
 const PATH_TO_KEY = Object.fromEntries(KEYS.map((k) => [`/${k}`, k]));
 
 const KEY_COPY = {
-  standard:  { subhead: 'The standard removes negotiation.' },
+  standard:  { subhead: 'A live interview. Three questions. Then we know what this is.' },
   structure: { subhead: 'Discipline didn’t fail. Structure did.' },
   system:    { subhead: 'A system you can keep is stronger than a plan you can’t.' },
   protocol:  { subhead: 'Behavior becomes identity.' },
@@ -283,34 +283,10 @@ function Header({ keyword, subhead }) {
   );
 }
 
-// Five rotating opener frames. Picked at random per visitor so /standard
-// doesn't default everyone into the marriage-friction lane. The agent's
-// system prompt still surfaces marriage when the visitor brings it up,
-// but the visible opener no longer pre-loads the assumption — single,
-// career-grind, identity-drift, and restart visitors land on a frame
-// that fits their actual friction.
-const OPENER_FRAMES = [
-  // Open / default — broadest catch
-  "Tell me what's actually moving. Sleep, training, food, the version of you you used to know — wherever it's loudest.",
-  // Marriage / family — original frame, kept for the audience it fits
-  "Wife, kids, work, mornings, the late-night fridge — whatever has been moving lately.",
-  // Career-heavy — executive / high-earner pressure
-  "Calendar owns you. Body pays for it. Where's the friction showing first — sleep, training, food, presence?",
-  // Identity gap — the man who used to be there
-  "Where you are vs where you used to be. The gap that's been growing. What's it actually about?",
-  // Restart / false start — the guy who's tried before
-  "What did you start and stop. Tell me what you actually tried — not the perfect version, the real one.",
-];
-
-function pickOpenerFrame() {
-  return OPENER_FRAMES[Math.floor(Math.random() * OPENER_FRAMES.length)];
-}
+// v2: single fixed opener. The frame is a contract — three questions,
+// then diagnosis. Rotating breaks the contract.
 
 function Opener({ keyword }) {
-  // useMemo keeps the frame stable across re-renders within a single visit.
-  // Without it, React.StrictMode double-render or any parent state change
-  // would re-roll the random pick and feel jumpy to the visitor.
-  const frame = useMemo(pickOpenerFrame, []);
   return (
     <div
       style={{
@@ -333,10 +309,19 @@ function Opener({ keyword }) {
         START HERE
       </div>
       <p style={{ margin: 0, lineHeight: 1.55, color: INK, fontSize: 14 }}>
-        You typed <span style={{ color: GOLD }}>{keyword.toUpperCase()}</span>. Good.
+        You typed <span style={{ color: GOLD }}>{keyword.toUpperCase()}</span>.
       </p>
       <p style={{ margin: '10px 0 0', lineHeight: 1.55, color: MUTE, fontSize: 13 }}>
-        {frame} No script. No form.
+        This is not a form. This is not a coach.
+      </p>
+      <p style={{ margin: '10px 0 0', lineHeight: 1.55, color: INK, fontSize: 13 }}>
+        Three questions. Answer plain.
+      </p>
+      <p style={{ margin: '6px 0 0', lineHeight: 1.55, color: INK, fontSize: 13 }}>
+        By question three, I already know what this is.
+      </p>
+      <p style={{ margin: '14px 0 0', lineHeight: 1.55, color: MUTE, fontSize: 13 }}>
+        Say it.
       </p>
     </div>
   );
