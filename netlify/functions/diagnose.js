@@ -6,6 +6,15 @@ import {
   AGENT_TOOL_NAMES,
   handleToolUse,
 } from '../../src/lib/agentTools.js';
+import {
+  STATES,
+  TERMINAL_STATES,
+  applyScoreDelta,
+  computeRouteStatus,
+  deltaForSignals,
+  deriveLeadFields,
+  validateTransition,
+} from '../../src/lib/agentScoring.js';
 
 // Public-facing AI intake. No auth. The keyword routes a visitor from
 // ManyChat (or any link) into a Claude-driven conversation with PKFIT.
@@ -112,6 +121,38 @@ async function checkPublicRateLimit({ key, bucket, max, windowSec }) {
   return { allowed: true };
 }
 
+// Allow-list of slot keys the model can populate via slot_updates. Unknown
+// keys are silently dropped to defend against hallucinated slot names.
+const KNOWN_SLOT_KEYS = new Set([
+  'name', 'age', 'why_typed', 'lane',
+  'goal', 'experience', 'occupation',
+  'main_struggle', 'failure_pattern', 'previous_attempts',
+  'coaching_interest', 'price_readiness', 'timeline',
+  'brass_line_delivered', 'permission_given',
+]);
+
+function sanitizeSlotUpdates(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const clean = {};
+  let any = false;
+  for (const [k, v] of Object.entries(raw)) {
+    if (!KNOWN_SLOT_KEYS.has(k)) continue;
+    clean[k] = v;
+    any = true;
+  }
+  return any ? clean : null;
+}
+
+// v3 META JSON shape:
+//   {
+//     level: 1-5,                          (legacy, derived from state)
+//     tag:   "intent_N_label",             (legacy display)
+//     state_to: "awaiting_age",            (state transition the model proposes)
+//     slot_updates: { name: "Marcus" },    (slot writes for this turn)
+//     score_signals: ["detailed_answer"]   (named signals → backend maps to deltas)
+//   }
+// All v3 fields are optional. v2 prompt output continues to parse cleanly
+// (just no state/slot/score updates), so legacy sessions don't break mid-flight.
 function parseMeta(text) {
   if (!text) return { reply: '', meta: null };
   const m = text.match(META_RE);
@@ -120,21 +161,57 @@ function parseMeta(text) {
   try {
     const parsed = JSON.parse(m[1]);
     const level = Number(parsed.level);
+    meta = {};
     if (Number.isInteger(level) && level >= 1 && level <= 5) {
-      meta = { level, tag: typeof parsed.tag === 'string' ? parsed.tag : null };
+      meta.level = level;
+      meta.tag = typeof parsed.tag === 'string' ? parsed.tag : null;
+    }
+    if (typeof parsed.state_to === 'string') {
+      meta.state_to = parsed.state_to;
+    }
+    const slotUpdates = sanitizeSlotUpdates(parsed.slot_updates);
+    if (slotUpdates) meta.slot_updates = slotUpdates;
+    if (Array.isArray(parsed.score_signals)) {
+      meta.score_signals = parsed.score_signals.filter((s) => typeof s === 'string');
     }
   } catch {
-    // ignore parse errors; reply still gets returned without intent
+    // ignore parse errors; reply still gets returned without meta
   }
   const reply = text.slice(0, m.index).trim();
   return { reply, meta };
 }
 
-function buildSystemPrompt(key) {
+// Render the per-turn session context that prefixes the static system prompt.
+// The backend owns the source of truth for state/slots/score, so we inject
+// them explicitly each turn rather than relying on the model to remember.
+function renderSessionContext({ state, slots, leadScore, turnIndex }) {
+  const slotEntries = Object.entries(slots || {})
+    .map(([k, v]) => `  ${k}: ${JSON.stringify(v)}`)
+    .join('\n');
+  const slotsBlock = slotEntries ? `\n${slotEntries}` : ' {}';
+
+  return `SESSION CONTEXT (turn ${turnIndex})
+Current state: ${state}
+Slots captured so far:${slotsBlock}
+Running lead score: ${leadScore}
+
+Your job this turn: read the visitor's latest message, follow the per-state
+instructions below for state "${state}", and end your META JSON with a
+state_to transition, slot_updates (for any new slot values), and
+score_signals (named signals — see SIGNALS section). If you are uncertain
+about the state, stay in it (state_to equal to current state is valid).`;
+}
+
+function buildSystemPrompt(key, sessionCtx) {
   const base = loadPrompt('diagnose.md');
-  return base
-    .replaceAll('{{KEYWORD}}', key)
-    .replaceAll('{{KEYWORD_UPPER}}', key.toUpperCase());
+  const ctx = renderSessionContext(sessionCtx);
+  return [
+    ctx,
+    '',
+    base
+      .replaceAll('{{KEYWORD}}', key)
+      .replaceAll('{{KEYWORD_UPPER}}', key.toUpperCase()),
+  ].join('\n');
 }
 
 // Reconstruct API-shaped messages from persisted transcript. Persisted shape:
@@ -300,7 +377,7 @@ export default async (req) => {
   const { data: existing } = await admin
     .from('diagnose_sessions')
     .select(
-      'id, keyword, messages, intent_level, tools_invoked, qualifier_clicked, gumroad_clicked, consultation_requested',
+      'id, keyword, messages, intent_level, tools_invoked, qualifier_clicked, gumroad_clicked, consultation_requested, state, slots, lead_score, route_status, lead_fields, referrer, subscriber_id',
     )
     .eq('id', sessionId)
     .maybeSingle();
@@ -313,6 +390,12 @@ export default async (req) => {
     gumroad_clicked: false,
     consultation_requested: false,
   };
+  // v3 state machine fields. Defaults match the migration defaults.
+  let sessionState = STATES.ENTRY;
+  let sessionSlots = {};
+  let sessionScore = 0;
+  let sessionRouteStatus = 'pending';
+  let sessionRowForLeadFields = null;
 
   if (existing) {
     messages = Array.isArray(existing.messages) ? existing.messages : [];
@@ -323,6 +406,19 @@ export default async (req) => {
       gumroad_clicked: Boolean(existing.gumroad_clicked),
       consultation_requested: Boolean(existing.consultation_requested),
     };
+    if (typeof existing.state === 'string' && existing.state) {
+      sessionState = existing.state;
+    }
+    if (existing.slots && typeof existing.slots === 'object') {
+      sessionSlots = { ...existing.slots };
+    }
+    if (Number.isFinite(existing.lead_score)) {
+      sessionScore = existing.lead_score;
+    }
+    if (typeof existing.route_status === 'string') {
+      sessionRouteStatus = existing.route_status;
+    }
+    sessionRowForLeadFields = existing;
     if (messages.length >= MAX_MESSAGES_PER_SESSION) {
       return json(429, { error: 'session length limit reached' });
     }
@@ -335,11 +431,12 @@ export default async (req) => {
       ip_hash: ipKey,
       user_agent: userAgent,
       messages: [],
+      // state, slots, lead_score, route_status, lead_fields use column defaults
     });
     if (insertErr) {
       const { data: refetched } = await admin
         .from('diagnose_sessions')
-        .select('keyword, messages, tools_invoked')
+        .select('keyword, messages, tools_invoked, state, slots, lead_score, route_status, referrer, subscriber_id')
         .eq('id', sessionId)
         .maybeSingle();
       if (!refetched) {
@@ -350,10 +447,28 @@ export default async (req) => {
       existingToolsInvoked = Array.isArray(refetched.tools_invoked)
         ? refetched.tools_invoked
         : [];
+      if (typeof refetched.state === 'string' && refetched.state) sessionState = refetched.state;
+      if (refetched.slots && typeof refetched.slots === 'object') sessionSlots = { ...refetched.slots };
+      if (Number.isFinite(refetched.lead_score)) sessionScore = refetched.lead_score;
+      if (typeof refetched.route_status === 'string') sessionRouteStatus = refetched.route_status;
+      sessionRowForLeadFields = refetched;
     }
   }
 
+  // Fresh session: the greeting card has already asked the name, so the
+  // entry state's first observable user message lands the visitor in
+  // awaiting_name on the server side. We advance entry → awaiting_name
+  // optimistically; the model's job is to receive that first message,
+  // capture the name slot, and transition to awaiting_age.
+  if (sessionState === STATES.ENTRY) {
+    sessionState = STATES.AWAITING_NAME;
+  }
+
   const apiMessages = rebuildApiMessages(messages, message);
+
+  // Turn index = number of prior assistant turns + 1. Cheap derivation from
+  // the persisted transcript (avoids a separate counter column).
+  const turnIndex = messages.filter((m) => m && m.role === 'assistant').length + 1;
 
   const anthropic = getAnthropic();
   let completion;
@@ -362,7 +477,12 @@ export default async (req) => {
       model: MODEL,
       max_tokens: MAX_TOKENS,
       temperature: TEMPERATURE,
-      system: buildSystemPrompt(sessionKeyword),
+      system: buildSystemPrompt(sessionKeyword, {
+        state: sessionState,
+        slots: sessionSlots,
+        leadScore: sessionScore,
+        turnIndex,
+      }),
       tools: agentToolDefinitions,
       messages: apiMessages,
     });
@@ -408,12 +528,70 @@ export default async (req) => {
     return json(502, { error: 'empty model reply' });
   }
 
+  // ─── v3: apply state machine transition + slot merge + score delta ────
+  // The model proposes state_to / slot_updates / score_signals in META JSON.
+  // Backend is the source of truth: validate the transition, drop unknown
+  // slot keys (already filtered by parseMeta), sum the score signals, and
+  // recompute route_status from the final state + score + slots.
+
+  let nextState = sessionState;
+  if (meta?.state_to && meta.state_to !== sessionState) {
+    if (validateTransition(sessionState, meta.state_to)) {
+      nextState = meta.state_to;
+    }
+    // Illegal transition: stay in current state. Model gets another chance
+    // next turn. We don't surface this to the visitor — the conversation
+    // continues unaffected.
+  }
+
+  const nextSlots = { ...sessionSlots };
+  if (meta?.slot_updates) {
+    Object.assign(nextSlots, meta.slot_updates);
+  }
+
+  let nextScore = sessionScore;
+  if (Array.isArray(meta?.score_signals) && meta.score_signals.length) {
+    const delta = deltaForSignals(meta.score_signals);
+    nextScore = applyScoreDelta(nextScore, delta);
+  }
+
+  // Side-channel: if a tool fires that implies a route, ensure state is at
+  // the right terminal. offer_consultation in a non-terminal state means
+  // the model jumped ahead — promote to EMAIL_CAPTURE / BOOKING_HANDOFF.
+  if (toolUses.some((t) => t.name === 'offer_consultation') && !TERMINAL_STATES.has(nextState)) {
+    if (validateTransition(nextState, STATES.EMAIL_CAPTURE)) {
+      nextState = STATES.EMAIL_CAPTURE;
+    } else if (validateTransition(nextState, STATES.BOOKING_HANDOFF_PERCY)) {
+      nextState = STATES.BOOKING_HANDOFF_PERCY;
+    }
+  }
+  if (toolUses.some((t) => t.name === 'offer_workbook') && !TERMINAL_STATES.has(nextState)) {
+    if (validateTransition(nextState, STATES.NURTURE_EXIT)) {
+      nextState = STATES.NURTURE_EXIT;
+    }
+  }
+  if (toolUses.some((t) => t.name === 'offer_qualifier') && !TERMINAL_STATES.has(nextState)) {
+    if (validateTransition(nextState, STATES.QUALIFIER_ROUTE)) {
+      nextState = STATES.QUALIFIER_ROUTE;
+    } else if (validateTransition(nextState, STATES.ATHLETE_QUALIFIER)) {
+      nextState = STATES.ATHLETE_QUALIFIER;
+    }
+  }
+
+  const nextRouteStatus = computeRouteStatus({
+    state: nextState,
+    score: nextScore,
+    slots: nextSlots,
+  });
+
   const turnTimestamp = new Date().toISOString();
   const assistantTurn = {
     role: 'assistant',
     content: reply,
     meta,
     at: new Date().toISOString(),
+    state: nextState,
+    score_after_turn: nextScore,
   };
   if (toolUses.length) {
     assistantTurn.tool_calls = toolUses;
@@ -428,6 +606,10 @@ export default async (req) => {
   const update = {
     messages: finalMessages,
     last_message_at: new Date().toISOString(),
+    state: nextState,
+    slots: nextSlots,
+    lead_score: nextScore,
+    route_status: nextRouteStatus,
   };
   if (meta?.level) update.intent_level = meta.level;
 
@@ -440,6 +622,19 @@ export default async (req) => {
     Object.assign(update, leadUpdate);
   }
 
+  // Derive lead_fields off the post-update snapshot. The deriveLeadFields
+  // helper reads slots, route_status, keyword, referrer, subscriber_id, and
+  // the last assistant message, so we synthesize that snapshot inline.
+  update.lead_fields = deriveLeadFields({
+    keyword: sessionKeyword,
+    referrer: sessionRowForLeadFields?.referrer ?? referrer,
+    subscriber_id: sessionRowForLeadFields?.subscriber_id ?? subscriberId,
+    slots: nextSlots,
+    lead_score: nextScore,
+    route_status: nextRouteStatus,
+    messages: finalMessages,
+  });
+
   const { error: updateErr } = await admin
     .from('diagnose_sessions')
     .update(update)
@@ -449,6 +644,8 @@ export default async (req) => {
       reply,
       intent_level: meta?.level ?? null,
       tool_calls: toolUses,
+      state: nextState,
+      route_status: nextRouteStatus,
       warning: 'persist_failed',
     });
   }
@@ -458,6 +655,8 @@ export default async (req) => {
     intent_level: meta?.level ?? null,
     tool_calls: toolUses,
     session_id: sessionId,
+    state: nextState,
+    route_status: nextRouteStatus,
   });
 };
 
@@ -467,5 +666,8 @@ export const __test__ = {
   hashIp,
   rebuildApiMessages,
   buildLeadCaptureUpdate,
+  renderSessionContext,
+  sanitizeSlotUpdates,
+  KNOWN_SLOT_KEYS,
   ALLOWED_KEYS,
 };

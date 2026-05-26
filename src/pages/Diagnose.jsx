@@ -320,8 +320,8 @@ function Opener({ keyword }) {
       <p style={{ margin: '6px 0 0', lineHeight: 1.55, color: INK, fontSize: 13 }}>
         By question three, I already know what this is.
       </p>
-      <p style={{ margin: '14px 0 0', lineHeight: 1.55, color: MUTE, fontSize: 13 }}>
-        Say it.
+      <p style={{ margin: '14px 0 0', lineHeight: 1.55, color: INK, fontSize: 13 }}>
+        I&apos;m /standard. What&apos;s your name?
       </p>
     </div>
   );
