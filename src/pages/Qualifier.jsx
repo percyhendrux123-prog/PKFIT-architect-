@@ -80,7 +80,12 @@ export default function Qualifier() {
       if (!res.ok) {
         throw new Error(payload?.error || `submission failed (${res.status})`);
       }
-      setResult({ ready_to_invest: readyToInvest, application_id: payload.application_id });
+      setResult({
+        ready_to_invest: readyToInvest,
+        application_id: payload.application_id,
+        name: name.trim(),
+        email: email.trim(),
+      });
     } catch (e) {
       setError(e?.message || 'Submission failed. Try again in a moment.');
     } finally {
@@ -111,7 +116,13 @@ export default function Qualifier() {
   }
 
   if (result) {
-    return <Confirmation isHot={result.ready_to_invest} />;
+    return (
+      <Confirmation
+        isHot={result.ready_to_invest}
+        name={result.name}
+        email={result.email}
+      />
+    );
   }
 
   return (
@@ -473,7 +484,11 @@ function Nav({ step, submitting, canAdvance, isFinal, onBack, onNext }) {
   );
 }
 
-function Confirmation({ isHot }) {
+function Confirmation({ isHot, name, email }) {
+  const calendlyUrl =
+    'https://calendly.com/percyhendrux123/30min?hide_gdpr_banner=1' +
+    (name ? `&name=${encodeURIComponent(name)}` : '') +
+    (email ? `&email=${encodeURIComponent(email)}` : '');
   return (
     <div
       style={{
@@ -501,7 +516,7 @@ function Confirmation({ isHot }) {
             border: `0.5px solid ${GOLD}`,
             borderRadius: RADIUS,
             padding: '28px 24px',
-            maxWidth: 540,
+            maxWidth: isHot ? 680 : 540,
             width: '100%',
             textAlign: 'left',
           }}
@@ -521,14 +536,25 @@ function Confirmation({ isHot }) {
           {isHot ? (
             <>
               <p style={{ color: INK, fontSize: 15, lineHeight: 1.55, margin: '0 0 14px' }}>
-                I review every submission personally.
+                I review every submission personally — you're in.
               </p>
-              <p style={{ color: INK, fontSize: 15, lineHeight: 1.55, margin: '0 0 14px' }}>
-                You'll hear from me within 24 hours at the contact you gave.
+              <p style={{ color: INK, fontSize: 15, lineHeight: 1.55, margin: '0 0 18px' }}>
+                Book your Application Review Call below. That's where we move forward.
               </p>
-              <p style={{ color: MUTE, fontSize: 13, lineHeight: 1.55, margin: 0 }}>
-                The next standard begins the moment you respond.
-              </p>
+              <div
+                style={{
+                  border: `0.5px solid ${BORDER}`,
+                  borderRadius: RADIUS,
+                  overflow: 'hidden',
+                  background: '#fff',
+                }}
+              >
+                <iframe
+                  title="Book your PKFIT Application Review Call"
+                  src={calendlyUrl}
+                  style={{ width: '100%', height: 700, border: 'none', display: 'block' }}
+                />
+              </div>
             </>
           ) : (
             <>
