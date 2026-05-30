@@ -44,7 +44,7 @@ export default function EnterIntro() {
         aria-hidden="true"
         className="transition-opacity duration-100 ease-out hover:opacity-85"
         style={{
-          fontFamily: "'DRUK Wide', 'Druk Wide', 'Bowlby One', sans-serif",
+          fontFamily: "'Bebas Neue', 'DRUK Wide', 'Druk Wide', sans-serif",
           fontWeight: 900,
           fontSize: 'clamp(12rem, 40vw, 32rem)',
           lineHeight: 1,

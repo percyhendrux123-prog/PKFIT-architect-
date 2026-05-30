@@ -88,12 +88,12 @@ export default function Signup() {
 
           <fieldset className="space-y-2 border border-line bg-black/30 p-3 text-xs text-mute">
             <legend className="px-1 label">Agreements</legend>
-            <label className="flex items-start gap-2">
+            <label className="flex min-h-[44px] cursor-pointer items-start gap-3 py-2">
               <input
                 type="checkbox"
                 checked={tos}
                 onChange={(e) => setTos(e.target.checked)}
-                className="mt-0.5 accent-gold"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-gold"
                 required
               />
               <span>
@@ -104,12 +104,12 @@ export default function Signup() {
                 .
               </span>
             </label>
-            <label className="flex items-start gap-2">
+            <label className="flex min-h-[44px] cursor-pointer items-start gap-3 py-2">
               <input
                 type="checkbox"
                 checked={coaching}
                 onChange={(e) => setCoaching(e.target.checked)}
-                className="mt-0.5 accent-gold"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-gold"
                 required
               />
               <span>
@@ -120,12 +120,12 @@ export default function Signup() {
                 , including the assumption of risk.
               </span>
             </label>
-            <label className="flex items-start gap-2">
+            <label className="flex min-h-[44px] cursor-pointer items-start gap-3 py-2">
               <input
                 type="checkbox"
                 checked={privacy}
                 onChange={(e) => setPrivacy(e.target.checked)}
-                className="mt-0.5 accent-gold"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-gold"
                 required
               />
               <span>

@@ -12,16 +12,19 @@ export default {
         ink: '#F5F5F5',
         mute: '#BFBFBF',
         faint: '#9A9A9A',
-        // minimalist 2026-05-01: line tint moved off yellow rgba onto neutral cream.
-        line: 'rgba(245, 241, 232, 0.12)',
+        // WCAG 1.4.11 fix: alpha 0.12 resolved to ~1.3:1 over the #080808
+        // page — borders read as voids. Bumped to 0.40 → ~3.45:1, clearing
+        // the 3:1 minimum for non-text UI boundaries with a small margin.
+        line: 'rgba(245, 241, 232, 0.40)',
         signal: '#A03A2C',
         success: '#7A8C5C',
       },
       fontFamily: {
-        // block 0 2026-05-05: PK•FIT brand cascade. DRUK Wide is the target;
-        // Druk Wide and Bowlby One are restrained fallbacks for when the
-        // licensed face is not yet bundled. system-ui closes the chain.
-        display: ['"DRUK Wide"', '"Druk Wide"', '"Bowlby One"', 'system-ui', 'sans-serif'],
+        // PK•FIT brand cascade. Bebas Neue is bundled and self-hosted from
+        // /public/fonts/. DRUK Wide is reserved as a future-licensed face;
+        // it stays in the chain so the day the woff2 is added the brand can
+        // upgrade without touching component code. system-ui closes the chain.
+        display: ['"Bebas Neue"', '"DRUK Wide"', '"Druk Wide"', 'system-ui', 'sans-serif'],
         body: ['"DM Mono"', 'ui-monospace', 'monospace'],
       },
       letterSpacing: {
