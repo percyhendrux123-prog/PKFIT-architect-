@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'node:path';
 
 export default defineConfig({
   plugins: [react()],
@@ -23,6 +24,15 @@ export default defineConfig({
     commonjsOptions: {
       // Workspace package is ESM-only, skip CJS conversion attempts.
       include: [/node_modules/],
+    },
+    rollupOptions: {
+      // Multi-page: the SPA shell (/) plus a dedicated /apply shell that
+      // carries application-specific Open Graph tags for link previews.
+      // Both boot the same React app; React Router renders the route.
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        apply: resolve(__dirname, 'apply.html'),
+      },
     },
   },
 });

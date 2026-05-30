@@ -63,6 +63,16 @@
   force = true
 
 [[redirects]]
+  # Serve the dedicated /apply shell so social scrapers read the
+  # application-specific Open Graph tags (og-apply card) instead of the
+  # generic SPA shell. Must precede the SPA catch-all below. Rewrite (200)
+  # keeps the URL at /apply; the bundled React app boots and renders the
+  # Qualifier route as usual.
+  from = "/apply"
+  to = "/apply.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
