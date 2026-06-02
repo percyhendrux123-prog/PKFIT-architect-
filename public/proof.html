@@ -173,16 +173,17 @@
         <div class="who">DARRYL GARNER × DELE BAKARE · CLIENT TESTIMONIAL</div>
       </div>
 
-      <!-- lazy YouTube facade: poster + play button now; iframe injected on click (no page bloat) -->
-      <div class="vframe" onclick="if(!this.dataset.on){this.dataset.on=1;this.innerHTML='&lt;iframe src=\'https://www.youtube-nocookie.com/embed/Nx7TDt5QIIE?autoplay=1&rel=0\' title=\'PKFIT client testimonial\' allow=\'accelerated-rotation;autoplay;encrypted-media;picture-in-picture\' allowfullscreen&gt;&lt;/iframe&gt;';}">
+      <!-- lazy YouTube facade: branded frame + one play button. The click injects the
+           youtube-nocookie iframe inline, so playback stays on operatefitness.app. -->
+      <div class="vframe" role="button" tabindex="0" aria-label="Play the client testimonial"
+           onclick="if(!this.dataset.on){this.dataset.on=1;this.innerHTML='&lt;iframe src=\'https://www.youtube-nocookie.com/embed/Nx7TDt5QIIE?autoplay=1&rel=0\' title=\'PKFIT client testimonial\' allow=\'accelerated-rotation;autoplay;encrypted-media;picture-in-picture\' allowfullscreen&gt;&lt;/iframe&gt;';}"
+           onkeydown="if((event.key==='Enter'||event.key===' ')&&!this.dataset.on){event.preventDefault();this.click();}">
         <span class="badge">▶ Testimonial · 9:16</span>
-        <img class="poster" src="/assets/proof/testimonial-poster.jpg" alt="PKFIT client testimonial">
-        <a class="play" href="https://youtube.com/shorts/Nx7TDt5QIIE" target="_blank" rel="noopener"
-           onclick="event.stopPropagation();">
+        <span class="play">
           <span class="ring"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
           <span class="cta">WATCH</span>
-        </a>
-        <div class="fallback">Video not loading? <a href="https://youtube.com/shorts/Nx7TDt5QIIE" target="_blank" rel="noopener">Open it here →</a></div>
+        </span>
+        <div class="fallback">Video not loading? <a href="https://youtube.com/shorts/Nx7TDt5QIIE" target="_blank" rel="noopener" onclick="event.stopPropagation();">Open it here →</a></div>
       </div>
     </div>
   </div>
