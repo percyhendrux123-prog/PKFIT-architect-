@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results — PKFIT — operatefitness.app</title>
+<link rel="stylesheet" href="assets/brand.css">
+<style>
+/* /proof — THE RECEIPT. Stark, contrast carries it. One gold accent per element. */
+.hero{padding:60px 0 44px}
+.hero h1{font-family:'Anton',sans-serif;text-transform:uppercase;font-size:clamp(38px,10vw,82px);line-height:0.9;max-width:13ch}
+.hero-sub{margin:24px 0 0;max-width:48ch;font-size:16px;color:#cfcfcf}
+
+/* big stat ledger */
+.ledger{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:30px}
+.stat .n{font-family:'Anton',sans-serif;font-size:clamp(38px,11vw,64px);color:var(--ink);line-height:0.85}
+.stat .n .u{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);letter-spacing:1px}
+.stat .l{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:8px}
+
+/* transformation cards — ADDITIVE. Each .case = one client (before/after pair, or .solo single).
+   Adding a 3rd/4th client later = copy one .case block + point <img> at new filenames. No rebuild. */
+.cases{display:grid;gap:18px;margin-top:26px}
+.case{border:0.5px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card)}
+.case .pair{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--line)}
+.case.solo .pair{grid-template-columns:1fr}
+.shot{position:relative;aspect-ratio:3/4;background:linear-gradient(160deg,#1c1c1c 0%,#0e0e0e 60%,#080808 100%);overflow:hidden}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.shot .ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#3a3a3a;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-align:center;padding:0 10px}
+.shot .ph .file{color:#2a2a2a;font-size:9px}
+.shot .bf{position:absolute;top:10px;left:10px;z-index:2;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;color:var(--ink);background:rgba(8,8,8,0.7);border:0.5px solid var(--line);padding:3px 9px;border-radius:6px}
+.shot .bf.after{color:var(--gold);border-color:var(--gold)}
+.case .cap{padding:18px 20px}
+.case .cap .tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.case .cap .name{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-top:6px}
+.case .cap .line{font-size:13px;color:#c4c4c4;margin-top:6px;max-width:46ch}
+
+/* testimonial video — lazy facade, 9:16 vertical, on-brand frame */
+.vt{display:grid;gap:26px;margin-top:26px;align-items:center}
+.vt .lead .brass{font-family:'Bebas Neue',sans-serif;font-size:clamp(22px,5vw,34px);letter-spacing:1px;line-height:1.15;color:var(--ink)}
+.vt .lead p{font-size:14px;color:var(--muted);margin-top:14px;max-width:42ch}
+.vt .lead .who{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1px;color:var(--steel);margin-top:16px}
+.vframe{position:relative;width:100%;max-width:340px;margin:0 auto;aspect-ratio:9/16;border:0.5px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#080808;cursor:pointer}
+.vframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.vframe .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.vframe .badge{position:absolute;top:12px;left:12px;z-index:3;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);background:rgba(8,8,8,0.7);border:0.5px solid var(--gold);border-radius:20px;padding:4px 10px}
+.vframe .play{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-decoration:none}
+.vframe .play .ring{width:74px;height:74px;border-radius:50%;border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;background:rgba(8,8,8,0.35)}
+.vframe .play .ring svg{width:26px;height:26px;fill:var(--gold);margin-left:4px}
+.vframe .play .cta{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--ink);text-shadow:0 2px 8px rgba(0,0,0,0.8)}
+.vframe .fallback{position:absolute;bottom:10px;left:0;right:0;z-index:3;text-align:center;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px}
+.vframe .fallback a{color:var(--muted);text-decoration:underline}
+
+/* authority band */
+.auth{background:var(--base)}
+.auth-portrait{position:relative;border-radius:var(--radius);overflow:hidden;border:0.5px solid var(--line);aspect-ratio:16/9;margin-top:18px;
+  background:linear-gradient(160deg,#1c1c1c 0%,#0e0e0e 60%,#080808 100%)}
+.auth-portrait img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 22%;display:block}
+.auth-portrait .ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#3a3a3a;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-align:center;padding:0 16px}
+.auth-portrait .ph .file{color:#2a2a2a;font-size:9px}
+.auth-portrait .cap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:18px 20px;background:linear-gradient(to top,rgba(8,8,8,0.9),transparent)}
+.auth-portrait .cap .k{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.auth-portrait .cap .n{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-top:4px}
+.auth .band{display:grid;gap:16px;margin-top:24px}
+.auth .b{padding:18px;border:0.5px solid var(--line);border-radius:var(--radius);background:var(--card)}
+.auth .b .t{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:1px}
+.auth .b .x{font-size:13px;color:var(--muted);margin-top:4px}
+
+.cta-band{text-align:center}
+.cta-band h2{font-family:'Anton',sans-serif;font-size:clamp(26px,7vw,46px);max-width:18ch;margin:0 auto 22px}
+.cta-row{display:flex;flex-direction:column;gap:12px;max-width:360px;margin:0 auto}
+
+@media(min-width:768px){
+  .ledger{grid-template-columns:repeat(4,1fr)}
+  .cases{grid-template-columns:repeat(2,1fr)}
+  .vt{grid-template-columns:1.1fr 0.9fr}
+  .auth .band{grid-template-columns:repeat(3,1fr)}
+  .cta-row{flex-direction:row;max-width:none;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="index.html" class="wordmark" style="text-decoration:none">PKFIT</a>
+    <div class="nav-links">
+      <a href="standard.html">THE STANDARD</a>
+      <a href="index.html#ladder">PROGRAMS</a>
+      <a href="proof.html">RESULTS</a>
+      <a href="field-notes.html">FIELD NOTES</a>
+      <a href="/apply">APPLY</a>
+    </div>
+    <a href="/apply" class="nav-cta">APPLY</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker gold">THE RECEIPT · EARNED, NOT CLAIMED</div>
+    <h1>THE WORK IS THE PROOF.</h1>
+    <p class="hero-sub">Potential means nothing without proof. Below is the record — the physique, the credential, and the men who reinstalled a Standard and kept it.</p>
+    <div class="ledger">
+      <div class="stat"><div class="n">IFBB</div><div class="l">Pro Men's Physique</div></div>
+      <div class="stat"><div class="n">141<span class="u">K+</span></div><div class="l">Operators reached</div></div>
+      <div class="stat"><div class="n">12<span class="u">WK</span></div><div class="l">Standard install</div></div>
+      <div class="stat"><div class="n">100<span class="u">%</span></div><div class="l">Documented, not staged</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- TRANSFORMATIONS -->
+<section>
+  <div class="wrap">
+    <div class="kicker">THE STANDARD BOARD</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 6px">MEN WHO HELD IT</h2>
+    <div class="cases">
+
+      <!-- DARRYL GARNER — 3-month, headed back to the stage. Additive card: before/after pair. -->
+      <div class="case">
+        <div class="pair">
+          <div class="shot">
+            <div class="ph">DARRYL — BEFORE<span class="file">assets/proof/darryl-before.jpg</span></div>
+            <img src="assets/proof/darryl-before.jpg" alt="Darryl Garner — before" onerror="this.style.display='none'">
+            <span class="bf">BEFORE</span>
+          </div>
+          <div class="shot">
+            <div class="ph">DARRYL — AFTER<span class="file">assets/proof/darryl-after.jpg</span></div>
+            <img src="assets/proof/darryl-after.jpg" alt="Darryl Garner — after" onerror="this.style.display='none'">
+            <span class="bf after">AFTER</span>
+          </div>
+        </div>
+        <div class="cap">
+          <div class="tag">3 MONTHS · STILL TRAINING</div>
+          <div class="name">DARRYL GARNER</div>
+          <div class="line">Three months in, and not done — headed back to the stage. The trajectory is the proof.</div>
+        </div>
+      </div>
+
+      <!-- DELE BAKARE — honest ~5-6 month slow burn. Before/after pair. NO fast-result implication. -->
+      <div class="case">
+        <div class="pair">
+          <div class="shot">
+            <div class="ph">DELE — BEFORE<span class="file">assets/proof/dele-before.jpg</span></div>
+            <img src="assets/proof/dele-before.jpg" alt="Dele Bakare — before" onerror="this.style.display='none'">
+            <span class="bf">BEFORE</span>
+          </div>
+          <div class="shot">
+            <div class="ph">DELE — AFTER<span class="file">assets/proof/dele-after.jpg</span></div>
+            <img src="assets/proof/dele-after.jpg" alt="Dele Bakare — after" onerror="this.style.display='none'">
+            <span class="bf after">AFTER</span>
+          </div>
+        </div>
+        <div class="cap">
+          <div class="tag">~5–6 MONTHS · STILL TRAINING</div>
+          <div class="name">DELE BAKARE</div>
+          <div class="line">No fast promises. The standard held long enough to show. Structure outliving motivation.</div>
+        </div>
+      </div>
+
+    </div>
+    <p style="font-size:12px;color:var(--faint);letter-spacing:1px;margin-top:14px">Cards auto-display once images land in <b style="color:var(--steel)">assets/proof/</b> (filenames shown on each slot). Additive — a 3rd/4th client is one more <code>.case</code> block, not a rebuild.</p>
+  </div>
+</section>
+
+<!-- TESTIMONIAL VIDEO — real client video beats text quotes. Lazy facade → iframe loads on click. -->
+<section>
+  <div class="wrap">
+    <div class="kicker">IN THEIR WORDS</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 6px">NOT HYPE. THE MEN THEMSELVES.</h2>
+    <div class="vt">
+      <div class="lead">
+        <div class="brass">The before-and-afters are the receipt.<br>This is the men reading it back in their own words.</div>
+        <p>Darryl and Dele, unscripted — what changed, and what kept it from collapsing. No testimonial we could write beats the man saying it himself.</p>
+        <div class="who">DARRYL GARNER × DELE BAKARE · CLIENT TESTIMONIAL</div>
+      </div>
+
+      <!-- lazy YouTube facade: poster + play button now; iframe injected on click (no page bloat) -->
+      <div class="vframe" onclick="if(!this.dataset.on){this.dataset.on=1;this.innerHTML='&lt;iframe src=\'https://www.youtube-nocookie.com/embed/Nx7TDt5QIIE?autoplay=1&rel=0\' title=\'PKFIT client testimonial\' allow=\'accelerated-rotation;autoplay;encrypted-media;picture-in-picture\' allowfullscreen&gt;&lt;/iframe&gt;';}">
+        <span class="badge">▶ Testimonial · 9:16</span>
+        <img class="poster" src="assets/proof/testimonial-poster.jpg" alt="PKFIT client testimonial">
+        <a class="play" href="https://youtube.com/shorts/Nx7TDt5QIIE" target="_blank" rel="noopener"
+           onclick="event.stopPropagation();">
+          <span class="ring"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+          <span class="cta">WATCH</span>
+        </a>
+        <div class="fallback">Video not loading? <a href="https://youtube.com/shorts/Nx7TDt5QIIE" target="_blank" rel="noopener">Open it here →</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AUTHORITY -->
+<section class="auth">
+  <div class="wrap">
+    <div class="kicker">WHY THIS COACH</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 6px">THE NON-PORTABLE CREDENTIAL</h2>
+    <div class="auth-portrait">
+      <div class="ph">PERCY — AUTHORITY<span class="file">assets/proof/percy-authority.jpg</span></div>
+      <img src="assets/proof/percy-authority.jpg" alt="Percy Keith — IFBB Pro" onerror="this.style.display='none'">
+      <div class="cap"><div class="k">THE CREDENTIAL</div><div class="n">PERCY KEITH · IFBB PRO</div></div>
+    </div>
+    <div class="band">
+      <div class="b"><div class="t">THE BODY</div><div class="x">IFBB Pro Men's Physique. Built across a real timeline, judged on a real stage.</div></div>
+      <div class="b"><div class="t">THE CONSTRAINT</div><div class="x">Marriage, two kids, a prep, a coaching practice, a deployment company — run without collapsing.</div></div>
+      <div class="b"><div class="t">THE VOICE</div><div class="x">A man in the room, not a script. Mechanism over motivation. Restraint over hype.</div></div>
+    </div>
+    <a href="about.html" class="btn btn-ghost" style="margin-top:24px">THE FULL STORY · ABOUT PERCY →</a>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-band">
+  <div class="wrap">
+    <div class="kicker gold" style="text-align:center;margin-bottom:18px">YOUR MOVE</div>
+    <h2 class="anton">THE NEXT NAME ON THE BOARD IS A DECISION AWAY.</h2>
+    <div class="cta-row">
+      <a href="/apply" class="btn btn-gold btn-block">APPLY FOR 1:1</a>
+      <a href="group.html" class="btn btn-ghost btn-block">JOIN THE GROUP · $97/MO</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-mark">© 2026 PKFIT · OPERATEFITNESS.APP · THE STANDARD IS YOURS TO SET.</div>
+  </div>
+</footer>
+
+</body>
+</html>

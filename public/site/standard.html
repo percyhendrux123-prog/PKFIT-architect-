@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Workbook — PKFIT</title>
+<link rel="stylesheet" href="assets/brand.css">
+<style>
+.hero{padding:64px 0 56px}
+.hero .kicker{margin-bottom:20px}
+.hero h1{font-size:clamp(34px,9vw,72px);max-width:16ch}
+.verdict-sub{margin:24px 0 6px;max-width:48ch;font-size:16px;color:#cfcfcf}
+.price-line{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:18px;color:var(--muted);margin:8px 0 26px}
+.price-line .gold{font-size:22px}
+.buy-cta{max-width:420px}
+.note{font-size:12px;color:var(--muted);margin-top:12px;letter-spacing:0.5px}
+.note code{color:var(--gold);background:#161616;padding:2px 7px;border-radius:5px}
+
+.problem p{font-size:16px;max-width:58ch;margin-bottom:18px;color:#d2d2d2}
+
+.mech-block{margin-top:24px;background:var(--card);border:0.5px solid var(--line);border-radius:var(--radius);padding:22px;font-family:'DM Mono',monospace}
+.mech-block .row{display:grid;grid-template-columns:54px 1fr;gap:12px;padding:9px 0;border-bottom:0.5px solid var(--line)}
+.mech-block .row:last-child{border-bottom:0}
+.mech-block .m{font-family:'Anton',sans-serif;color:var(--steel);font-size:20px}
+.mech-block .row.key .m{color:var(--gold)}
+.mech-block .lbl{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px}
+.mech-block .lbl .d{display:block;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:0;margin-top:2px}
+
+.get{display:grid;gap:12px;margin-top:24px}
+.get .item{padding:18px;background:var(--card-nested);border-radius:8px;border-left:2px solid var(--gold)}
+.get .item h4{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;margin-bottom:4px}
+.get .item p{font-size:13px;color:var(--muted)}
+
+.pricing-card{margin-top:24px;background:var(--gold-tile);border:0.5px solid var(--gold);border-radius:var(--radius);padding:30px;text-align:center}
+.pricing-card .big{font-family:'Anton',sans-serif;font-size:64px;color:var(--ink);line-height:0.9}
+.pricing-card .sub{font-size:13px;color:var(--muted);letter-spacing:1px;margin:10px 0 22px}
+.pricing-card .notwhat{font-size:13px;color:var(--muted);max-width:42ch;margin:18px auto 0}
+
+.faq{display:grid;gap:0;margin-top:20px}
+.faq details{border-bottom:0.5px solid var(--line);padding:18px 0}
+.faq summary{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:1px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';color:var(--gold);font-size:24px}
+.faq details[open] summary::after{content:'–'}
+.faq p{margin-top:12px;font-size:14px;color:var(--muted);max-width:60ch}
+
+.final{background:var(--base);text-align:center}
+.final h2{font-family:'Anton',sans-serif;font-size:clamp(28px,7vw,52px);max-width:18ch;margin:0 auto 14px}
+
+@media(min-width:768px){
+  .get{grid-template-columns:1fr 1fr}
+  .mech-block .row{grid-template-columns:64px 1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="index.html" class="wordmark" style="text-decoration:none">PKFIT</a>
+    <div class="nav-links">
+      <a href="standard.html">THE STANDARD</a>
+      <a href="index.html#ladder">PROGRAMS</a>
+      <a href="proof.html">RESULTS</a>
+      <a href="field-notes.html">FIELD NOTES</a>
+      <a href="/apply">APPLY</a>
+    </div>
+    <a href="#buy" class="nav-cta">GET IT · $47</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker gold">THE PKFIT STANDARD · VOLUME ONE</div>
+    <h1 class="anton">A VERDICT.<br>NOT ADVICE.</h1>
+    <p class="verdict-sub">The Workbook diagnoses the mechanism behind the breakdown and hands you a Standard you can run this week — without supervision.</p>
+    <div class="price-line"><span class="gold">$47</span> · ONE-TIME · NO SUBSCRIPTION</div>
+    <div class="buy-cta">
+      <a href="#buy" class="btn btn-gold btn-block">GET THE WORKBOOK</a>
+      <div class="note">Use code <code>PKFIT</code> at checkout — $47 drops to $28.20.</div>
+    </div>
+  </div>
+</header>
+
+<!-- PROBLEM — marriage angle, no moralizing -->
+<section class="problem">
+  <div class="wrap">
+    <div class="kicker">THE PROBLEM</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 22px">SAME ALARM. SAME INTENTION. DIFFERENT BEHAVIOR.</h2>
+    <p>The man who used to train at 5am is now scrolling at 5am. Nothing about the intention changed. The behavior did.</p>
+    <p>The Standard you set in the first year of the marriage is not the Standard your wife is married to now. She hasn't said it out loud. You haven't either. Both of you feel the gap.</p>
+    <p>Most men respond by promising harder. Promising harder does not work. The mechanism is not promises. The mechanism is structure — and the structure collapsed.</p>
+  </div>
+</section>
+
+<!-- MECHANISM -->
+<section>
+  <div class="wrap">
+    <div class="kicker steel">THE MECHANISM · DEFAULT PARALYSIS LOOP</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 4px">THE BREAK IS NOT AT WILLPOWER.</h2>
+    <div class="mech-block">
+      <div class="row"><div class="m">M01</div><div class="lbl">STIMULUS<span class="d">The day breaks routine.</span></div></div>
+      <div class="row key"><div class="m">M02</div><div class="lbl">INTERPRETATION<span class="d">You read the stimulus as a problem.</span></div></div>
+      <div class="row key"><div class="m">M03</div><div class="lbl">AVOIDANCE<span class="d">A behavior arrives to make the reading stop.</span></div></div>
+      <div class="row"><div class="m">M04</div><div class="lbl">DEFAULT BEHAVIOR<span class="d">The behavior runs to completion.</span></div></div>
+      <div class="row"><div class="m">M05</div><div class="lbl">IDENTITY LOCK<span class="d">You become the man the loop rehearsed.</span></div></div>
+    </div>
+    <p class="brass" style="font-size:clamp(20px,4.5vw,30px);margin-top:24px">The intervention is at M02 or M03. The Workbook tells you which.</p>
+  </div>
+</section>
+
+<!-- WHAT YOU GET -->
+<section>
+  <div class="wrap">
+    <div class="kicker">WHAT YOU GET</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 4px">THE FULL SYSTEM, IN WRITING</h2>
+    <div class="get">
+      <div class="item"><h4>THE SELF-ASSESSMENT</h4><p>Map your loop signature in M01–M05 terms — in the words you actually use.</p></div>
+      <div class="item"><h4>THE STANDARD</h4><p>The Standard you abandoned, named. The Standard you reinstall, written as one sentence you can repeat.</p></div>
+      <div class="item"><h4>THE FOUR SPLITS</h4><p>Training built around the calendar you actually have — not the one you wish you had.</p></div>
+      <div class="item"><h4>THE 14-DAY PROTOCOL</h4><p>Three lines: the Standard, the trigger, the proof. Run it without supervision.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="buy">
+  <div class="wrap">
+    <div class="kicker gold">THE MOVE</div>
+    <div class="pricing-card">
+      <div class="big">$47</div>
+      <div class="sub">ONE-TIME · NO SUBSCRIPTION · CODE <span class="gold">PKFIT</span> → $28.20</div>
+      <a href="https://buy.stripe.com/28E7sN3PEfZ0eYacHL2Nq03" class="btn btn-gold btn-block">GET THE WORKBOOK</a>
+      <div class="notwhat">Not a course. Not a quiz. Not a video library. A diagnostic, a Standard, and a next move.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="wrap">
+    <div class="kicker">CALIBRATED</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 8px">SIX HONEST ANSWERS</h2>
+    <div class="faq">
+      <details open><summary>Is this another quiz?</summary><p>No. A quiz scores you. The Workbook diagnoses you — then hands you the Standard to run.</p></details>
+      <details><summary>Why $47 instead of free?</summary><p>Free filters nothing. $47 makes the answer honest.</p></details>
+      <details><summary>What if my wife isn't the issue?</summary><p>The marriage frame is the most common entry point, not the only one. The Standard fits whatever the breach actually is.</p></details>
+      <details><summary>Will this work if I've already tried programs?</summary><p>The Workbook is the answer to why programs stop working. Programs deliver structure. The Standard determines whether structure stays.</p></details>
+      <details><summary>What happens after?</summary><p>A 14-day Protocol arrives inside. If you want it installed under supervision, the Performance Standard is the next rung.</p></details>
+      <details><summary>How is it delivered?</summary><p>You pay, you get the book. Read it end to end before you execute — the sections build on each other.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <div class="kicker gold" style="text-align:center;margin-bottom:18px">THE LAST WORD</div>
+    <h2 class="anton">THE STANDARD YOU RUN ON IS THE STANDARD YOUR LIFE IS MATCHING.</h2>
+    <p style="max-width:40ch;margin:0 auto 26px;color:var(--muted)">Audit the Standard.</p>
+    <a href="https://buy.stripe.com/28E7sN3PEfZ0eYacHL2Nq03" class="btn btn-gold">GET THE WORKBOOK · $47</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-mark">© 2026 PKFIT · PERCY KEITH · IFBB PRO · THE STANDARD IS YOURS TO SET.</div>
+  </div>
+</footer>
+
+</body>
+</html>

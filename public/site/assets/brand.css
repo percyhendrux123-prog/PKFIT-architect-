@@ -1,0 +1,91 @@
+/* PKFIT — operatefitness.app brand system (design pass v1)
+   Source of truth: PKFIT-PILLAR-VISUAL-SYSTEM.md + operatefitness-mockups app kit. */
+
+/* Self-hosted fonts — the site CSP blocks external font CDNs (font-src 'self'),
+   so Bebas Neue / Anton / DM Mono ship from /site/assets/fonts/ as woff2. */
+@font-face{font-family:'Bebas Neue';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/bebas-neue-v16-latin-400.woff2') format('woff2')}
+@font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/anton-v27-latin-400.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/dm-mono-v16-latin-400.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/dm-mono-v16-latin-500.woff2') format('woff2')}
+
+:root{
+  --base:#080808;
+  --body:#0a0a0a;
+  --card:#161616;
+  --card-nested:#0e0e0e;
+  --line:#2a2a2a;
+  --ink:#F5F5F5;
+  --muted:#888;
+  --faint:#555;
+  --gold:#C9A84C;
+  --gold-tile:#1a1610;
+  --steel:#8A94A6;     /* cool / mechanism */
+  --red-miss:#5a3535;
+  --maxw:1120px;
+  --radius:14px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--body);
+  color:var(--ink);
+  font-family:'DM Mono',monospace;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.6;
+  /* dot grid — architectural, low opacity, never competes */
+  background-image:radial-gradient(rgba(138,148,166,0.05) 1px, transparent 1px);
+  background-size:30px 30px;
+}
+
+/* ---------- type ---------- */
+.anton{font-family:'Anton',sans-serif;text-transform:uppercase;line-height:0.95;letter-spacing:0.5px}
+.bebas{font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;line-height:1}
+.kicker{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+.kicker.gold{color:var(--gold)}
+.kicker.steel{color:var(--steel)}
+.brass{font-family:'Bebas Neue',sans-serif;letter-spacing:1px;color:var(--ink);line-height:1.1}
+.gold{color:var(--gold)}
+.muted{color:var(--muted)}
+p{color:#cfcfcf;font-size:15px}
+
+/* ---------- layout ---------- */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:64px 0;border-bottom:0.5px solid var(--line)}
+.rule{height:0.5px;background:var(--line);border:0;margin:0}
+
+/* ---------- nav ---------- */
+.nav{position:sticky;top:0;z-index:60;background:rgba(8,8,8,0.86);backdrop-filter:blur(10px);border-bottom:0.5px solid var(--line)}
+.nav-in{max-width:var(--maxw);margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
+.wordmark{font-family:'DM Mono',monospace;font-weight:500;letter-spacing:4px;font-size:16px;color:var(--ink)}
+.nav-links{display:none;gap:26px}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:11px;letter-spacing:2px;text-transform:uppercase}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;background:var(--gold);color:var(--base);padding:9px 16px;border-radius:8px;text-decoration:none}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-family:'Bebas Neue',sans-serif;letter-spacing:3px;text-decoration:none;border-radius:10px;cursor:pointer;border:none}
+.btn-gold{background:var(--gold);color:var(--base);font-size:20px;padding:16px 26px;box-shadow:0 6px 18px rgba(201,168,76,0.22)}
+.btn-ghost{background:transparent;color:var(--ink);border:0.5px solid var(--line);font-size:18px;padding:15px 24px}
+.btn-block{width:100%}
+
+/* ---------- cards ---------- */
+.card{background:var(--card);border:0.5px solid var(--line);border-radius:var(--radius);padding:22px}
+.card-nested{background:var(--card-nested);border-radius:8px;padding:14px 16px}
+
+/* ---------- footer ---------- */
+.footer{padding:54px 0 70px;background:var(--base)}
+.footer .wordmark{opacity:0.7}
+.footer-cols{display:grid;grid-template-columns:1fr;gap:30px}
+.footer a{color:var(--muted);text-decoration:none;font-size:12px;letter-spacing:1px;display:block;margin:8px 0}
+.footer a:hover{color:var(--ink)}
+.footer-mark{opacity:0.55;font-size:11px;letter-spacing:2px;color:var(--faint);margin-top:30px}
+
+/* ---------- responsive ---------- */
+@media(min-width:768px){
+  section{padding:84px 0}
+  .footer-cols{grid-template-columns:2fr 1fr 1fr 1fr}
+}
+@media(min-width:1024px){
+  .nav-links{display:flex}
+}
