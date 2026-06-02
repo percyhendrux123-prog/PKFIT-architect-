@@ -26,11 +26,14 @@ export default defineConfig({
       include: [/node_modules/],
     },
     rollupOptions: {
-      // Multi-page: the SPA shell (/) plus a dedicated /apply shell that
-      // carries application-specific Open Graph tags for link previews.
-      // Both boot the same React app; React Router renders the route.
+      // Multi-page React app shells. The marketing site (static HTML in
+      // public/) owns the root `/`; the SPA only boots on the live funnel
+      // surfaces (/standard agent, /apply + /qualifier intake). `app.html`
+      // is the generic shell; `apply.html` carries the apply-specific Open
+      // Graph tags. Both load the same React app; React Router renders the
+      // route. Netlify _redirects maps the funnel paths to these shells.
       input: {
-        main: resolve(__dirname, 'index.html'),
+        app: resolve(__dirname, 'app.html'),
         apply: resolve(__dirname, 'apply.html'),
       },
     },
