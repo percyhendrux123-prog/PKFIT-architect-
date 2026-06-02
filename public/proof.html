@@ -17,8 +17,7 @@
 .stat .n .u{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);letter-spacing:1px}
 .stat .l{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:8px}
 
-/* transformation cards — ADDITIVE. Each .case = one client (before/after pair, or .solo single).
-   Adding a 3rd/4th client later = copy one .case block + point <img> at new filenames. No rebuild. */
+/* transformation cards — each .case = one client (before/after pair, or .solo single). */
 .cases{display:grid;gap:18px;margin-top:26px}
 .case{border:0.5px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card)}
 .case .pair{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--line)}
@@ -159,7 +158,6 @@
       </div>
 
     </div>
-    <p style="font-size:12px;color:var(--faint);letter-spacing:1px;margin-top:14px">Cards auto-display once images land in <b style="color:var(--steel)">assets/proof/</b> (filenames shown on each slot). Additive — a 3rd/4th client is one more <code>.case</code> block, not a rebuild.</p>
   </div>
 </section>
 
