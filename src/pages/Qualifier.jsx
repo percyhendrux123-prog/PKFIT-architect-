@@ -30,7 +30,7 @@ const TRAINING_DAYS_OPTIONS = [
 
 const TOTAL_STEPS = 7;
 
-export default function Qualifier() {
+export default function Qualifier({ embedded = false }) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -121,6 +121,7 @@ export default function Qualifier() {
         isHot={result.ready_to_invest}
         name={result.name}
         email={result.email}
+        embedded={embedded}
       />
     );
   }
@@ -128,25 +129,25 @@ export default function Qualifier() {
   return (
     <div
       style={{
-        minHeight: '100dvh',
-        background: BG,
+        minHeight: embedded ? 0 : '100dvh',
+        background: embedded ? 'transparent' : BG,
         color: INK,
         display: 'flex',
         flexDirection: 'column',
         fontFamily: '"DM Mono", ui-monospace, monospace',
       }}
     >
-      <Header />
+      {!embedded && <Header />}
 
       <main
         style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          maxWidth: 720,
+          maxWidth: embedded ? '100%' : 720,
           width: '100%',
           margin: '0 auto',
-          padding: '24px 20px 96px',
+          padding: embedded ? 0 : '24px 20px 96px',
           minHeight: 0,
         }}
       >
@@ -279,6 +280,7 @@ export default function Qualifier() {
           isFinal={(step === 5 && readyToInvest === false) || step === 6}
           onBack={back}
           onNext={next}
+          embedded={embedded}
         />
       </main>
     </div>
@@ -429,13 +431,13 @@ function Choices({ options, value, onChange }) {
   );
 }
 
-function Nav({ step, submitting, canAdvance, isFinal, onBack, onNext }) {
+function Nav({ step, submitting, canAdvance, isFinal, onBack, onNext, embedded }) {
   return (
     <div
       style={{
-        position: 'sticky',
+        position: embedded ? 'static' : 'sticky',
         bottom: 0,
-        background: BG,
+        background: embedded ? 'transparent' : BG,
         paddingTop: 16,
         display: 'flex',
         gap: 10,
@@ -484,7 +486,7 @@ function Nav({ step, submitting, canAdvance, isFinal, onBack, onNext }) {
   );
 }
 
-function Confirmation({ isHot, name, email }) {
+function Confirmation({ isHot, name, email, embedded }) {
   const calendlyUrl =
     'https://calendly.com/percyhendrux123/30min?hide_gdpr_banner=1' +
     (name ? `&name=${encodeURIComponent(name)}` : '') +
@@ -492,22 +494,22 @@ function Confirmation({ isHot, name, email }) {
   return (
     <div
       style={{
-        minHeight: '100dvh',
-        background: BG,
+        minHeight: embedded ? 0 : '100dvh',
+        background: embedded ? 'transparent' : BG,
         color: INK,
         display: 'flex',
         flexDirection: 'column',
         fontFamily: '"DM Mono", ui-monospace, monospace',
       }}
     >
-      <Header />
+      {!embedded && <Header />}
       <main
         style={{
           flex: 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '40px 20px',
+          padding: embedded ? 0 : '40px 20px',
         }}
       >
         <div
@@ -516,7 +518,7 @@ function Confirmation({ isHot, name, email }) {
             border: `0.5px solid ${GOLD}`,
             borderRadius: RADIUS,
             padding: '28px 24px',
-            maxWidth: isHot ? 680 : 540,
+            maxWidth: embedded ? '100%' : isHot ? 680 : 540,
             width: '100%',
             textAlign: 'left',
           }}
