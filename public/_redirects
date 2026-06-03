@@ -1,5 +1,40 @@
-# Stripe webhook alias for The Standard Audit. Must precede the SPA fallback —
-# _redirects takes precedence over netlify.toml, and first-match wins.
-/api/webhooks/stripe-audit  /.netlify/functions/stripe-audit-webhook  200!
+# Netlify routing for PKFIT.
+#
+# Precedence (Netlify): a matching STATIC FILE is served before any rule here,
+# UNLESS the rule is forced with "!". Among rules, first match wins. So static
+# marketing pages (/proof -> proof.html, /workbook -> workbook.html, etc.) and
+# the built SPA shells (/apply -> apply.html) resolve automatically; the rules
+# below only cover paths with no static file of their own.
+#
+# Layout after the marketing-port:
+#   - Marketing site = static HTML at the publish root (home.html, proof.html,
+#     about.html, field-notes.html, diagnostic.html, group.html, workbook.html).
+#   - React SPA = two shells (app.html, apply.html) that boot the same app.
+#     It is only reachable on the LIVE FUNNEL surfaces below. The retired
+#     dashboard routes are never served a shell, so the app never boots there.
 
-/*  /index.html  200
+# --- Server functions (force over everything) ---
+/api/webhooks/stripe-audit   /.netlify/functions/stripe-audit-webhook   200!
+
+# --- Live funnel surfaces: must boot the React SPA ---
+# /apply has its own static shell (apply.html, apply-specific OG tags) and
+# resolves as a static file; listed here for clarity / belt-and-suspenders.
+/apply         /apply.html   200
+/qualifier     /app.html     200
+# The Diagnose agent — five keyword landing surfaces + the canonical path.
+/standard      /app.html     200
+/structure     /app.html     200
+/system        /app.html     200
+/protocol      /app.html     200
+/align         /app.html     200
+/diagnose      /app.html     200
+# Legal pages live inside the React app.
+/legal/*       /app.html     200
+
+# --- Marketing home ---
+/              /home.html    200
+
+# --- Everything else (incl. retired dashboard paths) -> marketing home ---
+# Not forced: real static files (/proof, /about, /workbook, assets, etc.) still
+# win first. This only catches unknown/retired paths like /dashboard, /coach.
+/*             /home.html    200

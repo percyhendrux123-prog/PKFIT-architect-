@@ -54,28 +54,10 @@
   # purge can't compete with axiom-overseer / migration-recovery.
   schedule = "0 2 * * *"
 
-[[redirects]]
-  # Phase 2A: clean alias for The Standard Audit webhook so audit.pkfit.com
-  # and downstream Stripe configuration can point at /api/webhooks/stripe-audit.
-  from = "/api/webhooks/stripe-audit"
-  to = "/.netlify/functions/stripe-audit-webhook"
-  status = 200
-  force = true
-
-[[redirects]]
-  # Serve the dedicated /apply shell so social scrapers read the
-  # application-specific Open Graph tags (og-apply card) instead of the
-  # generic SPA shell. Must precede the SPA catch-all below. Rewrite (200)
-  # keeps the URL at /apply; the bundled React app boots and renders the
-  # Qualifier route as usual.
-  from = "/apply"
-  to = "/apply.html"
-  status = 200
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# NOTE: All redirect/rewrite rules live in `public/_redirects` (it takes
+# precedence over netlify.toml and is first-match-wins). The webhook alias,
+# the funnel-surface SPA rewrites, and the marketing routing are defined
+# there to keep a single source of truth. Headers + functions stay here.
 
 [[headers]]
   for = "/*"

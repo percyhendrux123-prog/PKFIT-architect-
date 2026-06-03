@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Standard — Group — PKFIT — operatefitness.app</title>
+<link rel="stylesheet" href="/assets/brand.css">
+<style>
+/* /group — $97/mo. MECHANISM → RECEIPT → MOVE. Community = "the room". */
+.hero{padding:60px 0 48px}
+.hero .kicker{margin-bottom:20px}
+.hero h1{font-family:'Anton',sans-serif;text-transform:uppercase;font-size:clamp(36px,9vw,76px);line-height:0.92;max-width:15ch}
+.hero-sub{margin:24px 0 0;max-width:48ch;font-size:16px;color:#cfcfcf}
+.price-line{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:18px;color:var(--muted);margin-top:14px}
+.price-line .gold{font-size:24px}
+.hero-cta{max-width:420px;margin-top:24px}
+
+/* the room — the central angle */
+.room{display:grid;gap:14px;margin-top:26px}
+.room .blk{padding:22px;background:var(--card);border:0.5px solid var(--line);border-radius:var(--radius)}
+.room .blk h4{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:1px;margin-bottom:6px}
+.room .blk p{font-size:14px;color:var(--muted)}
+.room .blk .ic{font-family:'Anton',sans-serif;font-size:20px;color:var(--gold);margin-bottom:10px;display:block}
+
+/* what's inside */
+.inside{display:grid;gap:12px;margin-top:24px}
+.inside .item{display:grid;grid-template-columns:40px 1fr;gap:14px;padding:16px;background:var(--card-nested);border-radius:8px;border-left:2px solid var(--gold)}
+.inside .item .n{font-family:'Anton',sans-serif;font-size:18px;color:var(--gold)}
+.inside .item .t{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px}
+.inside .item .x{font-size:13px;color:var(--muted)}
+
+/* placement in the ladder */
+.between{display:grid;grid-template-columns:1fr;gap:12px;margin-top:24px}
+.tier{padding:18px;border:0.5px solid var(--line);border-radius:var(--radius);background:var(--card);text-align:center}
+.tier.mid{border-color:var(--gold);background:var(--gold-tile)}
+.tier .p{font-family:'Anton',sans-serif;font-size:26px;color:var(--ink)}
+.tier .n{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;color:var(--muted);margin-top:4px}
+.tier.mid .n{color:var(--gold)}
+
+/* pricing card */
+.pricing-card{margin-top:24px;background:var(--gold-tile);border:0.5px solid var(--gold);border-radius:var(--radius);padding:30px;text-align:center}
+.pricing-card .big{font-family:'Anton',sans-serif;font-size:60px;color:var(--ink);line-height:0.9}
+.pricing-card .big span{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--muted);letter-spacing:1px}
+.pricing-card .sub{font-size:13px;color:var(--muted);letter-spacing:1px;margin:10px 0 22px}
+.pricing-card .fine{font-size:12px;color:var(--muted);max-width:40ch;margin:18px auto 0}
+
+.faq{display:grid;gap:0;margin-top:18px}
+.faq details{border-bottom:0.5px solid var(--line);padding:18px 0}
+.faq summary{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:1px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';color:var(--gold);font-size:24px}
+.faq details[open] summary::after{content:'–'}
+.faq p{margin-top:12px;font-size:14px;color:var(--muted);max-width:60ch}
+
+.final{background:var(--base);text-align:center}
+.final h2{font-family:'Anton',sans-serif;font-size:clamp(26px,7vw,48px);max-width:18ch;margin:0 auto 14px}
+
+@media(min-width:768px){
+  .room{grid-template-columns:repeat(3,1fr)}
+  .inside{grid-template-columns:1fr 1fr}
+  .between{grid-template-columns:repeat(3,1fr);align-items:center}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="/" class="wordmark" style="text-decoration:none">PKFIT</a>
+    <div class="nav-links">
+      <a href="/workbook">THE STANDARD</a>
+      <a href="/#ladder">PROGRAMS</a>
+      <a href="/proof">RESULTS</a>
+      <a href="/field-notes">FIELD NOTES</a>
+      <a href="/apply">APPLY</a>
+    </div>
+    <a href="https://www.trainerize.me/profile/pkfit3/?planGUID=3ece2d14c7924ba0a17c5902044dcca0&mode=checkout" class="nav-cta">JOIN · $97/MO</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker gold">THE STANDARD — GROUP</div>
+    <h1>YOU DON'T HOLD A STANDARD ALONE.</h1>
+    <p class="hero-sub">The Workbook hands you the system. The Group puts you in the room with men running it beside you — same cadence, same standard, no spectators.</p>
+    <div class="price-line"><span class="gold">$97</span>/MO · CANCEL ANYTIME · THE ROOM IS LIVE</div>
+    <div class="hero-cta">
+      <a href="https://www.trainerize.me/profile/pkfit3/?planGUID=3ece2d14c7924ba0a17c5902044dcca0&mode=checkout" class="btn btn-gold btn-block">JOIN THE STANDARD — GROUP</a>
+    </div>
+  </div>
+</header>
+
+<!-- THE ROOM -->
+<section>
+  <div class="wrap">
+    <div class="kicker">WHY A ROOM, NOT A PROGRAM</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 6px">STRUCTURE OUTLIVES MOTIVATION</h2>
+    <p style="max-width:56ch">Motivation is private and it leaves. A standard held in a room of men who can see whether you moved does not. The Group is the structure around the standard — the part that keeps it from collapsing the first hard week.</p>
+    <div class="room">
+      <div class="blk"><span class="ic">01</span><h4>THE ROOM</h4><p>A standing group of operators holding the same standard. You're seen. Quiet quitting has nowhere to hide.</p></div>
+      <div class="blk"><span class="ic">02</span><h4>THE CADENCE</h4><p>Weekly check-ins and group calls. The rhythm is the mechanism — promises kept on a schedule.</p></div>
+      <div class="blk"><span class="ic">03</span><h4>THE STANDARD</h4><p>One standard, shared. Programming, accountability, and the framework — run together, not in isolation.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT'S INSIDE -->
+<section>
+  <div class="wrap">
+    <div class="kicker">WHAT'S INSIDE</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 4px">SUPERVISED-LITE</h2>
+    <div class="inside">
+      <div class="item"><div class="n">›</div><div><div class="t">PROGRAMMED TRAINING</div><div class="x">Built around the calendar you actually have. Delivered in-app.</div></div></div>
+      <div class="item"><div class="n">›</div><div><div class="t">WEEKLY GROUP CALL</div><div class="x">Mechanism breakdowns, Q&A, the week's standard set together.</div></div></div>
+      <div class="item"><div class="n">›</div><div><div class="t">THE ACCOUNTABILITY ROOM</div><div class="x">Daily check-ins with the group. Proof posted, not promised.</div></div></div>
+      <div class="item"><div class="n">›</div><div><div class="t">THE FULL FRAMEWORK</div><div class="x">Appetite · System · Structure · Standard — applied, not just read.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLACEMENT -->
+<section>
+  <div class="wrap">
+    <div class="kicker">WHERE IT SITS</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 4px">BETWEEN SOLO AND 1:1</h2>
+    <div class="between">
+      <div class="tier"><div class="p">$47</div><div class="n">THE WORKBOOK · SOLO</div></div>
+      <div class="tier mid"><div class="p">$97<span style="font-size:15px">/mo</span></div><div class="n">THE GROUP · THE ROOM</div></div>
+      <div class="tier"><div class="p">$250<span style="font-size:15px">/mo</span></div><div class="n">1:1 · DIRECT</div></div>
+    </div>
+    <p style="max-width:54ch;margin-top:20px">If the Workbook is the system and 1:1 is full supervision, the Group is the room in between — supervision shared, cost shared, standard held.</p>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="join">
+  <div class="wrap">
+    <div class="kicker gold">THE MOVE</div>
+    <div class="pricing-card">
+      <div class="big">$97<span>/MO</span></div>
+      <div class="sub">CANCEL ANYTIME · AUTO-PROVISIONED IN-APP ON JOIN</div>
+      <a href="https://www.trainerize.me/profile/pkfit3/?planGUID=3ece2d14c7924ba0a17c5902044dcca0&mode=checkout" class="btn btn-gold btn-block">JOIN THE STANDARD — GROUP</a>
+      <div class="fine">You're in the room the moment you join. No waitlist, no application — the Group is live.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="wrap">
+    <div class="kicker">CALIBRATED</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 8px">STRAIGHT ANSWERS</h2>
+    <div class="faq">
+      <details open><summary>How is this different from the Workbook?</summary><p>The Workbook is the system, solo. The Group is the system run in a room — programming, weekly calls, and daily accountability with men holding the same standard.</p></details>
+      <details><summary>Do I get Percy directly?</summary><p>The Group is supervised-lite: Percy runs the room and the calls, not 1:1 messaging. For direct, by-name supervision, that's the $250/mo 1:1 rung.</p></details>
+      <details><summary>What if I'm brand new?</summary><p>The room is the best place to start with people watching. Training scales to your calendar and level.</p></details>
+      <details><summary>Can I cancel?</summary><p>Anytime. No 12-month lock — that's the 1:1 tier. The Group earns the month.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <div class="kicker gold" style="text-align:center;margin-bottom:18px">THE LAST WORD</div>
+    <h2 class="anton">A MAN BECOMES WHAT HE REPEATEDLY MOVES TOWARD. MOVE IN A ROOM.</h2>
+    <a href="https://www.trainerize.me/profile/pkfit3/?planGUID=3ece2d14c7924ba0a17c5902044dcca0&mode=checkout" class="btn btn-gold">JOIN · $97/MO</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-mark">© 2026 PKFIT · OPERATEFITNESS.APP · THE STANDARD IS YOURS TO SET.</div>
+  </div>
+</footer>
+
+</body>
+</html>

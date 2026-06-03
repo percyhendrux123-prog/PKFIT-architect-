@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Notes — PKFIT</title>
+<link rel="stylesheet" href="/assets/brand.css">
+<style>
+/* FIELD NOTES = THE MECHANISM treatment: cool/steel, clinical, low arousal.
+   GREEN TIER: mechanism education only. No product names, no dosing, no purchase path. */
+body{
+  /* line grid instead of dots — architectural, cooler */
+  background-image:
+    linear-gradient(rgba(138,148,166,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(138,148,166,0.035) 1px, transparent 1px);
+  background-size:48px 48px;
+}
+.compliance-bar{background:#0d0f12;border-bottom:0.5px solid var(--line);text-align:center;padding:9px 16px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--steel)}
+
+.hero{padding:60px 0 44px}
+.hero .kicker{margin-bottom:20px}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,9vw,72px);letter-spacing:1.5px;line-height:0.98;max-width:16ch;color:var(--ink)}
+.hero-sub{margin:24px 0 0;max-width:52ch;font-size:16px;color:#c4c8cf}
+.hero-edline{margin-top:18px;font-size:12px;letter-spacing:1px;color:var(--steel)}
+
+/* editorial index */
+.notes{display:grid;gap:16px;margin-top:28px}
+.note-card{padding:24px;background:var(--card);border:0.5px solid var(--line);border-radius:var(--radius);border-top:2px solid var(--steel)}
+.note-card .tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--steel)}
+.note-card h3{font-family:'Bebas Neue',sans-serif;font-size:clamp(22px,4.5vw,30px);letter-spacing:1px;margin:10px 0 8px;color:var(--ink)}
+.note-card p{font-size:14px;color:var(--muted);max-width:60ch}
+.note-card .read{display:inline-block;margin-top:14px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--steel);text-decoration:none}
+
+/* mechanism explainer block */
+.path{display:grid;gap:10px;margin-top:24px}
+.path .step{display:grid;grid-template-columns:90px 1fr;gap:14px;padding:16px;background:var(--card-nested);border-radius:8px}
+.path .step .k{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;color:var(--steel)}
+.path .step .v{font-size:14px;color:#c4c8cf}
+
+/* editorial / no-sell capture */
+.continue{background:#0d0f12;text-align:center}
+.continue h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,6vw,40px);letter-spacing:1.5px;margin-bottom:12px}
+.continue p{max-width:48ch;margin:0 auto 22px;color:var(--muted);font-size:14px}
+.continue .pill{display:inline-block;border:0.5px solid var(--steel);border-radius:24px;padding:12px 22px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--steel);text-decoration:none}
+
+.disclaimer{font-size:11px;color:var(--faint);line-height:1.7;max-width:66ch;margin-top:8px}
+
+@media(min-width:768px){
+  .notes{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="compliance-bar">Educational · Mechanism only · Not medical advice · No products sold on this page</div>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="/" class="wordmark" style="text-decoration:none">PKFIT</a>
+    <div class="nav-links">
+      <a href="/workbook">THE STANDARD</a>
+      <a href="/#ladder">PROGRAMS</a>
+      <a href="/proof">RESULTS</a>
+      <a href="/field-notes">FIELD NOTES</a>
+      <a href="/apply">APPLY</a>
+    </div>
+    <a href="/" class="nav-cta" style="background:transparent;border:0.5px solid var(--steel);color:var(--steel)">PKFIT →</a>
+  </div>
+</nav>
+
+<!-- HERO — cool, editorial -->
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker steel">FIELD NOTES · THE MECHANISM LANE</div>
+    <h1>HOW THE BODY ACTUALLY SIGNALS RECOVERY</h1>
+    <p class="hero-sub">A clinical-register reading room. We explain the mechanisms the performance category talks about — signaling, recovery, adaptation — at the level of how the system works. Nothing else.</p>
+    <div class="hero-edline">Written for operators who want the mechanism, not the marketing.</div>
+  </div>
+</header>
+
+<!-- MECHANISM PRIMER -->
+<section>
+  <div class="wrap">
+    <div class="kicker steel">PRIMER · SIGNALING 101</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 6px;color:var(--ink)">ADAPTATION IS A SIGNAL PROBLEM</h2>
+    <p style="max-width:56ch">Training breaks tissue. Recovery rebuilds it. Between those two events sits a signaling cascade that decides how much adaptation you actually keep. Understanding that cascade — generically, mechanistically — is the whole point of this page.</p>
+    <div class="path">
+      <div class="step"><div class="k">STIMULUS</div><div class="v">A training load creates a controlled stress the body must respond to.</div></div>
+      <div class="step"><div class="k">SIGNAL</div><div class="v">The body releases messengers that tell tissue to repair and grow.</div></div>
+      <div class="step"><div class="k">RECEPTOR</div><div class="v">Those messengers bind to receptors that switch repair pathways on.</div></div>
+      <div class="step"><div class="k">ADAPTATION</div><div class="v">Sleep, nutrition, and time convert the signal into kept adaptation.</div></div>
+    </div>
+    <p class="brass" style="font-size:clamp(20px,4.5vw,28px);margin-top:24px;color:var(--ink)">The mechanism is the message. The message is recovery.</p>
+  </div>
+</section>
+
+<!-- EDITORIAL INDEX -->
+<section>
+  <div class="wrap">
+    <div class="kicker steel">THE NOTES</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 6px;color:var(--ink)">READING ROOM</h2>
+    <div class="notes">
+      <div class="note-card">
+        <div class="tag">MECHANISM · 6 MIN</div>
+        <h3>WHY RECOVERY OUTRANKS INTENSITY</h3>
+        <p>The adaptation you keep is decided after the session, not during it. A mechanism-level look at the recovery window.</p>
+        <a class="read" href="#">READ THE NOTE →</a>
+      </div>
+      <div class="note-card">
+        <div class="tag">MECHANISM · 5 MIN</div>
+        <h3>WHAT "SIGNALING" ACTUALLY MEANS</h3>
+        <p>The category uses the word constantly. Here is the physiology underneath it — receptors, messengers, pathways — in plain terms.</p>
+        <a class="read" href="#">READ THE NOTE →</a>
+      </div>
+      <div class="note-card">
+        <div class="tag">MECHANISM · 7 MIN</div>
+        <h3>SLEEP IS THE PRIMARY VARIABLE</h3>
+        <p>Why the largest lever on recovery is also the cheapest, and how the repair cascade depends on it.</p>
+        <a class="read" href="#">READ THE NOTE →</a>
+      </div>
+      <div class="note-card">
+        <div class="tag">MECHANISM · 5 MIN</div>
+        <h3>ADAPTATION VS. STIMULATION</h3>
+        <p>Feeling worked is not the same as adapting. The difference is mechanistic, and it changes how you train.</p>
+        <a class="read" href="#">READ THE NOTE →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTINUE — editorial, NO product, NO purchase path -->
+<section class="continue">
+  <div class="wrap">
+    <div class="kicker steel" style="margin-bottom:16px">WHERE THIS CONTINUES</div>
+    <h2>THE NOTES ARRIVE WEEKLY</h2>
+    <p>Field Notes is editorial. We do not sell, dose, or recommend products here. If you want the mechanism breakdowns as they publish, follow the notes.</p>
+    <a class="pill" href="#">FOLLOW THE FIELD NOTES →</a>
+  </div>
+</section>
+
+<!-- FOOTER with disclaimer -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="kicker steel" style="margin-bottom:10px">DISCLOSURE</div>
+    <p class="disclaimer">Field Notes is educational content about general physiology and performance mechanisms. It is not medical advice, does not diagnose or treat any condition, and does not recommend, sell, dose, or endorse any product or substance. Consult a qualified professional before making decisions about your health. No products are offered for sale on this page.</p>
+    <div class="footer-mark">© 2026 PKFIT · FIELD NOTES · MECHANISM, NOT MARKETING.</div>
+  </div>
+</footer>
+
+</body>
+</html>

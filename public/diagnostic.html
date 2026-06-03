@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Diagnostic — PKFIT — operatefitness.app</title>
+<link rel="stylesheet" href="/assets/brand.css">
+<style>
+/* /diagnostic — THE MIRROR → MECHANISM. Free, low-friction, "name the breakdown". */
+.hero{padding:60px 0 40px}
+.hero .kicker{margin-bottom:20px}
+.hero h1{font-family:'Anton',sans-serif;text-transform:uppercase;font-size:clamp(38px,10vw,84px);line-height:0.92;max-width:13ch}
+.hero-sub{margin:24px 0 0;max-width:46ch;font-size:16px;color:#cfcfcf}
+.free-tag{display:inline-block;margin-top:22px;font-family:'Bebas Neue',sans-serif;letter-spacing:3px;font-size:15px;color:var(--steel);border:0.5px solid var(--line);border-radius:22px;padding:8px 18px}
+
+/* the picker — self-select signal, 4 options mapped to a DPL signature */
+.picker{margin-top:8px}
+.picker .q{font-family:'Bebas Neue',sans-serif;font-size:clamp(22px,5vw,30px);letter-spacing:1px;margin-bottom:18px}
+.opts{display:grid;gap:12px}
+.opt{display:grid;grid-template-columns:54px 1fr;gap:14px;align-items:center;padding:18px;background:var(--card);border:0.5px solid var(--line);border-radius:var(--radius);cursor:pointer;transition:border-color .15s}
+.opt:hover{border-color:var(--gold)}
+.opt.sel{border-color:var(--gold);background:var(--gold-tile)}
+.opt .m{font-family:'Anton',sans-serif;font-size:22px;color:var(--steel)}
+.opt.sel .m{color:var(--gold)}
+.opt .t{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;line-height:1.05}
+.opt .t .d{display:block;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:0;margin-top:3px}
+
+/* capture */
+.capture{margin-top:26px;background:var(--card);border:0.5px solid var(--line);border-radius:var(--radius);padding:24px}
+.capture label{display:block;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.capture input{width:100%;background:var(--card-nested);border:0.5px solid var(--line);border-radius:8px;color:var(--ink);font-family:'DM Mono',monospace;font-size:14px;padding:14px}
+.capture input:focus{outline:none;border-color:var(--gold)}
+.capture .alt{margin-top:16px;font-size:12px;color:var(--muted);letter-spacing:0.5px;text-align:center}
+.capture .alt b{color:var(--steel)}
+
+/* what it surfaces */
+.surf{display:grid;gap:12px;margin-top:24px}
+.surf .row{display:grid;grid-template-columns:40px 1fr;gap:14px;padding:16px;background:var(--card-nested);border-radius:8px}
+.surf .row .n{font-family:'Anton',sans-serif;font-size:18px;color:var(--gold)}
+.surf .row .t{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px}
+.surf .row .x{font-size:13px;color:var(--muted)}
+
+@media(min-width:768px){
+  .opts{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="/" class="wordmark" style="text-decoration:none">PKFIT</a>
+    <div class="nav-links">
+      <a href="/workbook">THE STANDARD</a>
+      <a href="/#ladder">PROGRAMS</a>
+      <a href="/proof">RESULTS</a>
+      <a href="/field-notes">FIELD NOTES</a>
+      <a href="/apply">APPLY</a>
+    </div>
+    <a href="#start" class="nav-cta" style="background:transparent;border:0.5px solid var(--steel);color:var(--steel)">FREE →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker gold">DEFAULT PARALYSIS LOOP · M01–M05</div>
+    <h1>NAME THE BREAKDOWN.</h1>
+    <p class="hero-sub">Before you fix anything, you name the loop running your week. Pick the signal you recognize. The diagnostic does the rest — free.</p>
+    <div class="free-tag">FREE · 90 SECONDS · NO CARD</div>
+  </div>
+</header>
+
+<!-- PICKER -->
+<section id="start">
+  <div class="wrap">
+    <div class="kicker steel">STEP ONE · THE SIGNAL</div>
+    <div class="picker">
+      <div class="q" style="margin-top:14px">When the day breaks routine, what arrives first?</div>
+      <div class="opts">
+        <div class="opt sel"><div class="m">M02</div><div class="t">A STORY<span class="d">"It's fine to skip — I'll lock in tomorrow."</span></div></div>
+        <div class="opt"><div class="m">M03</div><div class="t">A BEHAVIOR<span class="d">I reach for the phone before I decide anything.</span></div></div>
+        <div class="opt"><div class="m">M04</div><div class="t">A SPIRAL<span class="d">One miss becomes the whole day gone.</span></div></div>
+        <div class="opt"><div class="m">M05</div><div class="t">A VERDICT<span class="d">"This is just who I am now."</span></div></div>
+      </div>
+    </div>
+
+    <!-- CAPTURE -->
+    <div class="capture">
+      <label>Where do we send your DPL breakdown?</label>
+      <input type="email" placeholder="you@email.com">
+      <a href="#" class="btn btn-gold btn-block" style="margin-top:14px">SEND MY BREAKDOWN</a>
+      <div class="alt">Or on Instagram, comment <b>STANDARD</b> — the breakdown arrives in your DMs.</div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT IT SURFACES -->
+<section>
+  <div class="wrap">
+    <div class="kicker steel">WHAT YOU GET BACK</div>
+    <h2 class="bebas" style="font-size:clamp(26px,6vw,40px);margin:14px 0 4px">A NAME, NOT A SCORE</h2>
+    <p style="max-width:54ch">No grade. No 1-to-10. The free diagnostic returns the one thing that changes how you move this week: the point in the loop where it actually breaks.</p>
+    <div class="surf">
+      <div class="row"><div class="n">01</div><div><div class="t">YOUR LOOP SIGNATURE</div><div class="x">M01 → M05, named in plain language.</div></div></div>
+      <div class="row"><div class="n">02</div><div><div class="t">THE INTERVENTION POINT</div><div class="x">M02 or M03 — where the break lives for you.</div></div></div>
+      <div class="row"><div class="n">03</div><div><div class="t">THE FIRST MOVE</div><div class="x">One thing to run before the next stimulus hits.</div></div></div>
+    </div>
+    <p class="brass" style="font-size:clamp(20px,4.5vw,28px);margin-top:26px">You can't reinstall a Standard you never named.</p>
+    <a href="/workbook" class="btn btn-ghost" style="margin-top:22px">READY FOR THE FULL SYSTEM? · THE WORKBOOK →</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-mark">© 2026 PKFIT · OPERATEFITNESS.APP · THE STANDARD IS YOURS TO SET.</div>
+  </div>
+</footer>
+
+</body>
+</html>
