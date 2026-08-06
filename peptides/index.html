@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>PKFIT — Peptide Calculator</title>
+<meta name="description" content="Free research peptide reconstitution and dose calculator. Structure over guesswork.">
+<style>
+/* PKFIT brand tokens — mirrors operatefitness.app /assets/brand.css */
+@font-face{font-family:'Bebas Neue';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/bebas-neue-v16-latin-400.woff2') format('woff2'),url('/fonts/bebas-neue-v16-latin-400.woff2') format('woff2')}
+@font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/anton-v27-latin-400.woff2') format('woff2'),url('/fonts/anton-v27-latin-400.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/dm-mono-v16-latin-400.woff2') format('woff2'),url('/fonts/dm-mono-v16-latin-400.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/fonts/dm-mono-v16-latin-500.woff2') format('woff2'),url('/fonts/dm-mono-v16-latin-500.woff2') format('woff2')}
+
+:root{
+  --base:#080808;
+  --body:#0a0a0a;
+  --card:#161616;
+  --card-nested:#0e0e0e;
+  --line:#2a2a2a;
+  --ink:#F5F5F5;
+  --muted:#888;
+  --faint:#555;
+  --gold:#C9A84C;
+  --gold-tile:#1a1610;
+  --gold-line:rgba(201,168,76,0.32);
+  --steel:#8A94A6;
+  --maxw:760px;
+  --radius:14px;
+  --radius-btn:10px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--body);
+  color:var(--ink);
+  font-family:'DM Mono',ui-monospace,monospace;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.6;
+  background-image:radial-gradient(rgba(138,148,166,0.05) 1px, transparent 1px);
+  background-size:30px 30px;
+  min-height:100vh;
+}
+
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+.kicker{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+.kicker.gold{color:var(--gold)}
+.anton{font-family:'Anton',sans-serif;text-transform:uppercase;line-height:0.95;letter-spacing:0.5px}
+.bebas{font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;line-height:1}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:60;background:rgba(8,8,8,0.86);backdrop-filter:blur(10px);border-bottom:0.5px solid var(--line)}
+.nav-in{max-width:var(--maxw);margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
+.wordmark{font-family:'DM Mono',monospace;font-weight:500;letter-spacing:4px;font-size:16px;color:var(--ink);text-decoration:none}
+.nav-cta{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;background:var(--gold);color:var(--base);padding:9px 16px;border-radius:8px;text-decoration:none}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-family:'Bebas Neue',sans-serif;letter-spacing:3px;text-decoration:none;border-radius:var(--radius-btn);cursor:pointer;border:none;width:100%}
+.btn-gold{background:var(--gold);color:var(--base);font-size:20px;padding:16px 26px;box-shadow:0 6px 18px rgba(201,168,76,0.22)}
+.btn-gold:hover{filter:brightness(1.05)}
+.btn-ghost{background:transparent;color:var(--ink);border:0.5px solid var(--line);font-size:18px;padding:15px 24px}
+
+/* Cards */
+.card{background:var(--card);border:0.5px solid var(--line);border-radius:var(--radius);padding:22px}
+.card-nested{background:var(--card-nested);border-radius:8px;padding:14px 16px;border:0.5px solid var(--line)}
+
+/* Form */
+label{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input,select{
+  width:100%;
+  background:var(--card-nested);
+  border:0.5px solid var(--line);
+  border-radius:8px;
+  color:var(--ink);
+  font-family:'DM Mono',monospace;
+  font-size:15px;
+  padding:14px 16px;
+  outline:none;
+}
+input:focus,select:focus{border-color:var(--gold)}
+.field{margin-bottom:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.grid-2{grid-template-columns:1fr}}
+
+/* Results */
+.result-block{margin-top:20px}
+.result-row{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:0.5px solid var(--line)}
+.result-row:last-child{border-bottom:none}
+.result-label{font-size:12px;color:var(--muted);letter-spacing:1px}
+.result-value{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:var(--ink)}
+.result-value.gold{color:var(--gold)}
+
+/* Gate */
+.gate{
+  border:0.5px solid var(--gold-line);
+  border-radius:var(--radius);
+  background:linear-gradient(145deg,rgba(26,22,16,0.92),rgba(14,14,14,0.88));
+  padding:28px 22px;
+  margin-top:28px;
+}
+.gate-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:8px}
+.gate-copy{font-size:13px;color:#cfcfcf;max-width:48ch;margin-bottom:20px;line-height:1.6}
+
+/* Promo */
+.promo{
+  margin-top:28px;
+  padding:20px;
+  background:var(--card);
+  border:0.5px solid var(--line);
+  border-radius:var(--radius);
+}
+.promo-kicker{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--steel);margin-bottom:8px}
+.promo a{color:var(--gold);text-decoration:none;border-bottom:0.5px solid var(--gold-line)}
+.promo a:hover{border-color:var(--gold)}
+.code{font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--gold);font-size:22px}
+
+/* Disclaimer */
+.disclaimer{margin-top:32px;padding-top:20px;border-top:0.5px solid var(--line);font-size:11px;color:var(--faint);line-height:1.6;max-width:54ch}
+
+/* Hidden until unlocked */
+#calculator{display:none}
+#calculator.unlocked{display:block}
+#gate-wrap.hidden{display:none}
+
+.success-note{font-size:12px;color:var(--steel);margin-top:12px;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="/" class="wordmark">PKFIT</a>
+    <a href="/" class="nav-cta">BACK</a>
+  </div>
+</nav>
+
+<main class="wrap" style="padding:48px 22px 80px">
+
+  <div class="kicker gold">RESEARCH TOOL</div>
+  <h1 class="anton" style="font-size:clamp(36px,9vw,64px);margin-top:14px;max-width:12ch">PEPTIDE CALCULATOR</h1>
+  <p style="margin-top:18px;max-width:48ch;font-size:15px;color:#cfcfcf">
+    Reconstitution and dose math. Transparent formulas. No guesswork.
+  </p>
+
+  <!-- EMAIL GATE -->
+  <div id="gate-wrap">
+    <div class="gate">
+      <div class="gate-title">UNLOCK THE CALCULATOR</div>
+      <p class="gate-copy">
+        Enter your email for free access. You’ll also receive the source link and your operator code.
+      </p>
+      <form id="gate-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required placeholder="you@domain.com" autocomplete="email">
+        </div>
+        <button type="submit" class="btn btn-gold">GET ACCESS</button>
+      </form>
+      <p class="success-note" id="gate-status" hidden></p>
+    </div>
+  </div>
+
+  <!-- CALCULATOR (unlocked after email) -->
+  <div id="calculator">
+
+    <section style="margin-top:36px">
+      <div class="kicker steel">RECONSTITUTION</div>
+      <h2 class="bebas" style="font-size:clamp(24px,5vw,34px);margin:10px 0 20px">VIAL MATH</h2>
+
+      <div class="card">
+        <div class="grid-2">
+          <div class="field">
+            <label for="peptide">Peptide (mg in vial)</label>
+            <input type="number" id="peptide" min="0" step="0.1" value="5" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label for="bac">BAC water (mL)</label>
+            <input type="number" id="bac" min="0" step="0.1" value="2" inputmode="decimal">
+          </div>
+        </div>
+        <div class="field">
+          <label for="dose">Desired dose (mcg)</label>
+          <input type="number" id="dose" min="0" step="1" value="250" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="syringe">Syringe units (IU full scale)</label>
+          <select id="syringe">
+            <option value="100" selected>100 IU (1 mL insulin)</option>
+            <option value="50">50 IU (0.5 mL)</option>
+            <option value="30">30 IU (0.3 mL)</option>
+          </select>
+        </div>
+
+        <div class="result-block card-nested" style="margin-top:8px">
+          <div class="result-row">
+            <span class="result-label">CONCENTRATION</span>
+            <span class="result-value" id="out-conc">—</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">DRAW (UNITS)</span>
+            <span class="result-value gold" id="out-units">—</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">DRAW (mL)</span>
+            <span class="result-value" id="out-ml">—</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOURCE / PROMO -->
+    <div class="promo">
+      <div class="promo-kicker">SOURCE</div>
+      <p style="font-size:14px;color:#cfcfcf;line-height:1.6;margin-bottom:12px">
+        For research compounds, the operator source is
+        <a href="https://knowledgepharm.com" target="_blank" rel="noopener noreferrer">Knowledge Pharmaceuticals</a>.
+      </p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:6px">Operator code</p>
+      <div class="code">PKFIT</div>
+      <p style="font-size:12px;color:var(--faint);margin-top:12px;line-height:1.5">
+        Apply the code at checkout. This is a research tool only — not medical advice.
+      </p>
+    </div>
+
+    <p class="disclaimer">
+      Research use only. This calculator provides mathematical conversion for reconstitution and dosing. It does not diagnose, treat, or recommend any compound. Verify all calculations independently. You are responsible for compliance with applicable laws and research protocols.
+    </p>
+  </div>
+
+</main>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'pkfit_peptides_access';
+  const form = document.getElementById('gate-form');
+  const gateWrap = document.getElementById('gate-wrap');
+  const calc = document.getElementById('calculator');
+  const status = document.getElementById('gate-status');
+
+  function unlock() {
+    gateWrap.classList.add('hidden');
+    calc.classList.add('unlocked');
+    localStorage.setItem(STORAGE_KEY, '1');
+    compute();
+  }
+
+  // Restore if already unlocked on this device
+  if (localStorage.getItem(STORAGE_KEY) === '1') {
+    unlock();
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim().toLowerCase();
+    if (!email || !email.includes('@')) return;
+
+    // Store locally for now. Wire to Supabase / your endpoint later.
+    // Payload ready for your backend: { email, source: 'peptides', ts: Date.now() }
+    try {
+      const leads = JSON.parse(localStorage.getItem('pkfit_leads') || '[]');
+      leads.push({ email, source: 'peptides', ts: Date.now() });
+      localStorage.setItem('pkfit_leads', JSON.stringify(leads));
+    } catch (_) {}
+
+    status.hidden = false;
+    status.textContent = 'ACCESS GRANTED · CHECK YOUR INBOX FOR THE SOURCE LINK';
+    form.querySelector('button').textContent = 'UNLOCKED';
+    form.querySelector('button').disabled = true;
+
+    setTimeout(unlock, 600);
+
+    // Optional: fire a beacon / fetch to your Supabase or form endpoint here
+    // fetch('/api/leads', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, source: 'peptides' }) })
+  });
+
+  // Calculator
+  const peptide = document.getElementById('peptide');
+  const bac = document.getElementById('bac');
+  const dose = document.getElementById('dose');
+  const syringe = document.getElementById('syringe');
+
+  function compute() {
+    const mg = parseFloat(peptide.value) || 0;
+    const ml = parseFloat(bac.value) || 0;
+    const mcg = parseFloat(dose.value) || 0;
+    const iuFull = parseFloat(syringe.value) || 100;
+
+    if (mg <= 0 || ml <= 0) {
+      document.getElementById('out-conc').textContent = '—';
+      document.getElementById('out-units').textContent = '—';
+      document.getElementById('out-ml').textContent = '—';
+      return;
+    }
+
+    // Concentration: mcg per mL
+    const mcgPerMl = (mg * 1000) / ml;
+    // Volume needed for desired dose
+    const drawMl = mcg / mcgPerMl;
+    // Units on insulin syringe (IU scale)
+    const units = drawMl * iuFull;
+
+    document.getElementById('out-conc').textContent = Math.round(mcgPerMl) + ' mcg/mL';
+    document.getElementById('out-units').textContent = (Math.round(units * 10) / 10) + ' u';
+    document.getElementById('out-ml').textContent = (Math.round(drawMl * 1000) / 1000) + ' mL';
+  }
+
+  [peptide, bac, dose, syringe].forEach(el => {
+    el.addEventListener('input', compute);
+    el.addEventListener('change', compute);
+  });
+
+  compute();
+})();
+</script>
+
+</body>
+</html>
