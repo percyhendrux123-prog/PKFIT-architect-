@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PKFIT — operatefitness.app</title>
+<link rel="stylesheet" href="/assets/brand.css">
+<style>
+/* ---- HOME-specific ---- */
+.hero{padding:72px 0 64px;position:relative;overflow:hidden}
+.hero .kicker{margin-bottom:22px}
+.hero h1{font-size:clamp(40px,11vw,92px);color:var(--ink);max-width:14ch}
+.hero h1 .dim{color:#6f6f6f}
+.hero-sub{margin:26px 0 8px;max-width:46ch;font-size:16px;color:#cfcfcf}
+.hero-meta{font-size:13px;color:var(--muted);letter-spacing:1px;margin-bottom:30px}
+.hero-cta{display:flex;flex-direction:column;gap:12px;max-width:360px}
+
+.bracket{position:relative}
+/* gold corner brackets — containment, used sparingly on the mechanism block */
+.mech{position:relative}
+.mech .stages{margin-top:26px;display:grid;gap:10px}
+.stage{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:start;padding:14px 16px;background:var(--card-nested);border-radius:8px;border-left:2px solid var(--line)}
+.stage.key{border-left-color:var(--gold);background:var(--gold-tile)}
+.stage .m{font-family:'Anton',sans-serif;font-size:26px;color:var(--steel)}
+.stage.key .m{color:var(--gold)}
+.stage .t{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:1px;color:var(--ink)}
+.stage .d{font-size:13px;color:var(--muted)}
+.mech-line{margin-top:24px;font-family:'Bebas Neue',sans-serif;font-size:clamp(20px,4vw,28px);letter-spacing:1px;line-height:1.15}
+
+/* ladder */
+.ladder{display:grid;gap:14px;margin-top:30px}
+.rung{display:flex;flex-direction:column;gap:6px;padding:20px;background:var(--card);border:0.5px solid var(--line);border-radius:var(--radius)}
+.rung .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.rung .price{font-family:'Anton',sans-serif;font-size:32px;color:var(--ink)}
+.rung .price.free{color:var(--steel)}
+.rung .name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px}
+.rung .desc{font-size:13px;color:var(--muted);max-width:52ch}
+.rung .go{margin-top:8px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-decoration:none}
+.rung.feature{border-color:var(--gold);box-shadow:0 0 0 0.5px rgba(201,168,76,0.4)}
+.rung .tag{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2px;background:#2a2a2a;color:var(--gold);padding:4px 8px;border-radius:6px}
+
+/* proof strip */
+.proof{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:26px}
+.stat .n{font-family:'Anton',sans-serif;font-size:clamp(34px,9vw,52px);color:var(--ink);line-height:0.9}
+.stat .n .u{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--gold);letter-spacing:1px}
+.stat .l{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:8px}
+
+/* dual lane */
+.lanes{display:grid;gap:14px;margin-top:26px}
+.lane{padding:22px;border:0.5px solid var(--line);border-radius:var(--radius);background:var(--card)}
+.lane h4{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:8px}
+.lane p{font-size:13px;color:var(--muted);max-width:42ch}
+.lane .pill{display:inline-block;margin-top:14px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-decoration:none}
+.lane.axiom{border-color:rgba(138,148,166,0.35)}
+
+/* footer */
+.footer{padding:54px 0 70px;background:var(--base)}
+.footer .wordmark{opacity:0.7}
+.footer-cols{display:grid;grid-template-columns:1fr;gap:30px}
+.footer a{color:var(--muted);text-decoration:none;font-size:12px;letter-spacing:1px;display:block;margin:8px 0}
+.footer-mark{margin-top:40px;font-size:11px;letter-spacing:2px;color:var(--faint);text-transform:uppercase}
+@media(min-width:720px){.footer-cols{grid-template-columns:2fr 1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">DEFAULT PARALYSIS LOOP · M02</div>
+    <h1 class="anton">YOU DIDN'T LOSE DISCIPLINE.<br><span class="dim">YOU LOST THE STRUCTURE AROUND IT.</span></h1>
+    <p class="hero-sub">PKFIT does not sell discipline. It diagnoses why discipline disappeared — then reinstalls a Standard you can respect.</p>
+    <div class="hero-meta">IFBB Pro Men's Physique · Mechanism over motivation · The Quiet Assassin</div>
+    <div class="hero-cta">
+      <a href="/workbook" class="btn btn-gold btn-block">START WITH THE WORKBOOK</a>
+      <a href="/apply" class="btn btn-ghost btn-block">APPLY FOR 1:1</a>
+    </div>
+  </div>
+</header>
+
+<!-- MECHANISM -->
+<section class="mech" id="mechanism">
+  <div class="wrap">
+    <div class="kicker steel">THE MECHANISM</div>
+    <h2 class="bebas" style="font-size:clamp(28px,6vw,44px);margin-top:14px">THE LOOP RUNNING YOUR WEEK</h2>
+    <p style="margin-top:14px;max-width:52ch;color:#cfcfcf;font-size:15px">The day breaks routine. A story arrives. A behavior follows. You become the man the loop just rehearsed. The break is not at willpower — it's at interpretation.</p>
+    <div class="stages">
+      <div class="stage"><div class="m">M01</div><div><div class="t">STIMULUS</div><div class="d">The day breaks routine.</div></div></div>
+      <div class="stage key"><div class="m">M02</div><div><div class="t">INTERPRETATION</div><div class="d">You read the stimulus as a problem. ← the break lives here.</div></div></div>
+      <div class="stage"><div class="m">M03</div><div><div class="t">AVOIDANCE SIGNAL</div><div class="d">A behavior arrives to make the reading stop.</div></div></div>
+      <div class="stage"><div class="m">M04</div><div><div class="t">DEFAULT BEHAVIOR</div><div class="d">The behavior runs to completion.</div></div></div>
+      <div class="stage"><div class="m">M05</div><div><div class="t">IDENTITY LOCK</div><div class="d">You become the man the loop rehearsed.</div></div></div>
+    </div>
+    <p class="mech-line">The intervention is not at M01 and not at M05. It is at M02 or M03. The work is naming which.</p>
+  </div>
+</section>
+
+<!-- OFFER LADDER -->
+<section id="ladder">
+  <div class="wrap">
+    <div class="kicker">THE LADDER · EVERY RUNG PAYS FOR THE NEXT</div>
+    <h2 class="bebas" style="font-size:clamp(28px,6vw,44px);margin-top:14px">FIND YOUR ENTRY POINT</h2>
+    <div class="ladder">
+      <div class="rung">
+        <div class="top"><span class="name">THE DIAGNOSTIC</span><span class="price free">FREE</span></div>
+        <div class="desc">Surface your loop signature. Name the breakdown before you spend a dollar.</div>
+        <a class="go" href="/diagnostic">RUN THE DIAGNOSTIC →</a>
+      </div>
+      <div class="rung feature">
+        <div class="top"><span class="name">THE WORKBOOK</span><span class="price">$47</span></div>
+        <span class="tag">START HERE</span>
+        <div class="desc">The PKFIT Standard, Volume One. The full system, in writing. Run it without supervision.</div>
+        <a class="go" href="/workbook">GET THE WORKBOOK →</a>
+      </div>
+      <div class="rung">
+        <div class="top"><span class="name">THE STANDARD — GROUP</span><span class="price">$97<span style="font-size:16px;color:var(--muted)">/mo</span></span></div>
+        <div class="desc">The Standard, run alongside other operators. Cohort cadence, shared accountability — supervised-lite between the Workbook and 1:1.</div>
+        <a class="go" href="https://www.trainerize.me/profile/pkfit3/?planGUID=3ece2d14c7924ba0a17c5902044dcca0&mode=checkout">JOIN THE STANDARD — GROUP →</a>
+      </div>
+      <div class="rung">
+        <div class="top"><span class="name">PERFORMANCE STANDARD</span><span class="price">$250<span style="font-size:16px;color:var(--muted)">/mo</span></span></div>
+        <div class="desc">1:1. Direct supervision. The Standard installed under Percy, by name, on your actual life.</div>
+        <a class="go" href="https://buy.stripe.com/5kQfZbekE1ge99G9bW5gc0h">APPLY FOR 1:1 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section id="tools">
+  <div class="wrap">
+    <div class="kicker">TOOLS · STRUCTURE FOR THE WORK</div>
+    <h2 class="bebas" style="font-size:clamp(28px,6vw,44px);margin-top:14px">OPERATOR TOOLS</h2>
+    <div class="ladder">
+      <div class="rung">
+        <div class="top"><span class="name">PKFIT-LITE</span><span class="price free">FREE</span></div>
+        <div class="desc">Mini app that builds a training program, meal plan, and cardio from the equipment you have.</div>
+        <a class="go" href="https://pkfit-lite.netlify.app">OPEN PKFIT-LITE →</a>
+      </div>
+      <div class="rung">
+        <div class="top"><span class="name">PEPTIDES CALCULATOR</span><span class="price free">FREE</span></div>
+        <div class="desc">Research peptide reconstitution and dose calculator. Structure over guesswork.</div>
+        <a class="go" href="/peptides">OPEN CALCULATOR →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROOF -->
+<section id="proof">
+  <div class="wrap">
+    <div class="kicker">THE RECEIPT · EARNED, NOT CLAIMED</div>
+    <h2 class="bebas" style="font-size:clamp(28px,6vw,44px);margin-top:14px">THE CREDENTIAL IS NON-PORTABLE</h2>
+    <div class="proof">
+      <div class="stat"><div class="n">IFBB</div><div class="l">Pro Men's Physique</div></div>
+      <div class="stat"><div class="n">141<span class="u">K+</span></div><div class="l">Operators reached</div></div>
+      <div class="stat"><div class="n">12<span class="u">WK</span></div><div class="l">Standard install</div></div>
+      <div class="stat"><div class="n">1<span class="u">:1</span></div><div class="l">By name, your life</div></div>
+    </div>
+    <a href="/proof" class="btn btn-ghost" style="margin-top:30px">SEE THE WORK →</a>
+  </div>
+</section>
+
+<!-- DUAL LANE -->
+<section>
+  <div class="wrap">
+    <div class="kicker">ONE OPERATOR · TWO LANES</div>
+    <div class="lanes">
+      <div class="lane">
+        <h4>PKFIT</h4>
+        <p>Reinstall the Standard. Diagnose the loop. Build the body and the discipline that holds it.</p>
+        <a class="pill" href="/workbook">ENTER PKFIT →</a>
+      </div>
+      <div class="lane axiom">
+        <h4>AXIOM</h4>
+        <p>The same operator deploys AI agents that handle the work. One agent. One operating lane. One measurable outcome.</p>
+        <a class="pill" href="https://deployaxiom.com">DEPLOYAXIOM.COM →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <div class="wordmark" style="font-size:20px">PKFIT</div>
+        <p style="margin-top:12px;max-width:34ch;color:var(--muted);font-size:13px">Percy Keith · IFBB Pro Men's Physique. Structure outlives motivation.</p>
+      </div>
+      <div>
+        <div class="kicker" style="margin-bottom:6px">PROGRAMS</div>
+        <a href="/workbook">The Workbook</a>
+        <a href="https://www.trainerize.me/profile/pkfit3/?planGUID=3ece2d14c7924ba0a17c5902044dcca0&mode=checkout">The Standard — Group</a>
+        <a href="/apply">1:1 Coaching</a>
+      </div>
+      <div>
+        <div class="kicker" style="margin-bottom:6px">MORE</div>
+        <a href="#proof">Results</a>
+        <a href="/field-notes">Field Notes</a>
+        <a href="https://pkfit-lite.netlify.app">PKFIT-lite</a>
+        <a href="/peptides">Peptides Calculator</a>
+        <a href="https://deployaxiom.com">Axiom</a>
+      </div>
+      <div>
+        <div class="kicker" style="margin-bottom:6px">LEGAL</div>
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+      </div>
+    </div>
+    <div class="footer-mark">© 2026 PKFIT · THE STANDARD IS YOURS TO SET.</div>
+  </div>
+</footer>
+
+</body>
+</html>
