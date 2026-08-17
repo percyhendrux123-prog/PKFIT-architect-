@@ -1,3 +1,4 @@
+import Cal from '@calcom/embed-react';
 import { useMemo, useState } from 'react';
 
 // Native PKFIT qualifier — replaces the Typeform that pkfitelite.co.site has
@@ -487,10 +488,10 @@ function Nav({ step, submitting, canAdvance, isFinal, onBack, onNext, embedded }
 }
 
 function Confirmation({ isHot, name, email, embedded }) {
-  const calendlyUrl =
-    'https://calendly.com/percyhendrux123/30min?hide_gdpr_banner=1' +
-    (name ? `&name=${encodeURIComponent(name)}` : '') +
-    (email ? `&email=${encodeURIComponent(email)}` : '');
+  const bookingConfig = {
+    ...(name ? { name } : {}),
+    ...(email ? { email } : {}),
+  };
   return (
     <div
       style={{
@@ -551,10 +552,10 @@ function Confirmation({ isHot, name, email, embedded }) {
                   background: '#fff',
                 }}
               >
-                <iframe
-                  title="Book your PKFIT Application Review Call"
-                  src={calendlyUrl}
-                  style={{ width: '100%', height: 700, border: 'none', display: 'block' }}
+                <Cal
+                  calLink="percy-keith-acsj26/30min"
+                  config={bookingConfig}
+                  style={{ width: '100%', minHeight: 700, overflow: 'auto' }}
                 />
               </div>
             </>

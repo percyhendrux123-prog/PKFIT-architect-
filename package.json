@@ -17,6 +17,7 @@
     "axiom:smoke": "node scripts/axiom-smoke.js"
   },
   "dependencies": {
+    "@calcom/embed-react": "^1.5.3",
     "@google/generative-ai": "^0.24.1",
     "@pkfit/ui": "*",
     "@stripe/stripe-js": "^4.8.0",
