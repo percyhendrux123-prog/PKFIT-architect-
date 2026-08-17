@@ -1,0 +1,47 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/home.html"
+    },
+    {
+      "source": "/apply",
+      "destination": "/apply.html"
+    },
+    {
+      "source": "/qualifier",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/standard",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/structure",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/system",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/protocol",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/align",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/diagnose",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/legal/:path*",
+      "destination": "/app.html"
+    }
+  ]
+}
