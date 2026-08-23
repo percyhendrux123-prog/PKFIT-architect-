@@ -17,6 +17,7 @@
 | ○ Dotted Circle | **Skills** | Dormant behaviors invoked by user. Commit, simplify, schedule, loop. | On invocation |
 | ⬡ Small Hexagon | **Hooks** | Event watchers. React to tool calls and file changes. | Persistent (configured) |
 | ▽ Inverted Triangle | **Projects** | The ground. Where all work lands. Video Dashboard, PKFIT Brand, Voice Clone Studio. | Persistent (directories) |
+| ◈ Filled Diamond | **Grok Bots** | External workforce. Nine bots on xAI. No memory, no tools, no outbound reach. Config is UI-only. | Persistent (configured in Grok's settings) |
 
 ---
 
@@ -102,4 +103,42 @@
 
 ---
 
-*Last updated: 2026-04-06*
+## The External Workforce (Grok)
+
+A second, weaker ecosystem runs alongside this one. It is documented in full in
+`grok/` — start at `grok/WORKFLOW.md`.
+
+It obeys different physics:
+
+| Here (Claude Code) | There (Grok) |
+|---|---|
+| Agents read the repo directly | Bots read nothing. Context must be attached or pasted |
+| Memory persists across sessions | No memory. Skills and Project Sources are the only substitute |
+| Tools call out to the world | No outbound reach except MCP connectors and a fixed trigger list |
+| Config is files | Config is UI-only. There is no API to create agents, projects, or automations |
+| CLAUDE.md is the law | `grok/skills/pkfit-voice/SKILL.md` is the law, and it only applies where attached |
+
+```
+▭ CLAUDE.md ──→ ⬡ Core            Laws internalized at session start
+○ SKILL.md  ──→ ◈ Grok Bots       Laws uploaded, attached per surface, re-uploaded on change
+```
+
+**The bridge is a handoff, not a connection.** `grok/handoff/` hands a desktop-control
+agent the artifacts and the click path. Nothing syncs automatically. When this repo
+changes, the workforce is stale until someone re-uploads — see the sync loop in
+`grok/WORKFLOW.md`.
+
+**Authority chain, extended:**
+
+```
+▭ CLAUDE.md  >  ◇ Memory  >  ⬡ Core reasoning        (in here)
+○ pkfit-voice  >  ◈ Bot instructions  >  Grok's defaults   (out there)
+```
+
+The ethical floor in `grok/skills/pkfit-voice/SKILL.md` binds every bot: no health or
+body outcome claims, no medical or peptide claims, no income claims, no manufactured
+scarcity, no fabricated proof. A bot asked to break it refuses and names the line.
+
+---
+
+*Last updated: 2026-08-23*
