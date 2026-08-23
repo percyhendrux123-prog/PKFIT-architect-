@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""Generates bot-configs.json from the bot definitions in ../bots/.
+
+The markdown files in ../bots/ are the source of truth. This script extracts each
+bot's fenced system prompt and emits the machine-readable config the desktop-control
+agent installs from. Run it after editing any bot prompt.
+"""
+import json
+import re
+import pathlib
+
+HERE = pathlib.Path(__file__).parent
+BOTS = HERE.parent / "bots"
+
+AGENT_SLOTS = ["01-signal-scout", "02-reply-operator", "06-the-interrogator", "08-plate"]
+
+AUTOMATIONS = [
+    ("scout-daily",      "01-signal-scout",   "PKFIT MEDIA", "Daily",  "07:00", "Run today's scout."),
+    ("reply-daily",      "02-reply-operator", "PKFIT MEDIA", "Daily",  "07:15", "Write today's thirteen from the most recent scout table in this project."),
+    ("archivist-weekly", "04-loop-archivist", "PKFIT MEDIA", "Weekly", "Sunday 09:00", "Archive the week. The operator will paste the top three posts by link clicks."),
+    ("listener-weekly",  "07-the-listener",   "PKFIT SALES", "Weekly", "Sunday 08:00", "Run the weekly listen against the phrase bank in this project's sources."),
+]
+
+PROJECTS = [
+    {
+        "name": "PKFIT MEDIA",
+        "instructions": (
+            "This project runs PKFIT's distribution. Every output obeys the pkfit-voice "
+            "skill without exception: declarative, stoic, systems-framed, no emoji, no "
+            "exclamation points, no hype vocabulary, no fabricated proof. Reference one "
+            "rung of the offer ladder at a time and default cold traffic to a free tool, "
+            "never to the $37 Blueprint. X is primary, Instagram is secondary, email is "
+            "the terminal. Nothing published here is written by a bot alone - the "
+            "operator cuts and publishes."
+        ),
+        "sources": [
+            "grok/00_STACK_CONTEXT.md", "grok/01_MEDIA_PLAN.md", "grok/phrase-bank.md",
+            "grok/bots/01-signal-scout.md", "grok/bots/02-reply-operator.md",
+            "grok/bots/04-loop-archivist.md",
+            "content/content_pack_01_busy_schedule.md", "content/carousel_template.md",
+            "content/animated_reel_series.md",
+        ],
+        "skills": ["pkfit-voice", "pkfit-stack"],
+    },
+    {
+        "name": "PKFIT SALES",
+        "instructions": (
+            "This project runs PKFIT's persuasion layer. Every output obeys the "
+            "pkfit-voice skill, including its ethical floor: no health or body outcome "
+            "claims, no medical or peptide claims, no income claims, no manufactured "
+            "scarcity, no fabricated proof, no diagnosis. The only nameable proof point "
+            "is Dele Bakare, 39, down 35 lbs, business owner - used verbatim or not at "
+            "all. If persuasion would require breaking a line of the ethical floor, "
+            "refuse and name the line."
+        ),
+        "sources": [
+            "grok/00_STACK_CONTEXT.md", "grok/02_FUNNEL_MAP.md", "grok/phrase-bank.md",
+            "grok/bots/05-the-forge.md", "grok/bots/06-the-interrogator.md",
+            "grok/bots/07-the-listener.md",
+        ],
+        "skills": ["pkfit-voice", "pkfit-stack"],
+    },
+    {
+        "name": "PKFIT DESIGN",
+        "instructions": (
+            "This project produces PKFIT visuals and audits interfaces. Every asset "
+            "obeys the pkfit-design skill exactly: background #080808, accent #C8A96E "
+            "under 8% coverage, text #F5F5F5, Bebas Neue display, DM Mono body, square "
+            "corners, hairline rules. No emoji, no decorative gradients, no glow, no "
+            "glassmorphism, no gym stock imagery, no off-palette color. Append the "
+            "negative-prompt block to every generation. Legibility beats decoration."
+        ),
+        "sources": [
+            "grok/00_STACK_CONTEXT.md", "grok/03_DESIGN_CONTRACT.md",
+            "grok/bots/03-frame-room.md", "grok/bots/08-plate.md", "grok/bots/09-caliper.md",
+        ],
+        "skills": ["pkfit-design", "pkfit-voice", "pkfit-stack"],
+    },
+]
+
+SKILLS_FOR_BOT = {
+    "01-signal-scout":   ["pkfit-voice", "pkfit-stack"],
+    "02-reply-operator": ["pkfit-voice", "pkfit-stack"],
+    "03-frame-room":     ["pkfit-design", "pkfit-voice"],
+    "04-loop-archivist": ["pkfit-voice", "pkfit-stack"],
+    "05-the-forge":      ["pkfit-voice", "pkfit-stack"],
+    "06-the-interrogator": ["pkfit-voice", "pkfit-stack"],
+    "07-the-listener":   ["pkfit-voice"],
+    "08-plate":          ["pkfit-design"],
+    "09-caliper":        ["pkfit-design"],
+}
+
+
+def read_bot(slug):
+    text = (BOTS / f"{slug}.md").read_text()
+    title = re.search(r"^# (.+)$", text, re.M).group(1)
+    prompt = re.search(r"^```\n(.*?)^```", text, re.M | re.S).group(1).strip()
+    return title, prompt
+
+
+def main():
+    agents = []
+    for slug in AGENT_SLOTS:
+        title, prompt = read_bot(slug)
+        agents.append({
+            "source_file": f"grok/bots/{slug}.md",
+            "name": title.split("—")[-1].strip().title(),
+            "personality_preset": "Custom",
+            "instructions": prompt,
+            "instruction_chars": len(prompt),
+            "note": "Read the live character counter before pasting. The limit is "
+                    "server-side remote config, not a fixed number. If it does not fit, "
+                    "truncate from the bottom at a section boundary, never from the "
+                    "voice or prohibition clauses, and log the drop.",
+        })
+
+    automations = []
+    for name, slug, project, sched, when, kickoff in AUTOMATIONS:
+        title, prompt = read_bot(slug)
+        automations.append({
+            "source_file": f"grok/bots/{slug}.md",
+            "name": name,
+            "instructions": f"{prompt}\n\nSTANDING TASK FOR THIS AUTOMATION: {kickoff}",
+            "trigger": {"type": "schedule", "schedule": sched, "at": when,
+                        "timezone": "OPERATOR_LOCAL - confirm in Settings before setting"},
+            "project": project,
+            "skills": SKILLS_FOR_BOT[slug],
+            "connectors": [],
+            "notification": "App only",
+            "initial_state": "paused",
+        })
+
+    config = {
+        "generated_from": "grok/bots/*.md - those files are the source of truth",
+        "regenerate_with": "python3 grok/handoff/build-configs.py",
+        "install_guide": "grok/handoff/DESKTOP_AGENT_HANDOFF.md",
+        "capability_map": "grok/04_GROK_CAPABILITY_MAP.md",
+        "verified_against_grok_ui": "2026-08-23",
+        "sharing_policy": "All surfaces stay private. Never share to Team, to specific "
+                          "users, or by link.",
+        "skills": [
+            {"name": "pkfit-voice",  "archive": "grok/skills/dist/pkfit-voice.zip",  "source": "grok/skills/pkfit-voice/SKILL.md"},
+            {"name": "pkfit-stack",  "archive": "grok/skills/dist/pkfit-stack.zip",  "source": "grok/skills/pkfit-stack/SKILL.md"},
+            {"name": "pkfit-design", "archive": "grok/skills/dist/pkfit-design.zip", "source": "grok/skills/pkfit-design/SKILL.md"},
+        ],
+        "projects": PROJECTS,
+        "agents": agents,
+        "automations": automations,
+        "project_chat_bots": [
+            {"source_file": f"grok/bots/{s}.md", "project": p}
+            for s, p in [("03-frame-room", "PKFIT DESIGN"), ("05-the-forge", "PKFIT SALES"),
+                         ("09-caliper", "PKFIT DESIGN")]
+        ],
+    }
+
+    out = HERE / "bot-configs.json"
+    out.write_text(json.dumps(config, indent=2) + "\n")
+    print(f"wrote {out.relative_to(HERE.parent.parent)}")
+    for a in agents:
+        print(f"  agent {a['name']:<18} {a['instruction_chars']:>5} chars")
+    for a in automations:
+        print(f"  automation {a['name']:<18} {a['trigger']['schedule']} {a['trigger']['at']}")
+
+
+if __name__ == "__main__":
+    main()
