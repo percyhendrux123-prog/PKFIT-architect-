@@ -133,7 +133,7 @@ def main():
     config = {
         "generated_from": "grok/bots/*.md - those files are the source of truth",
         "regenerate_with": "python3 grok/handoff/build-configs.py",
-        "install_guide": "grok/handoff/DESKTOP_AGENT_HANDOFF.md",
+        "install_guide": "grok/handoff/GROKBOT_HANDOFF.md - the chosen target; grok/handoff/GROKCOM_HANDOFF.md for grok.com",
         "capability_map": "grok/04_GROK_CAPABILITY_MAP.md",
         "verified_against_grok_ui": "2026-08-23",
         "sharing_policy": "All surfaces stay private. Never share to Team, to specific "

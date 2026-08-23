@@ -34,8 +34,16 @@ grok/skills/build.sh                      # package the three skills
 python3 grok/handoff/build-configs.py     # regenerate bot-configs.json
 ```
 
-Then hand `grok/handoff/DESKTOP_AGENT_HANDOFF.md` to the desktop-control agent. The
-human logs in; the agent never touches credentials.
+Then hand the handoff for the chosen target to the desktop-control agent. The human
+logs in; the agent never touches credentials.
+
+| Target | Handoff | Status |
+|---|---|---|
+| **Grok Bot** (desktop/iOS agent product) | `handoff/GROKBOT_HANDOFF.md` | **The chosen target.** In progress |
+| grok.com (Custom Agents, Projects, Automations) | `handoff/GROKCOM_HANDOFF.md` | Written. Secondary surface — do not install from it unless told to |
+
+The artifacts in `skills/` and `bots/` are shared between both targets. Only the install
+path differs.
 
 ## The nine bots
 

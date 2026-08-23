@@ -1,7 +1,17 @@
-# HANDOFF — DESKTOP-CONTROL AGENT
+# HANDOFF — grok.com (NOT the chosen target)
+
+> **STOP. Read this first.**
+>
+> The operator has chosen **Grok Bot**, the standalone desktop/iOS agent product, as
+> the install target. **That handoff is `GROKBOT_HANDOFF.md`. Use that one.**
+>
+> This file targets **grok.com** — Custom Agents, Projects, and Automations. It is a
+> different product with a different field set. It is kept because the artifacts in
+> `../skills/` and `../bots/` are shared between both, and grok.com remains a valid
+> secondary surface. **Do not install from this file unless explicitly told to.**
 
 **For:** an agentic agent with desktop control (screen, keyboard, mouse).
-**Goal:** install the PKFIT bot workforce into Grok's settings.
+**Goal:** install the PKFIT bot workforce into grok.com's settings.
 **Why a desktop agent:** xAI publishes no API for creating or configuring agents,
 projects, automations, or skills. Configuration is UI-only. Verified 2026-08-23 — see
 `../04_GROK_CAPABILITY_MAP.md` §4.
