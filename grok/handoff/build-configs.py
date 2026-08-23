@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """Generates bot-configs.json from the bot definitions in ../bots/.
 
-The markdown files in ../bots/ are the source of truth. This script extracts each
-bot's fenced system prompt and emits the machine-readable config the desktop-control
-agent installs from. Run it after editing any bot prompt.
+The markdown files in ../bots/ are the source of truth. This script extracts each bot's
+charter (the Grok Bot `description` field) and its full system prompt, then emits the
+machine-readable config the desktop-control agent installs from.
+
+Two targets are emitted. `grok_bot` is the chosen one: nine Bots, charters as
+descriptions, full briefs read from /workspace/pkfit/bots/, routines created
+conversationally. `grokcom` is the secondary surface: four agent slots, three projects,
+four scheduled automations.
+
+Run after editing any bot file.
 """
 import json
 import re
@@ -13,6 +20,15 @@ HERE = pathlib.Path(__file__).parent
 BOTS = HERE.parent / "bots"
 
 AGENT_SLOTS = ["01-signal-scout", "02-reply-operator", "06-the-interrogator", "08-plate"]
+
+# Grok Bot routines are created by talking to the owning Bot. There is no cron field
+# and no create-routine form, so the config carries the exact message to send.
+ROUTINES = [
+    ("01-signal-scout",   "Every weekday at 7:00 AM, run today's scout. Read /workspace/pkfit/bots/01-signal-scout.md first and follow it exactly. Write the entry-point table to /workspace/pkfit/out/<today>/signal-scout.md and post it in this conversation. Do not publish anything anywhere."),
+    ("02-reply-operator", "Every weekday at 7:15 AM, read the most recent scout table in /workspace/pkfit/out/ and write today's thirteen. Read /workspace/pkfit/bots/02-reply-operator.md first and follow its output format exactly. Save to /workspace/pkfit/out/<today>/reply-operator.md and post it here. Draft only - never post to X."),
+    ("07-the-listener",   "Every Sunday at 8:00 AM, run the weekly listen. Read /workspace/pkfit/bots/07-the-listener.md and /workspace/pkfit/phrase-bank.md first, deduplicate against the bank, and follow the table format exactly. Save to /workspace/pkfit/out/<today>/listener.md. Never include a handle or any identifying detail."),
+    ("04-loop-archivist", "Every Sunday at 9:00 AM, ask me for the top three X posts by link clicks, then archive the week. Read /workspace/pkfit/bots/04-loop-archivist.md first and follow its carousel and reel templates exactly. Save to /workspace/pkfit/out/<today>/archivist.md."),
+]
 
 AUTOMATIONS = [
     ("scout-daily",      "01-signal-scout",   "PKFIT MEDIA", "Daily",  "07:00", "Run today's scout."),
@@ -92,19 +108,64 @@ SKILLS_FOR_BOT = {
 
 
 def read_bot(slug):
+    """Returns (title, charter, prompt). Charter is the first fenced block, under
+    '## Charter'; prompt is the second, under '## System prompt'."""
     text = (BOTS / f"{slug}.md").read_text()
     title = re.search(r"^# (.+)$", text, re.M).group(1)
-    prompt = re.search(r"^```\n(.*?)^```", text, re.M | re.S).group(1).strip()
-    return title, prompt
+    blocks = re.findall(r"^```\n(.*?)^```", text, re.M | re.S)
+    if len(blocks) != 2:
+        raise SystemExit(f"{slug}: expected a charter block and a system-prompt block, "
+                         f"found {len(blocks)}")
+    return title, blocks[0].strip(), blocks[1].strip()
+
+
+def bot_name(title):
+    return title.split("\u2014")[-1].strip().title()
+
+
+BOT_ORDER = ["01-signal-scout", "02-reply-operator", "03-frame-room", "04-loop-archivist",
+             "05-the-forge", "06-the-interrogator", "07-the-listener", "08-plate",
+             "09-caliper"]
+
+LANE = {"01": "Media", "02": "Media", "03": "Media", "04": "Media",
+        "05": "Sales", "06": "Sales", "07": "Sales", "08": "Design", "09": "Design"}
+
+
+def build_grok_bot():
+    routines = {slug: msg for slug, msg in ROUTINES}
+    bots = []
+    for slug in BOT_ORDER:
+        title, charter, prompt = read_bot(slug)
+        bots.append({
+            "source_file": f"grok/bots/{slug}.md",
+            "name": bot_name(title),
+            "title": f"PKFIT {LANE[slug[:2]]}",
+            "description": charter,
+            "description_chars": len(charter),
+            "full_brief_on_agent_computer": f"/workspace/pkfit/bots/{slug}.md",
+            "sidebar_section": f"PKFIT {LANE[slug[:2]]}",
+            "notifications": "on",
+            "routine_message": routines.get(slug),
+        })
+    return {
+        "surface": "Grok Bot desktop app (Cursor account auth)",
+        "install_guide": "grok/handoff/GROKBOT_HANDOFF.md",
+        "workspace_payload": "grok/workspace/dist/pkfit -> /workspace/pkfit",
+        "build_payload_with": "python3 grok/workspace/build.py",
+        "note": "description IS the instruction field - there is no separate system "
+                "prompt. Charters are kept short because the limit is unpublished. The "
+                "full brief lives on the agent computer and the charter points at it.",
+        "bots": bots,
+    }
 
 
 def main():
     agents = []
     for slug in AGENT_SLOTS:
-        title, prompt = read_bot(slug)
+        title, _charter, prompt = read_bot(slug)
         agents.append({
             "source_file": f"grok/bots/{slug}.md",
-            "name": title.split("—")[-1].strip().title(),
+            "name": bot_name(title),
             "personality_preset": "Custom",
             "instructions": prompt,
             "instruction_chars": len(prompt),
@@ -116,7 +177,7 @@ def main():
 
     automations = []
     for name, slug, project, sched, when, kickoff in AUTOMATIONS:
-        title, prompt = read_bot(slug)
+        _title, _charter, prompt = read_bot(slug)
         automations.append({
             "source_file": f"grok/bots/{slug}.md",
             "name": name,
@@ -133,7 +194,7 @@ def main():
     config = {
         "generated_from": "grok/bots/*.md - those files are the source of truth",
         "regenerate_with": "python3 grok/handoff/build-configs.py",
-        "install_guide": "grok/handoff/GROKBOT_HANDOFF.md - the chosen target; grok/handoff/GROKCOM_HANDOFF.md for grok.com",
+        "chosen_target": "grok_bot",
         "capability_map": "grok/04_GROK_CAPABILITY_MAP.md",
         "verified_against_grok_ui": "2026-08-23",
         "sharing_policy": "All surfaces stay private. Never share to Team, to specific "
@@ -143,6 +204,12 @@ def main():
             {"name": "pkfit-stack",  "archive": "grok/skills/dist/pkfit-stack.zip",  "source": "grok/skills/pkfit-stack/SKILL.md"},
             {"name": "pkfit-design", "archive": "grok/skills/dist/pkfit-design.zip", "source": "grok/skills/pkfit-design/SKILL.md"},
         ],
+        "grok_bot": build_grok_bot(),
+        "grokcom": {
+            "surface": "grok.com Custom Agents, Projects, Automations",
+            "install_guide": "grok/handoff/GROKCOM_HANDOFF.md",
+            "note": "Secondary surface. Do not install from this unless told to.",
+        },
         "projects": PROJECTS,
         "agents": agents,
         "automations": automations,
@@ -156,10 +223,16 @@ def main():
     out = HERE / "bot-configs.json"
     out.write_text(json.dumps(config, indent=2) + "\n")
     print(f"wrote {out.relative_to(HERE.parent.parent)}")
+    gb = config["grok_bot"]
+    print(f"\n  GROK BOT ({len(gb['bots'])} bots) - the chosen target")
+    for b in gb["bots"]:
+        r = "routine" if b["routine_message"] else "-"
+        print(f"    {b['name']:<18} desc {b['description_chars']:>5} chars   {r}")
+    print(f"\n  grok.com (secondary)")
     for a in agents:
-        print(f"  agent {a['name']:<18} {a['instruction_chars']:>5} chars")
+        print(f"    agent {a['name']:<18} {a['instruction_chars']:>5} chars")
     for a in automations:
-        print(f"  automation {a['name']:<18} {a['trigger']['schedule']} {a['trigger']['at']}")
+        print(f"    automation {a['name']:<18} {a['trigger']['schedule']} {a['trigger']['at']}")
 
 
 if __name__ == "__main__":

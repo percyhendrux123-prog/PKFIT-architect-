@@ -21,25 +21,33 @@ next install overwrites it and the repo stops being canonical.
 | 08 | Plate | Design | Agent slot |
 | 09 | Caliper | Design | Project chat — PKFIT DESIGN |
 
+## Two fields per bot
+
+Each file carries **two** fenced blocks, and `../handoff/build-configs.py` depends on
+exactly two being present:
+
+1. **The charter**, under `## Charter`. This goes in Grok Bot's **`description`** field,
+   which is the only standing-instruction field the product has. Kept under ~1,030
+   characters because the limit is unpublished.
+2. **The system prompt**, under `## System prompt`. The full brief. On Grok Bot it is not
+   pasted anywhere — it ships to `/workspace/pkfit/bots/` and the charter tells the bot to
+   read it before every task. On grok.com it goes in the Instructions field.
+
 ## On the run procedures
 
-Each bot's run procedure says to paste `00_STACK_CONTEXT.md` and, where relevant,
-`03_DESIGN_CONTRACT.md`. **That is the fallback path**, correct for a one-off chat
-outside a project.
+The run procedures assume the workforce is installed per `../WORKFLOW.md`, with the
+context pack at `/workspace/pkfit/`. The bots read their own briefs from disk, so there is
+nothing to paste but the task-specific input.
 
-Once the workforce is installed per `../WORKFLOW.md`, the context arrives automatically:
-the `pkfit-voice`, `pkfit-stack`, and `pkfit-design` skills are attached to the agent or
-automation, and the same files sit in the project's sources. In that case skip the paste
-and send the kickoff line only.
-
-Paste anyway when the bot's output starts drifting — an emoji, an exclamation point, a
-hype word. Drift means the context is not reaching it, and a paste is the fastest way to
-confirm that before you go hunting through settings.
+If a bot's output drifts — an emoji, an exclamation point, a hype word — the cause is
+almost always one of two things: its charter did not take (check the description field for
+truncation), or `/workspace/pkfit/` is stale. Check those before rewriting a prompt.
 
 ## After editing any prompt
 
 1. Edit the file here.
-2. Run `python3 ../handoff/build-configs.py`.
-3. Re-paste the instructions into that bot's surface in Grok.
-4. **Start a new chat.** Existing conversations keep the old instructions.
+2. Run `python3 ../workspace/build.py` and `python3 ../handoff/build-configs.py`.
+3. Re-copy `../workspace/dist/pkfit/` to `/workspace/pkfit/` on the agent computer.
+4. **If the charter changed**, re-paste it into that Bot's description. A changed brief
+   needs no re-paste — it is re-read from disk on the next task.
 5. Log it in `../handoff/INSTALL_LOG.md`.

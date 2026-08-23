@@ -1,3 +1,4 @@
 
 # Grok skill packages are build artifacts
 grok/skills/dist/
+grok/workspace/dist/
